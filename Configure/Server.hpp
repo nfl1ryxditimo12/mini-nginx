@@ -13,5 +13,8 @@ class Server {
  public:
   Server();
   ~Server();
+
+  void  setServerNames(const std::vector<std::string>& server_names);
+  void  setListen(const std::map<int, std::string>& listen);
 };
 }  // namespace ws

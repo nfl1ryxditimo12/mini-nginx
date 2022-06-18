@@ -8,8 +8,8 @@ namespace ws {
   class ConfParser {
   private:
     std::string open_file(const std::string& file) const;
-    void  check_block_header(const std::string& line) const;
-    ws::Server& parse_server(std::stringstream& buffer) const throw();
+    std::string check_block_line(const std::string& line) const;
+    ws::Server parse_server(std::stringstream& buffer, const std::string& root_dir) const throw();
 
     ConfParser(const ConfParser& other);
     ConfParser& operator=(const ConfParser& other);
