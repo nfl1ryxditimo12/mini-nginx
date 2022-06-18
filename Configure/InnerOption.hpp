@@ -1,12 +1,11 @@
-#ifndef CONFIGUREOPTION_HPP
-#define CONFIGUREOPTION_HPP
+#pragma once
 
-#include <iostream>
 #include <map>
+#include <string>
 #include <vector>
 
 namespace ws {
-class ConfigureOption {
+class InnerOption {
  private:
   std::map<int, std::string> _error_page;
   std::string _root;
@@ -15,9 +14,7 @@ class ConfigureOption {
   int _directory_flag;
 
  public:
-  ConfigureOption();
-  ~ConfigureOption();
+  InnerOption();
+  ~InnerOption();
 };
 }  // namespace ws
-
-#endif

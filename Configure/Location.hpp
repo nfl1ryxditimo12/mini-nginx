@@ -1,7 +1,6 @@
-#ifndef LOCATION_HPP
-#define LOCATION_HPP
+#pragma once
 
-#include "ConfigureOption.hpp"
+#include "InnerOption.hpp"
 
 namespace ws {
 enum Method { GET, POST, DELETE };
@@ -11,12 +10,10 @@ class Location {
   std::vector<ws::Method>             _limit_except;
   std::pair<int, std::string>         _return;
   std::pair<std::string, std::string> _cgi;
-  ws::ConfigureOption                 _option;
+  ws::InnerOption                 _option;
 
  public:
   Location();
   ~Location();
 };
 }  // namespace ws
-
-#endif
