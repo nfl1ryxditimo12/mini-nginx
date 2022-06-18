@@ -1,25 +1,23 @@
 #ifndef CONFIGUREOPTION_HPP
-# define CONFIGUREOPTION_HPP
+#define CONFIGUREOPTION_HPP
 
-# include <iostream>
-# include <vector>
-# include <map>
+#include <iostream>
+#include <map>
+#include <vector>
 
-namespace ws
-{
-    class ConfigureOption
-    {
-        private:
-            std::map<int, std::string>  _error_page;
-            std::string                 _root;
-            std::string                 _index;
-            int                         _client_max_body_size;
-            int                         _directory_flag;
+namespace ws {
+class ConfigureOption {
+ private:
+  std::map<int, std::string> _error_page;
+  std::string _root;
+  std::string _index;
+  int _client_max_body_size;
+  int _directory_flag;
 
-        public:
-            ConfigureOption();
-            ~ConfigureOption();
-    };
-}
+ public:
+  ConfigureOption();
+  ~ConfigureOption();
+};
+}  // namespace ws
 
 #endif
