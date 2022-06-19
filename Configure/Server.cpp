@@ -10,3 +10,11 @@ ws::Server::Server() {
 }
 
 ws::Server::~Server() {}
+
+void  ws::Server::setServerNames(const std::vector<std::string>& server_names) {
+  _server_names = server_names;
+}
+
+void  ws::Server::setListen(const std::map<int, std::string>& listen) {
+  _listen = listen;
+}
