@@ -13,7 +13,7 @@ private:
   Configure(const Configure& other);
 
 public:
-  Configure(const std::string& file, const std::string& root_dir);
+  Configure(const std::string& file, const std::string& curr_dir);
   ~Configure();
   //Server& find();
 };

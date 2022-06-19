@@ -12,7 +12,7 @@
 static const std::string hash = "Seunkim123rootjaham456projectyeju789dir";
 
 // current executed directory
-// initialized by calling get_root_dir()
+// initialized by calling get_curr_dir()
 static std::string curr_dir;
 
 // param: void
