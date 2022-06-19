@@ -3,18 +3,9 @@
 #include <string>
 
 namespace ws {
-  class Util {
-  private:
-    static char* _curr_dir;
+  std::string get_curr_dir() throw();
+  void check_executed_dir();
 
-    Util(const Util& other);
-    Util& operator=(const Util& other);
-
-  public:
-    Util();
-    ~Util();
-
-    static void check_executed_dir();
-    static std::string get_dir() throw();
-  };
+  std::string::size_type skip_whitespace(const std::string& line);
+  std::string::size_type skip_whitespace(const std::string& line, std::string::size_type pos);
 }
