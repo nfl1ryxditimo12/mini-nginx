@@ -9,9 +9,8 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  ws::Util util;
-  util.check_executed_dir();
+  ws::check_executed_dir();
 
-  ws::Configure conf(argv[1], util.get_dir());
+  ws::Configure conf(argv[1], ws::get_curr_dir());
   (void) conf;
 }
