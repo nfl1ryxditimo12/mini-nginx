@@ -77,19 +77,11 @@ namespace ws {
   }
   */
 
-  // param: line to search
-  // return: (std::string::size_type) index of first occurence of not whitespace(space, tab)
-  // exception: none
-  // description: find first occurence of not whitespace
-  std::string::size_type skip_whitespace(const std::string& line) {
-    return line.find_first_not_of(" \t");
-  }
-
-  // param: line to search, search start position
+  // param: line to search, search start position (default 0)
   // return: (std::string::size_type) index of first occurence of not whitespace(space, tab) after pos
   // exception: none
   // description: find first occurence of not whitespace after pos
-  std::string::size_type skip_whitespace(const std::string& line, std::string::size_type pos) {
+  std::string::size_type skip_whitespace(const std::string& line, std::string::size_type pos = 0) {
     return line.find_first_not_of(" \t", pos);
   }
 }
