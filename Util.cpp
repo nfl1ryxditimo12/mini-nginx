@@ -81,7 +81,7 @@ namespace ws {
   // return: (std::string::size_type) index of first occurence of not whitespace(space, tab) after pos
   // exception: none
   // description: find first occurence of not whitespace after pos
-  std::string::size_type skip_whitespace(const std::string& line, std::string::size_type pos = 0) {
+  std::string::size_type skip_whitespace(const std::string& line, std::string::size_type pos) {
     return line.find_first_not_of(" \t", pos);
   }
 }
