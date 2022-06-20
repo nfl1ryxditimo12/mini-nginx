@@ -5,16 +5,22 @@ CXXFLAGS    :=  -std=c++98 -Wall -Wextra -Werror -g
 CXXDEBUG    :=  ~/goinfre/clang14/bin/clang++
 CXXDEBUGFLAGS :=  -std=c++98 -Wall -Wextra -Werror -g3 -pedantic -fsanitize=undefined -fsanitize=address
 
+UTIL_DIR	:=	./
+UTIL_SRCS	:=	Util.cpp
+UTIL_SRCS	:=	$(addprefix $(UTIL_DIR)/, $(UTIL_SRCS))
+UTIL_INCLUDES	:=	Util.hpp
+UTIL_INCLUDES	:=	$(addprefix $(UTIL_DIR)/, $(UTIL_INCLUDES))
+
 CONFIGURE_DIR		:=	Configure
 CONFIGURE_SRCS	:=	Configure.cpp ConfParser.cpp Server.cpp Location.cpp InnerOption.cpp
 CONFIGURE_SRCS	:=	$(addprefix $(CONFIGURE_DIR)/, $(CONFIGURE_SRCS))
 CONFIGURE_INCLUDES	:=	Configure.hpp ConfParser.hpp Server.hpp Location.hpp InnerOption.hpp
 CONFIGURE_INCLUDES	:=	$(addprefix $(CONFIGURE_DIR)/, $(CONFIGURE_INCLUDES))
 
-SRCS        :=  main.cpp Util.cpp $(CONFIGURE_SRCS)
+SRCS        :=  main.cpp $(UTIL_SRCS) $(CONFIGURE_SRCS)
 OBJS        :=  $(SRCS:.cpp=.o)
 
-INCLUDES    :=  Util.hpp $(CONFIGURE_INCLUDES)
+INCLUDES    :=  $(UTIL_INCLUDES) $(CONFIGURE_INCLUDES)
 
 RM          :=  rm -f
 
@@ -30,7 +36,7 @@ $(NAME)     :    $(OBJS) $(INCLUDES)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o $@
 
 %.o         :    %.cpp
-	$(CXX) $(CXXFLAGS) -c $^ -I$(CONFIGURE_DIR) -o $@
+	$(CXX) $(CXXFLAGS) -c $^ -I$(UTIL_DIR) -I$(CONFIGURE_DIR) -o $@
 
 .PHONY      :    clean
 clean       :
