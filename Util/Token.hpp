@@ -19,6 +19,8 @@ namespace ws {
     ~Token();
 
     std::string& get_token() throw();
+    int is_endl() const throw();
+    int is_endl_http() const throw();
   };
 
   ws::Token& operator<<(ws::Token& token, std::istream& buffer);

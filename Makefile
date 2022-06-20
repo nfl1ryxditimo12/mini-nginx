@@ -1,14 +1,14 @@
 NAME        :=  webserv
 
-CXX         :=  c++
-CXXFLAGS    :=  -std=c++98 -Wall -Wextra -Werror -g
+CXX         :=  ~/goinfre/clang14/bin/clang++
+CXXFLAGS    :=  -std=c++98 -Wall -Wextra -Werror -g  #-fsanitize=undefined# -fsanitize=address
 CXXDEBUG    :=  ~/goinfre/clang14/bin/clang++
 CXXDEBUGFLAGS :=  -std=c++98 -Wall -Wextra -Werror -g3 -pedantic -fsanitize=undefined -fsanitize=address
 
-UTIL_DIR	:=	./
-UTIL_SRCS	:=	Util.cpp
+UTIL_DIR	:=	Util
+UTIL_SRCS	:=	Util.cpp Token.cpp
 UTIL_SRCS	:=	$(addprefix $(UTIL_DIR)/, $(UTIL_SRCS))
-UTIL_INCLUDES	:=	Util.hpp
+UTIL_INCLUDES	:=	Util.hpp Token.hpp
 UTIL_INCLUDES	:=	$(addprefix $(UTIL_DIR)/, $(UTIL_INCLUDES))
 
 CONFIGURE_DIR		:=	Configure
