@@ -1,11 +1,25 @@
 #include "Token.hpp"
 
 namespace ws {
+  Token::size_type ws::Token::npos = std::string::npos;
+
   ws::Token::Token() {}
+
+  ws::Token::Token(char c) {
+    _token.push_back(c);
+  }
+
+  ws::Token::Token(const char* str) : _token(str) {}
+
+  ws::Token::Token(const std::string& str) : _token(str) {}
 
   ws::Token::~Token() {}
 
   std::string& ws::Token::get_token() throw() {
+    return _token;
+  }
+
+  const std::string& ws::Token::get_token() const throw() {
     return _token;
   }
 
@@ -15,7 +29,7 @@ namespace ws {
   exception: none
   description: returns true if Token string is "\n"
   */
-  int ws::Token::is_endl() const throw() {
+  bool ws::Token::is_endl() const throw() {
     return _token == "\n";
   }
 
@@ -25,8 +39,24 @@ namespace ws {
   exception: none
   description: returns true if Token string is "\r\n"
   */
-  int ws::Token::is_endl_http() const throw() {
+  bool ws::Token::is_endl_http() const throw() {
     return _token == "\r\n";
+  }
+
+  ws::Token::size_type ws::Token::find(const std::string& str, size_type pos) const throw() {
+    return _token.find(str, pos);
+  }
+
+  ws::Token::size_type ws::Token::length() const throw() {
+    return _token.length();
+  }
+
+  char& Token::operator[](size_type n) throw() {
+    return _token[n];
+  }
+
+  const char& Token::operator[](size_type n) const throw() {
+    return _token[n];
   }
 
   /*
@@ -64,5 +94,13 @@ namespace ws {
       target.push_back(buffer.get());
 
     return token;
+  }
+
+  bool operator==(const ws::Token& lhs, const ws::Token& rhs) throw() {
+    return lhs.get_token() == rhs.get_token();
+  }
+
+  bool operator!=(const ws::Token& lhs, const ws::Token& rhs) throw() {
+    return !(lhs == rhs);
   }
 }
