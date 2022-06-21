@@ -2,5 +2,6 @@
 *.o
 a.out
 webserv
-test.cpp
+test
+*.gch
 a.out.dSYM
