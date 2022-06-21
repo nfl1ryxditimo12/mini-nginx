@@ -1,5 +1,5 @@
 #include "Token.hpp"
-
+#include <iostream> // todo
 namespace ws {
   Token::size_type ws::Token::npos = std::string::npos;
 
@@ -30,7 +30,7 @@ namespace ws {
   description: returns true if Token string is "\n"
   */
   bool ws::Token::is_endl() const throw() {
-    return _token == "\n";
+    return _token == "\n" || !_token.length();
   }
 
   /*
@@ -43,6 +43,8 @@ namespace ws {
     return _token == "\r\n";
   }
 
+
+
   ws::Token::size_type ws::Token::find(const std::string& str, size_type pos) const throw() {
     return _token.find(str, pos);
   }
@@ -50,6 +52,28 @@ namespace ws {
   ws::Token::size_type ws::Token::length() const throw() {
     return _token.length();
   }
+
+  std::string& ws::Token::erase(size_type index, size_type count) {
+    return _token.erase(index, count);
+  }
+
+  std::string ws::Token::substr(size_type pos, size_type count) const {
+    return _token.substr(pos, count);
+  }
+
+  const char* ws::Token::c_str() const {
+    return _token.c_str();
+  }
+
+  int ws::Token::compare(const std::string& str) const throw() {
+    return _token.compare(str);
+  }
+
+  int ws::Token::compare(size_type pos1, size_type count1, const std::string& str) const {
+    return _token.compare(pos1, count1, str);
+  }
+
+
 
   char& Token::operator[](size_type n) throw() {
     return _token[n];
@@ -80,7 +104,7 @@ namespace ws {
       c = buffer.peek();
     }
 
-    while (c != ' ' && c != '\t' && c != '\n' && '\r') {
+    while (c != ' ' && c != '\t' && c != '\n' && c != '\r') {
       target.push_back(buffer.get());
       c = buffer.peek();
     }
@@ -94,6 +118,11 @@ namespace ws {
       target.push_back(buffer.get());
 
     return token;
+  }
+
+  std::ostream& operator<<(std::ostream& stream, const ws::Token& token) {
+    stream << token.get_token();
+    return stream;
   }
 
   bool operator==(const ws::Token& lhs, const ws::Token& rhs) throw() {
