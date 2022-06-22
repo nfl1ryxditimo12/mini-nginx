@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "Enum.hpp"
+#include "Token.hpp"
 
 namespace ws {
 
@@ -16,8 +17,10 @@ namespace ws {
     */
     ws::HttpMethod _method;
     std::string _request_uri;
+    std::string _http_version;
     std::map<std::string, std::string> _header;
     std::string _body;
+    std::string::size_type  _request_size;
 
     RequestMessage(const RequestMessage& cls);
     RequestMessage& operator=(const RequestMessage& cls);
@@ -26,7 +29,7 @@ namespace ws {
     RequestMessage();
     ~RequestMessage();
 
-    void  parse_request_message(const std::string& message);
+    void  parse_request_message(const char* message, int buffer_size);
     void  print_message();
   };
 }

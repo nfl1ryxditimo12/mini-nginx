@@ -3,87 +3,54 @@
 
 #include <map>
 #include <iostream> // todo
-// #include <istream>
+#include <stdexcept>
 
-ws::RequestMessage::RequestMessage(): _method(kNOTHING), _request_uri(""), _body("") {}
+ws::RequestMessage::RequestMessage(): _method(kNOTHING), _request_uri(""), _body(""), _http_version(""), _request_size(0) {}
 
 ws::RequestMessage::~RequestMessage() {}
 
-void	ws::RequestMessage::parse_request_message(const std::string& message) {
-	std::stringstream buffer;
-	ws::Token	token;
-	std::string tmp;
-	int i = 0;
-
-	// buffer << message;
-
-	/* 나중에 모듈화: parse_start_line */
-	/* ==================================== */
-	// token << buffer;
-	// if (token == "GET")
-	// 	_method = kGET;
-	// else if (token == "POST") 
-	// 	_method = kPOST;
-	// else if (token == "DELETE") 
-	// 	_method = kDELETE; // 4로 할지 추후 의논
-	// // else 인 경우 error response
-	// token << buffer;
-	// _request_uri = token.get_token();
-	// if (_method == kNOTHING || (token << buffer) != "HTTP/1.1" || (token << buffer) != "\r\n")
-	// 	return; // error response
-	if (message.find("GET") != message.npos)
-		_method = kGET;
-	else if (message.find("POST") != message.npos)
-		_method = kPOST;
-	else if (message.find("DELETE") != message.npos)
-		_method = kDELETE; // 4로 할지 추후 의논
-	// _request_uri = message.substr(message.find_first_of("/"), message.find_first_of("HTTP") - 1);
-	_request_uri = "/";
-	for (; message[i] != '\r' && message[i + 1] != '\n'; i++) {}
-	i += 2;
-	/* ==================================== */
-
-	/* Header parsing */
-	/* ==================================== */
-	while (message[i]) {
-		std::string key, value;
-
-		// std::getline(buffer, line);
-		for (; message[i] && message[i] != ':'; i++)
-			key.push_back(message[i]);
-		for (i += 2; message[i] && message[i] != '\r'; i++)
-			value.push_back(message[i]);
-		_header.insert(std::pair<std::string, std::string>(key, value));
-		// line.clear();
-		if (message[i] == '\r' && message[i + 1] == '\n' && message[i + 2] == '\r' && message[i + 3] == '\n') {
-			i += 4;
-			break;
-		}
-		i += 2;
-	}
-	/* ==================================== */
-
-	/* Body parsing */
-	/* ==================================== */
-	char *ptr;
-	std::map<std::string, std::string>::iterator iter = _header.find("Content-Length");
-	int content_length = 0;
-
-	if (iter == _header.end())
-		iter = _header.find("content-length");
-
-	if (iter != _header.end()) {
-		for (; message[i]; i++) {
-			_body.push_back(message[i]);
-		}
-		content_length = static_cast<int>(std::strtod(iter->second.c_str(), &ptr));
-		if (content_length != _body.length())
-			return; // error response
-	}
+void	ws::RequestMessage::parse_request_message(const char* message, int buffer_size) {
 	
-	/* ==================================== */
+	ws::Token token;
+	std::stringstream buffer;
+
+	_request_size += buffer_size;
+
+	buffer << message;
+
+	/*request line*/
+	token.rdword(buffer);
+	if (token == "GET")
+		_method = kGET;
+	else if (token == "POST")
+		_method = kPOST;
+	else if (token == "DELETE")
+		_method = kDELETE;
+	//else -> kNOTHING
+	_request_uri = token.rdword(buffer).get_data();
+	_http_version = token.rd_http_line(buffer).get_data();
+	
+	/*request header*/
+	std::string key;
+	std::string value;
+
+	for (token.rdword(buffer); !buffer.eof(); token.rdword(buffer)) {
+	if (token == "\r\n")
+		break;
+	if (token.find(":") == token.npos || token[token.length() - 1] != ':')
+		throw std::invalid_argument("RequestMessage: wrong header form: key");
+	key = token.get_data();
+	value = token.rd_http_line(buffer).substr(1, token.length() - 1);
+	_header.insert(std::pair<std::string, std::string>(key, value));
+	}
+	/*body*/
+
+	_body = token.rdall(buffer).get_data();
+
+	buffer.clear();
 }
 
+/* test */
 #define NC "\e[0m"
 #define RED "\e[0;31m"
 #define GRN "\e[0;32m"
