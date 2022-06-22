@@ -3,18 +3,20 @@
 #include "ConfParser.hpp"
 
 namespace ws {
-class Configure {
-private:
-  static const ws::ConfParser parser;
-  std::vector<ws::Server> server;
+  class Configure {
+  private:
+    ws::ConfParser _parser;
+    std::vector<ws::Server> _server;
 
-  Configure();
-  Configure& operator=(const Configure& other);
-  Configure(const Configure& other);
+    Configure& operator=(const Configure& other);
+    Configure(const Configure& other);
 
-public:
-  Configure(const std::string& file, const std::string& curr_dir);
-  ~Configure();
-  //Server& find();
-};
+  public:
+    Configure(const std::string& file, const std::string& curr_dir);
+    ~Configure();
+
+
+    const std::vector<ws::Server>& get_server() const throw();
+    //Server& find();
+  };
 }

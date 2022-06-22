@@ -1,8 +1,10 @@
 #include "Configure.hpp"
 
-const ws::ConfParser ws::Configure::parser;
-
 ws::Configure::Configure(const std::string& file, const std::string& curr_dir)
-    : server(parser.parse(file, curr_dir)) {}
+    : _parser(file), _server(_parser.parse(curr_dir)) {}
 
 ws::Configure::~Configure() {}
+
+const std::vector<ws::Server>& ws::Configure::get_server() const throw() {
+  return _server;
+}
