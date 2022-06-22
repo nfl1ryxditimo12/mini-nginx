@@ -56,29 +56,36 @@ namespace ws {
     }
 
     _listen.push_back(value);
+    std::cout << "set: " << value.first << ", " << value.second << std::endl;
   }
 
   void ws::Server::set_server_name(const server_name_value_type& value) throw() {
     _server_name.push_back(value);
+    std::cout << "set: " << value << std::endl;
   }
 
   void ws::Server::set_autoindex(const autoindex_type& value) throw() {
     _option.set_autoindex(value);
+    std::cout << "set: " << value << std::endl;
   }
 
   void ws::Server::set_root(const root_type& value) throw() {
     _option.set_root(value);
+    std::cout << "set: " << value << std::endl;
   }
 
-  void ws::Server::set_index(const index_type& value) throw() {
+  void ws::Server::set_index(const index_value_type& value) throw() {
     _option.set_index(value);
+    std::cout << "set: " << value << std::endl;
   }
 
   void ws::Server::set_client_max_body_size(const client_max_body_size_type& value) throw() {
     _option.set_client_max_body_size(value);
+    std::cout << "set: " << value << std::endl;
   }
 
-  void ws::Server::set_error_page(const error_page_type& value) throw() {
+  void ws::Server::set_error_page(const error_page_value_type& value) throw() {
     _option.set_error_page(value);
+    std::cout << "set: " << value.first << "," << value.second << std::endl;
   }
 }

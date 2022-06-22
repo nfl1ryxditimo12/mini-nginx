@@ -4,7 +4,7 @@
 #include <iostream>//todo
 
 namespace ws {
-  ws::InnerOption::InnerOption() : _client_max_body_size(kCLIENT_MAX_BODY_SIZE_UNSET), _autoindex(kAUTOINDEX_UNSET) {
+  ws::InnerOption::InnerOption() : _autoindex(kAUTOINDEX_UNSET), _client_max_body_size(kCLIENT_MAX_BODY_SIZE_UNSET) {
     // this->_root = "~/webserv/www/";
     // this->_index.push_back("index.html");
     // this->_client_max_body_size = 1024 * 1024;
@@ -41,16 +41,16 @@ namespace ws {
     _root = value;
   }
 
-  void ws::InnerOption::set_index(const index_type& value) throw() {
-    _index = value;
+  void ws::InnerOption::set_index(const index_value_type& value) throw() {
+    _index.push_back(value);
   }
 
   void ws::InnerOption::set_client_max_body_size(const client_max_body_size_type& value) throw() {
     _client_max_body_size = value;
   }
 
-  void ws::InnerOption::set_error_page(const error_page_type& value) throw() {
-    _error_page = value;
+  void ws::InnerOption::set_error_page(const error_page_value_type& value) throw() {
+    _error_page.insert(value);
   }
 }
 
