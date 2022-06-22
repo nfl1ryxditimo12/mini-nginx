@@ -86,14 +86,14 @@ namespace ws {
   ws::Token& ws::Token::rd_http_line(std::istream& buffer) {
     _data.clear();
 
-    for (char c = buffer.get(), flag = 0; ; c = buffer.get()) {
+    for (char c = buffer.get(), prev = 0; ; prev = c, c = buffer.get()) {
       if (buffer.eof())
         return *this;
 
       _data.push_back(c);
 
-      if ((c == '\n') && (_data[_data.length() - 1] == '\r')) {
-          _data.erase(_data.length() - 1, 1);
+      if ((c == '\n') && (prev == '\r')) {
+          _data.erase(_data.length() - 2, 2);
           return *this;
       }
     }
@@ -103,13 +103,13 @@ namespace ws {
   param: input stream to read
   return: *this
   exception: thorws if an error occured while reading buffer
-  description: reads buffer until buffer's eof bit is set
+  description: reads buffer until buffer's eof bit is set or c is NUL
   */
   ws::Token& ws::Token::rdall(std::istream& buffer) {
     _data.clear();
 
-    while (!buffer.eof())
-      _data.push_back(buffer.get());
+    for (char c = buffer.get(); !buffer.eof() && c; c = buffer.get())
+      _data.push_back(c);
 
     return *this;
   }

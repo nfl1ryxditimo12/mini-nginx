@@ -42,7 +42,6 @@ namespace ws {
     // custom method
     bool is_endl() const throw();
     bool is_http_endl() const throw();
-    int strncmp(const std::string& str, size_type start = 0, size_type len = npos) const throw();
 
     // std::string method
     size_type find(const std::string& str, size_type pos = 0) const throw();
