@@ -104,12 +104,17 @@ namespace ws {
   return: *this
   exception: thorws if an error occured while reading buffer
   description: reads buffer until buffer's eof bit is set or c is NUL
+  note: all char in buffer is valid, therefore, should accept all byte
   */
   ws::Token& ws::Token::rdall(std::istream& buffer) {
     _data.clear();
 
-    for (char c = buffer.get(); !buffer.eof() && c; c = buffer.get())
+    for (char c = buffer.get(); ; c = buffer.get()) {
+      if (buffer.eof())
+        break;
+
       _data.push_back(c);
+    }
 
     return *this;
   }
