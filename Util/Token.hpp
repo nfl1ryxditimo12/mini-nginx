@@ -11,7 +11,7 @@ namespace ws {
   */
   class Token {
   private:
-    std::string _token;
+    std::string _data;
 
     Token& operator=(const Token& other);
     Token(const Token& other);
@@ -30,12 +30,18 @@ namespace ws {
     Token(const std::string& str);
 
     // getter
-    std::string& get_token() throw();
-    const std::string& get_token() const throw();
+    std::string& get_data() throw();
+    const std::string& get_data() const throw();
+
+    // reading method
+    ws::Token& rdword(std::istream& buffer);
+    ws::Token& rdline(std::istream& buffer, char delim = '\n');
+    ws::Token& rd_http_line(std::istream& buffer);
+    ws::Token& rdall(std::istream& buffer);
 
     // custom method
     bool is_endl() const throw();
-    bool is_endl_http() const throw();
+    bool is_http_endl() const throw();
     int strncmp(const std::string& str, size_type start = 0, size_type len = npos) const throw();
 
     // std::string method
@@ -51,7 +57,6 @@ namespace ws {
     const char& operator[](size_type n) const throw();
   };
 
-  ws::Token& operator<<(ws::Token& token, std::istream& buffer);
   std::ostream& operator<<(std::ostream& stream, const ws::Token& token);
 
   bool operator==(const ws::Token& lhs, const ws::Token& rhs) throw();
