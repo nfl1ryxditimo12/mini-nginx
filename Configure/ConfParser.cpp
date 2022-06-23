@@ -51,11 +51,11 @@ void ws::ConfParser::check_block_header(const std::string& block_name) {
     throw std::invalid_argument("Configure: wrong " + block_name + " header");
 
   this->rdword();
-  if (_token != '{')
+  if (_token != "{")
     throw std::invalid_argument("Configure: wrong " + block_name + " header");
 
   this->rdword();
-  if (_token != '\n')
+  if (_token != "\n")
     throw std::invalid_argument("Configure: wrong " + block_name + " header");  
 }
 #include <iostream>
@@ -75,35 +75,22 @@ ws::Server ws::ConfParser::parse_server() {
 
     server_parser_func_map::iterator iter;
 
-    iter = server_parser_func.find(_token.get_data());
+    iter = server_parser_func.find(_token);
     if (iter == server_parser_func.end())
       throw std::invalid_argument("Configure: wrong field key");
     (this->*iter->second)(ret);
     this->rdword();
     if (_token != "\n") {
-      std::cout << _token.get_data() <<"asd" << std::endl;;
+      std::cout << _token <<"asd" << std::endl;;
       throw std::invalid_argument("Configure: wrong field argument number");
     }
 
-
-    // else if (!line.compare(pos, 11, "server_name"))
-    //   ret.set_server_name(this->parse_server_name(line, skip_whitespace(line, pos + 11)));
     // else if (!line.compare(pos, 12, "limit_except"))
     //   ret.set_limit_except(this->parse_limit_except(line), skip_whitespace(line, pos + 12));
     // else if (!line.compare(pos, 6, "return"))
     //   ret.set_return(this->parse_return(line), skip_whitespace(line, pos + 6));
-    // else if (!line.compare(pos, 20, "client_max_body_size"))
-    //   ret.set_client_max_body_size(this->parse_client_max_body_size(line), skip_whitespace(line, pos + 20));
-    // else if (!line.compare(pos, 14, "directory_list"))
-    //   ret.set_directory_list(this->parse_directory_list(line), skip_whitespace(line, pos + 14));
-    // else if (!line.compare(pos, 4, "root"))
-    //   ret.set_root(this->parse_root(line), skip_whitespace(line, pos + 4));
-    // else if (!line.compare(pos, 5, "index"))
-    //   ret.set_index(this->parse_index(line), skip_whitespace(line, pos + 5));
     // else if (!line.compare(pos, 10, "error_page"))
     //   ret.set_error_page(this->parse_error_page(line), skip_whitespace(line, pos + 10));
-    // else
-    //   throw std::invalid_argument("Configure: wrong configure key");
   }
   return ret;
 }
@@ -116,7 +103,7 @@ void ws::ConfParser::init_server_parser_func(server_parser_func_map& server_pars
   );
   server_parser_func.insert(server_parser_func_map::value_type("autoindex", &ConfParser::parse_autoindex));
   server_parser_func.insert(server_parser_func_map::value_type("root", &ConfParser::parse_root));
-  server_parser_func.insert(server_parser_func_map::value_type("index", &ConfParser::parse_root));
+  server_parser_func.insert(server_parser_func_map::value_type("index", &ConfParser::parse_index));
 }
 
 // localhost: 127.0.0.1
@@ -200,14 +187,14 @@ void ws::ConfParser::parse_server_name(ws::Server& server) {
         throw std::invalid_argument("Configure: server_name: `;' should appear at eol");
       if (pos == 0)
         throw std::invalid_argument("Configure: server_name: `;' should appear at eol");
-      server.set_server_name(_token.substr(0, pos - 1));
+      server.set_server_name(_token.substr(0, pos));
       break;
     } else {
       if (!_token.length())
         throw std::invalid_argument("Configure: server_name: invalid format");
       if (_token == "\n")
         throw std::invalid_argument("Configure: server_name: invalid format");
-      server.set_server_name(_token.get_data());
+      server.set_server_name(_token);
     }
   }
 }
@@ -287,30 +274,68 @@ void ws::ConfParser::parse_index(ws::Server& server) {
         throw std::invalid_argument("Configure: index: `;' should appear at eol");
       if (pos == 0)
         throw std::invalid_argument("Configure: index: `;' should appear at eol");
-      server.set_index(_token.substr(0, pos - 1));
+      server.set_index(_token.substr(0, pos));
       break;
     } else {
       if (!_token.length())
         throw std::invalid_argument("Configure: index: invalid format");
       if (_token == "\n")
         throw std::invalid_argument("Configure: index: invalid format");
-      server.set_index(_token.get_data());
+      server.set_index(_token);
     }
   }
 }
 
-// void ws::ConfParser::parse_limit_except(ws::Server& server, ws::Token& token, std::stringstream& buffer) {
-//   token << buffer;
+void ws::ConfParser::parse_error_page(ws::Server& server) {
+  this->rdword();
 
-//   for (; !token.is_endl(); token << buffer) {
-//     if (token[token.length() - 1] == ';')
-//       break;
+  std::vector<int> error_code;
+  std::string file;
 
-//     server.set_limit_except(token.get_token());
-//   }
+  for (
+    Token::size_type pos = _token.find(";");
+    !(_buffer.eof());
+    this->rdword(), pos = _token.find(";")
+  ) {
+    if (pos != _token.npos) {
+      if (pos != _token.length() - 1)
+        throw std::invalid_argument("Configure: error_page: `;' should appear at eol");
+      if (pos == 0)
+        throw std::invalid_argument("Configure: error_page: `;' should appear at eol");
+      file = _token.substr(0, pos);
+      break;
+    } else {
+      if (!_token.length())
+        throw std::invalid_argument("Configure: error_page: invalid format");
+      if (_token == "\n")
+        throw std::invalid_argument("Configure: error_page: invalid format");
+      error_code.push_back(this->parse_error_code());
+    }
+  }
 
-//   server.set_limit_except(token.substr(0, token.length() - 1));
-// }
+  if (error_code.empty())
+    throw std::invalid_argument("Configure: error_pgae: need error code");
+
+  for (std::vector<int>::size_type i = 0; i < error_code.size(); ++i)
+    server.set_error_page(ws::Server::error_page_value_type(error_code[i], file));
+}
+
+int ws::ConfParser::parse_error_code() const {
+  std::string curr(_token);
+  int ret = 0;
+
+  for (std::string::size_type i = 0; (ret < 600) && curr[i]; ++i) {
+    if (!std::isdigit(curr[i]))
+      throw std::invalid_argument("Configure: error_page: non numeric in error code");
+    ret *= 10;
+    ret += curr[i] - '0';
+  }
+
+  if (ret < 300 || ret > 599)
+    throw std::out_of_range("Configure: error_page: error code range must be between 300 and 599");
+
+  return ret;
+}
 
 /*
 param: configuration file, current directory(which should be project root directory)
@@ -332,7 +357,7 @@ std::vector<ws::Server> ws::ConfParser::parse() {
   while (!_buffer.eof()) {
     this->rdword();
 
-    if (_token.is_endl())
+    if (_token == "\n")
       continue;
 
     this->check_block_header("server");

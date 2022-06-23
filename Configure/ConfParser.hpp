@@ -33,13 +33,12 @@ namespace ws {
 
     void parse_server_name(ws::Server& server);
 
-    void parse_client_max_body_size(ws::Server& server);
-
     void parse_autoindex(ws::Server& server);
-
     void parse_root(ws::Server& server);
-
     void parse_index(ws::Server& server);
+    void parse_client_max_body_size(ws::Server& server);
+    void parse_error_page(ws::Server& server);
+    int parse_error_code() const;
 
     ConfParser(const ConfParser& other);
     ConfParser& operator=(const ConfParser& other);
