@@ -27,25 +27,25 @@ void	ws::RequestMessage::parse_request_message(const char* message, int buffer_s
 	else if (token == "DELETE")
 		_method = kDELETE;
 	//else -> kNOTHING
-	_request_uri = token.rdword(buffer).get_data();
-	_http_version = token.rd_http_line(buffer).get_data();
+	_request_uri = token.rdword(buffer);
+	_http_version = token.rd_http_line(buffer);
 	
 	/*request header*/
 	std::string key;
 	std::string value;
 
 	for (token.rdword(buffer); !buffer.eof(); token.rdword(buffer)) {
-	if (token == "\r\n")
-		break;
-	if (token.find(":") == token.npos || token[token.length() - 1] != ':')
-		throw std::invalid_argument("RequestMessage: wrong header form: key");
-	key = token.get_data();
-	value = token.rd_http_line(buffer).substr(1, token.length() - 1);
-	_header.insert(std::pair<std::string, std::string>(key, value));
+    if (token == "\r\n")
+      break;
+    if (token.find(":") == token.npos || token[token.length() - 1] != ':')
+      throw std::invalid_argument("RequestMessage: wrong header form: key");
+    key = token.substr(0, token.length() - 1);
+    value = token.rd_http_line(buffer).substr(1, token.length() - 1);
+    _header.insert(std::pair<std::string, std::string>(key, value));
 	}
 	/*body*/
 
-	_body = token.rdall(buffer).get_data();
+	_body = token.rdall(buffer);
 
 	buffer.clear();
 }

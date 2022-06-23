@@ -1,7 +1,7 @@
 NAME        :=  webserv
 
 CXX         :=  ~/goinfre/clang14/bin/clang++
-CXXFLAGS    :=  -std=c++98 -Wall -Wextra -Werror -g  #-fsanitize=undefined# -fsanitize=address
+CXXFLAGS    :=  -std=c++98 -Wall -Wextra -Werror -g  -fsanitize=undefined -fsanitize=address
 CXXDEBUG    :=  ~/goinfre/clang14/bin/clang++
 CXXDEBUGFLAGS :=  -std=c++98 -Wall -Wextra -Werror -g3 -pedantic -fsanitize=undefined -fsanitize=address
 
