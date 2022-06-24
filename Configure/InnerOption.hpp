@@ -36,10 +36,10 @@ namespace ws {
     const client_max_body_size_type& get_client_max_body_size() const throw();
     const error_page_type& get_error_page() const throw();
 
-    void set_autoindex(const autoindex_type& value) throw();
-    void set_root(const root_type& value) throw();
-    void set_index(const index_value_type& value) throw();
-    void set_client_max_body_size(const client_max_body_size_type& value) throw();
-    void set_error_page(const error_page_value_type& value) throw();
+    void set_autoindex(const autoindex_type& value);
+    void set_root(const root_type& value);
+    void set_index(const index_value_type& value);
+    void set_client_max_body_size(const client_max_body_size_type& value);
+    void set_error_page(const error_page_value_type& value);
   };
 }

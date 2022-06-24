@@ -14,10 +14,29 @@ ws::ConfParser::ConfParser(const std::string& file, const std::string& curr_dir)
   : _buffer(this->open_file(file)), _root_dir(curr_dir) {
   init_server_parser();
   init_location_parser();
-  init_inner_parser();
+  init_option_parser();
 }
 
 ws::ConfParser::~ConfParser() {}
+
+void ws::ConfParser::init_server_parser() {
+  _server_parser.insert(server_parser_func_map::value_type("listen", &ConfParser::parse_listen));
+  _server_parser.insert(server_parser_func_map::value_type("server_name", &ConfParser::parse_server_name));
+}
+
+void ws::ConfParser::init_location_parser() {
+  _location_parser.insert(location_parser_func_map::value_type("limit_except", &ConfParser::parse_limit_except));
+  _location_parser.insert(location_parser_func_map::value_type("return", &ConfParser::parse_return));
+}
+
+void ws::ConfParser::init_option_parser() {
+  _option_parser.insert(option_parser_func_map::value_type("autoindex", &ConfParser::parse_autoindex));
+  _option_parser.insert(option_parser_func_map::value_type("root", &ConfParser::parse_root));
+  _option_parser.insert(option_parser_func_map::value_type("index", &ConfParser::parse_index));
+  _option_parser.insert(
+    option_parser_func_map::value_type("client_max_body_size", &ConfParser::parse_client_max_body_size)
+  );
+}
 
 ws::Token& ws::ConfParser::get_token() throw() {
   return _token;
@@ -50,7 +69,7 @@ ws::Token& ws::ConfParser::rdword() {
 
 
 
-void ws::ConfParser::check_block_header(const std::string& block_name) {
+void ws::ConfParser::check_server_header(const std::string& block_name) {
   if (_token != block_name)
     throw std::invalid_argument("Configure: wrong " + block_name + " header");
 
@@ -60,13 +79,31 @@ void ws::ConfParser::check_block_header(const std::string& block_name) {
 
   this->rdword();
   if (_token != "\n")
-    throw std::invalid_argument("Configure: wrong " + block_name + " header");  
+    throw std::invalid_argument("Configure: wrong " + block_name + " header");
+}
+
+std::string ws::ConfParser::check_location_header(const std::string& block_name) {
+  if (_token != block_name)
+    throw std::invalid_argument("Configure: wrong " + block_name + " header");
+
+  this->rdword();
+  std::string ret = _token;
+
+  this->rdword();
+  if (_token != "{")
+    throw std::invalid_argument("Configure: wrong " + block_name + " header");
+
+  this->rdword();
+  if (_token != "\n")
+    throw std::invalid_argument("Configure: wrong " + block_name + " header");
+
+  return ret;
 }
 
 ws::Server ws::ConfParser::parse_server() {
   ws::Server ret;
-  std::vector<ws::Location> location;
-  ws::InnerOption inner;
+  location_type location;
+  ws::InnerOption option;
 
   std::string line;
 
@@ -75,52 +112,60 @@ ws::Server ws::ConfParser::parse_server() {
     if (_token == "\n")
       continue;
 
-    server_parser_iterator server_iter;
-    location_parser_iterator location_iter;
-    inner_parser_iterator inner_iter;
-
-    server_iter = _server_parser.find(_token);
-    location_iter = _location_parser.find(_token);
-    inner_iter = _inner_parser.find(_token);
+    server_parser_iterator server_iter = _server_parser.find(_token);
+    option_parser_iterator option_iter = _option_parser.find(_token);
 
     if (server_iter != _server_parser.end())
       (this->*server_iter->second)(ret);
-    else if (inner_iter != _inner_parser.end())
-      (this->*inner_iter->second)(inner);
-    else
+    else if (option_iter != _option_parser.end())
+      (this->*option_iter->second)(option);
+    else if (_token == "location") {
+      this->parse_location(location, this->check_location_header("location"));
+    } else
       throw std::invalid_argument("Configure: wrong field key");
-    this->rdword();
-    if (_token != "\n") {
-      std::cout << _token <<"asd" << std::endl;;
-      throw std::invalid_argument("Configure: wrong field argument number");
-    }
 
-    // else if (!line.compare(pos, 12, "limit_except"))
-    //   ret.set_limit_except(this->parse_limit_except(line), skip_whitespace(line, pos + 12));
-    // else if (!line.compare(pos, 6, "return"))
-    //   ret.set_return(this->parse_return(line), skip_whitespace(line, pos + 6));
-    // else if (!line.compare(pos, 10, "error_page"))
-    //   ret.set_error_page(this->parse_error_page(line), skip_whitespace(line, pos + 10));
+    this->rdword();
+
+    if (_token != "\n")
+      throw std::invalid_argument("Configure: wrong field argument number");
   }
+
+  ret.set_location(location);
+  ret.set_option(option);
+
   return ret;
 }
 
-void ws::ConfParser::init_server_parser() {
-  _server_parser.insert(server_parser_func_map::value_type("listen", &ConfParser::parse_listen));
-  _server_parser.insert(server_parser_func_map::value_type("server_name", &ConfParser::parse_server_name));
-}
+void ws::ConfParser::parse_location(location_type& location, const std::string& dir) {
+  if (location.find(dir) != location.end())
+    throw std::invalid_argument("Configure: location: dupilcated location dir");
 
-void ws::ConfParser::init_location_parser() {
-  return ;
-}
+  ws::Location curr_location;
+  ws::InnerOption option;
 
-void ws::ConfParser::init_inner_parser() {
-  _inner_parser.insert(
-    inner_parser_func_map::value_type("client_max_body_size", &ConfParser::parse_client_max_body_size)
-  );
-  _inner_parser.insert(inner_parser_func_map::value_type("autoindex", &ConfParser::parse_autoindex));
-  _inner_parser.insert(inner_parser_func_map::value_type("root", &ConfParser::parse_root));
-  _inner_parser.insert(inner_parser_func_map::value_type("index", &ConfParser::parse_index));
+  while (!_buffer.eof()) {
+    this->rdword();
+    if (_token == "\n")
+      continue;
+
+    location_parser_iterator location_iter = _location_parser.find(_token);
+    option_parser_iterator option_iter = _option_parser.find(_token);
+
+    if (location_iter != _location_parser.end())
+      (this->*location_iter->second)(curr_location);
+    else if (option_iter != _option_parser.end())
+      (this->*option_iter->second)(option);
+    else
+      throw std::invalid_argument("Configure: location: wrong field key");
+
+    this->rdword();
+
+    if (_token != "\n")
+      throw std::invalid_argument("Configure: location: wrong field argument number");
+  }
+
+  curr_location.set_option(option);
+  location.insert(location_value_type(dir, curr_location));
 }
 
 // localhost: 127.0.0.1
@@ -244,6 +289,55 @@ void ws::ConfParser::parse_client_max_body_size(ws::InnerOption& inner) {
     throw std::out_of_range("Configure: client_max_body_size: too large value");
 
   inner.set_client_max_body_size(size * 1024);
+}
+
+void ws::ConfParser::parse_limit_except(ws::Location& location) {
+  ws::Location::limit_except_type limit_except(location.get_limit_except());
+
+  for (limit_except_type::iterator it = limit_except.begin(); it != limit_except.end(); ++it) {
+    if (it->second != -1)
+      throw std::invalid_argument("Configure: location: limit_except: duplicated limit_except");
+  }
+
+  std::string method;
+
+  while (1) {
+    this->rdword();
+    ws::Location::limit_except_type::size_type pos = _token.find(";");
+
+    if (pos != _token.npos && (_token[pos] != ';' || _token[0] == ';'))
+        throw std::invalid_argument("Configure: location: limit_except: wrong format");
+
+    method = get_method(_token.substr(0, std::min(pos, _token.length())));
+
+    if (limit_except.find(method)->second != -1)
+      throw std::invalid_argument("Configure: location: limit_except: duplicated method");
+
+    location.set_limit_except(method, true);
+
+    if (pos != _token.npos)
+      break;
+  }
+}
+
+std::string ws::ConfParser::get_method(const std::string& method) const {
+  static const std::string method_list[] = {
+    "GET",
+    "POST",
+    "DELETE",
+    "HEAD"
+  };
+
+  for (std::size_t i = 0; ; ++i) {
+    if (i > 3)
+      throw std::invalid_argument("Configure: location: limit_except: wrong method");
+    if (method == method_list[i])
+      return std::string(method_list[i]);
+  }
+}
+
+void ws::ConfParser::parse_return(ws::Location& location) {
+  (void) location; // todo
 }
 
 void ws::ConfParser::parse_autoindex(ws::InnerOption& inner) {
@@ -377,7 +471,7 @@ std::vector<ws::Server> ws::ConfParser::parse() {
     if (_token == "\n")
       continue;
 
-    this->check_block_header("server");
+    this->check_server_header("server");
 
     ret.push_back(this->parse_server());
   }
