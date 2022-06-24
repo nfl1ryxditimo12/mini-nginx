@@ -5,25 +5,24 @@
 #include <string>
 #include <sstream>
 
-#include "Enum.hpp"
+// #include "Enum.hpp"
 #include "Token.hpp"
 
 namespace ws {
-
   class RequestMessage {
+  public:
+    typedef std::map<std::string, std::string> header_type;
+
   private:
-    /*
-    GET == 1, POST == 2, DELETE == 3
-    */
-    ws::HttpMethod _method;
+    std::string _method;
     std::string _request_uri;
     std::string _http_version;
-    std::map<std::string, std::string> _header;
+    header_type _header;
     std::string _body;
     std::string::size_type  _request_size;
 
-    RequestMessage(const RequestMessage& cls);
-    RequestMessage& operator=(const RequestMessage& cls);
+    RequestMessage& operator=(const RequestMessage& other);
+    RequestMessage(const RequestMessage& other);
 
   public:
     RequestMessage();
