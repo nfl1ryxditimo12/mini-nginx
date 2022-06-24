@@ -29,6 +29,8 @@ namespace ws {
     RequestMessage();
     ~RequestMessage();
 
+    void	parse_request_body(ws::Token& token, std::stringstream& buffer);
+    void	parse_request_header(ws::Token& token, std::stringstream& buffer);
     void  parse_request_message(const char* message, int buffer_size);
     void  print_message();
   };
