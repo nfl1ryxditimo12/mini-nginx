@@ -1,8 +1,9 @@
 #include "InnerOption.hpp"
 
 #include <stdexcept>
+#include <iostream>//todo
 
-ws::InnerOption::InnerOption() : _client_max_body_size(ULONG_MAX), _directory_list(-1) {
+ws::InnerOption::InnerOption() : _autoindex(kAUTOINDEX_UNSET), _client_max_body_size(kCLIENT_MAX_BODY_SIZE_UNSET) {
   // this->_root = "~/webserv/www/";
   // this->_index.push_back("index.html");
   // this->_client_max_body_size = 1024 * 1024;
@@ -11,19 +12,43 @@ ws::InnerOption::InnerOption() : _client_max_body_size(ULONG_MAX), _directory_li
 
 ws::InnerOption::~InnerOption() {}
 
-void ws::InnerOption::set_client_max_body_size(unsigned long client_max_body_size) throw() {
-  _client_max_body_size = client_max_body_size;
+const ws::InnerOption::autoindex_type& ws::InnerOption::get_autoindex() const throw() {
+  return _autoindex;
 }
 
-void ws::InnerOption::set_directory_list(const std::string& value) {
-  if (value == "on")
-    _directory_list = 1;
-  else if (value == "off")
-    _directory_list = 0;
-  else
-    throw std::invalid_argument("Configure: wrong directory list value");
+const ws::InnerOption::root_type& ws::InnerOption::get_root() const throw() {
+  return _root;
 }
 
-void ws::InnerOption::set_root(const std::string& value) {
-  
+const ws::InnerOption::index_type& ws::InnerOption::get_index() const throw() {
+  return _index;
 }
+
+const ws::InnerOption::client_max_body_size_type& ws::InnerOption::get_client_max_body_size() const throw() {
+  return _client_max_body_size;
+}
+
+const ws::InnerOption::error_page_type& ws::InnerOption::get_error_page() const throw() {
+  return _error_page;
+}
+
+void ws::InnerOption::set_autoindex(const autoindex_type& value) throw() {
+  _autoindex = value;
+}
+
+void ws::InnerOption::set_root(const root_type& value) throw() {
+  _root = value;
+}
+
+void ws::InnerOption::set_index(const index_value_type& value) throw() {
+  _index.push_back(value);
+}
+
+void ws::InnerOption::set_client_max_body_size(const client_max_body_size_type& value) throw() {
+  _client_max_body_size = value;
+}
+
+void ws::InnerOption::set_error_page(const error_page_value_type& value) throw() {
+  _error_page.insert(value);
+}
+
