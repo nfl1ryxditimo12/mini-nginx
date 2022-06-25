@@ -50,14 +50,14 @@ namespace ws {
 		*/
 		std::string _host;
 
-		/*
-		Millisecond from 1970 to the present
-		메세지가 언제 만들어졌는지에 대한 날짜와 시간을 제공
-		일반헤더
-		RFC 850형식:
-		Date: Tuesday, 03-Oct-97 02:15:31 GMT
-		*/
-		std::string _date;
+		// /*
+		// Millisecond from 1970 to the present
+		// 메세지가 언제 만들어졌는지에 대한 날짜와 시간을 제공
+		// 일반헤더
+		// RFC 850형식:
+		// Date: Tuesday, 03-Oct-97 02:15:31 GMT
+		// */
+		// std::string _date;
 
 		/* ================================= */
 		/*               option              */
