@@ -21,6 +21,9 @@ namespace ws {
     explicit Token(const char* str);
     explicit Token(const std::string& str);
 
+    // back() is c++11
+    char& back() throw();
+
     // reading method
     ws::Token& rdword(std::istream& buffer);
     ws::Token& rdline(std::istream& buffer, char delim = '\n');
