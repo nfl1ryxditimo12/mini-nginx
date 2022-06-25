@@ -16,10 +16,11 @@ namespace ws {
   private:
     std::string _method;
     std::string _request_uri;
-    std::string _http_version;
+    // std::string _request_uri_query = "";
+    std::string _http_version; //protocol
     header_type _request_header;
     std::string _request_body;
-    std::string::size_type  _request_body_size;
+    std::string::size_type  _request_size;
 
     RequestMessage& operator=(const RequestMessage& other);
     RequestMessage(const RequestMessage& other);
@@ -36,7 +37,7 @@ namespace ws {
     std::string get_uri() const throw();
     std::string get_version() const throw();
     header_type get_request_header() const throw();
-    // std::string get_request_body() const throw();
-    std::string::size_type get_request_body_size() const throw();
+    std::string get_request_body() const throw();
+    std::string::size_type get_request_size() const throw();
   };
 }

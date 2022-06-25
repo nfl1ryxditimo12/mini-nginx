@@ -5,7 +5,7 @@
 #include <iostream> // todo
 #include <stdexcept>
 
-ws::RequestMessage::RequestMessage(): _method(""), _request_uri(""), _body(""), _http_version(""), _request_body_size(0) {}
+ws::RequestMessage::RequestMessage(): _method(""), _request_uri(""), _body(""), _http_version(""), _request_size(0) {}
 
 ws::RequestMessage::~RequestMessage() {}
 
@@ -14,7 +14,7 @@ void	ws::RequestMessage::parse_request_message(const char* message, int buffer_s
 	ws::Token token;
 	std::stringstream buffer;
 
-	_request_body_size += buffer_size;
+	_request_size += buffer_size;
 
 	buffer << message;
 
@@ -59,8 +59,12 @@ ws::RequestMessage::header_type ws::RequestMessage::get_request_header() const t
 	return _request_header;
 }
 
-std::string::size_type ws::RequestMessage::get_request_body_size() const throw() {
-	return _request_body_size;
+std::string ws::RequestMessage::get_request_body() const throw() {
+	return _request_body;
+}
+
+std::string::size_type ws::RequestMessage::get_request_size() const throw() {
+	return _request_size;
 }
 
 
