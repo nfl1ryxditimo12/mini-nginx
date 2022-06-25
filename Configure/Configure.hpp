@@ -21,7 +21,7 @@ namespace ws {
 
 
     const std::vector<ws::Server>& get_server() const throw();
-    const listen_type& get_host_list() const;
+    listen_type get_host_list() const;
     //Server& find();
   };
 }
