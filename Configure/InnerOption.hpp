@@ -5,7 +5,7 @@
 #include <vector>
 
 #define kCLIENT_MAX_BODY_SIZE_LIMIT (ULONG_MAX - 1)
-#define kCLIENT_MAX_BODY_SIZE_UNSET ULONG_MAX
+#define kCLIENT_MAX_BODY_SIZE_UNSET -1UL
 #define kAUTOINDEX_UNSET -1
 
 namespace ws {

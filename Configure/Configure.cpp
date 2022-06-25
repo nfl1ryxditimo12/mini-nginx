@@ -8,3 +8,7 @@ ws::Configure::~Configure() {}
 const std::vector<ws::Server>& ws::Configure::get_server() const throw() {
   return _server;
 }
+
+const ws::Configure::listen_type& ws::Configure::get_host_list() const {
+
+}
