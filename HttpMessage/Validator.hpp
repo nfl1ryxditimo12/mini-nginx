@@ -1,5 +1,6 @@
 #include "RequestMessage.hpp"
 #include "Configure.hpp"
+#include "Server.hpp"
 
 namespace ws {
 	class Validator {
@@ -10,6 +11,7 @@ namespace ws {
 	private:
 		const ws::Configure _conf;
 		const ws::RequestMessage _request_message;
+		const ws::Server _server;
 
 	public:
 		Validator(const ws::Configure& conf, const RequestMessage& request);

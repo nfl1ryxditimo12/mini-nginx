@@ -55,11 +55,6 @@ void ws::Validator::check_request_header(header_type_& _request_header) {
         throw;
     }
     if (header_iter->first == "Host") {
-      //second: ex)www.naver.com:80
-      // : 기준으로 분류
-      // servername, listen의 IP와 비교
-      // port 비교
-      
       int split;
       std::string host;
       int port;
@@ -71,14 +66,18 @@ void ws::Validator::check_request_header(header_type_& _request_header) {
         host = header_iter->second.substr(0, split);
         port = stoi(header_iter->second.substr(split + 1));
       }
-        //1-1. string: localhost -> servername 
+      //1-1. string: localhost -> servername 
       // get_server_name()vector ->string == host
-      
-        //1-2. int: listen-ip 
-      // inet_addr(host) == get_listen()vector->pair ->first
-      
-        //2. port
-
+      for (ws::Server::server_name_type::iterator server_name_iter = _server.get_server_name().begin(); server_name_iter != _server.get_server_name().end(); server_name_iter++) {
+        if (server_name_iter == host) {
+          //1-2. int: listen-ip 
+          // inet_addr(host) == get_listen()vector->pair ->first
+          for (ws::Server::listen_type::iterator listen_iter = _server.get_listen().begin(); listen_iter != _server.get_listen().end() ; listen_iter++) {
+            if (listen_iter->second == port)
+              break;
+        }
+      }
+      throw;
 	  }
   }
 }
