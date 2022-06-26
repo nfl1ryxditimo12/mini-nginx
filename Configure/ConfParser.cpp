@@ -82,22 +82,29 @@ void ws::ConfParser::check_server_header(const std::string& block_name) {
     throw std::invalid_argument("Configure: wrong " + block_name + " header");
 }
 
-std::string ws::ConfParser::check_location_header(const std::string& block_name) {
-  if (_token != block_name)
-    throw std::invalid_argument("Configure: wrong " + block_name + " header");
+ws::ConfParser::location_value_type ws::ConfParser::check_location_header() {
+  if (_token != "location")
+    throw std::invalid_argument("Configure: wrong location header");
 
   this->rdword();
-  std::string ret = _token;
-// working with cgi
-  this->rdword();
-  if (_token != "\n")
-    
+
+  std::string dir(_token);
 
   this->rdword();
-  if (_token != "\n")
-    throw std::invalid_argument("Configure: wrong " + block_name + " header");
 
-  return ret;
+  std::string cgi;
+  if (_token != "{")
+    cgi = _token;
+
+  this->rdword();
+
+  if (_token != "{")
+    throw std::invalid_argument("Configure: wrong location header");
+
+  ws::Location location;
+  location.set_cgi_type(cgi);
+
+  return location_value_type(dir, location);
 }
 
 bool ws::ConfParser::check_block_end() {
@@ -127,8 +134,13 @@ ws::Server ws::ConfParser::parse_server() {
       (this->*server_iter->second)(ret);
     else if (option_iter != _option_parser.end())
       (this->*option_iter->second)(option);
-    else if (_token == "location")
-      this->parse_location(location, this->check_location_header("location"));
+    else if (_token == "location") {
+      location_value_type curr;
+
+      this->check_location_header(curr);
+      this->parse_location(curr);
+      location.insert(curr);
+    }
     else if (check_block_end())
       break;
     else
@@ -146,12 +158,9 @@ ws::Server ws::ConfParser::parse_server() {
   return ret;
 }
 
-void ws::ConfParser::parse_location(location_type& location, const std::string& dir) {
-  if (location.find(dir) != location.end())
-    throw std::invalid_argument("Configure: location: dupilcated location dir");
-
-  ws::Location curr_location;
+ws::ConfParser::location_value_type& ws::ConfParser::parse_location(location_value_type& location_value) {
   ws::InnerOption option;
+  ws::Location& location = location_value.second;
 
   while (!_buffer.eof()) {
     this->rdword();
@@ -162,7 +171,7 @@ void ws::ConfParser::parse_location(location_type& location, const std::string& 
     option_parser_iterator option_iter = _option_parser.find(_token);
 
     if (location_iter != _location_parser.end())
-      (this->*location_iter->second)(curr_location);
+      (this->*location_iter->second)(location);
     else if (option_iter != _option_parser.end())
       (this->*option_iter->second)(option);
     else if (this->check_block_end())
@@ -176,8 +185,9 @@ void ws::ConfParser::parse_location(location_type& location, const std::string& 
       throw std::invalid_argument("Configure: location: wrong field argument number");
   }
 
-  curr_location.set_option(option);
-  location.insert(location_value_type(dir, curr_location));
+  location.set_option(option);
+
+  return location_value;
 }
 
 // localhost: 127.0.0.1
