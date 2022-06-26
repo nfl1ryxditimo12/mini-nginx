@@ -40,36 +40,57 @@ void ws::Socket::request_handler() {
     ws::Kernel::kevent_vector event_list = _kernel.event_handler();
 
     for (int i = 0; i < event_list.size(); i++) {
-      // void (*func)(struct kevent*) = reinterpret_cast<void (*)(struct kevent*)>(curr_event->udata);
       struct kevent* curr_event = &event_list[i];
-      kevent_func func = reinterpret_cast<kevent_func>(curr_event->udata);
 
-      func(this, curr_event);
+      if (curr_event->udata != NULL) {
+        kevent_data* info = reinterpret_cast<kevent_data*>(curr_event->udata);
+        if (info->func != NULL) {
+          info->func(info);
+        }
+      }
     }
   }
 }
 
 /* Private function */
 
-void ws::Socket::connect_client(ws::Socket *self, struct kevent* event) {
-  int client_socket_fd;
+/* 마지막 인자로 ws::ResponseMessage = NULL 받아와야함 #추후수정 */
+ws::Socket::kevent_data ws::Socket::init_kevent_udata(void* func = NULL, ws::RequestMessage* request = NULL) {
+  kevent_data info;
 
-  if ((client_socket_fd = accept(event->ident, NULL, NULL)) == -1)
-    throw; // require custom exception
-  fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
-  self->_kernel.add_change_list(client_socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
-  self->_client.insert(client_type::value_type(client_socket_fd, ws::RequestMessage()));
+  info.self = NULL;
+  info.event = NULL;
+  info.func = (func != NULL ? reinterpret_cast<kevent_func>(func) : NULL);
+  info.request = request;
+  // info.response = response;
+  return info;
 }
 
-void ws::Socket::parse_request(ws::Socket *self, struct kevent* event) {
+void ws::Socket::connect_client(kevent_data* info) {
+  int client_socket_fd;
+
+  if ((client_socket_fd = accept(info->event->ident, NULL, NULL)) == -1)
+    throw; // require custom exception
+  fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
+  info->self->_kernel.add_change_list(client_socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, \
+                          (void*)&info->self->init_kevent_udata((void*)&Socket::parse_request));
+  info->self->_client.insert(client_type::value_type(client_socket_fd, &ws::RequestMessage()));
+}
+
+void ws::Socket::parse_request(kevent_data* info) {
   char buffer[1024];
   int  n;
 
-  if ((n = read(event->ident, buffer, sizeof(buffer))) == -1)
+  if ((n = read(info->event->ident, buffer, sizeof(buffer))) == -1)
     throw; // require custom exception
 
   if (n > 0)
-    self->_client.find(event->ident)->second.parse_request_message(buffer, n);
-  if (event->data == n)
-    self->_kernel.add_change_list(event->ident, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, NULL);
+    info->self->_client.find(info->event->ident)->second->parse_request_message(buffer, n);
+  if (info->event->data == n)
+    info->self->_kernel.add_change_list(info->event->ident, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, \
+                          (void*)&info->self->init_kevent_udata((void*)&Socket::send_response));
+}
+
+void ws::Socket::send_response(kevent_data* info) {
+  
 }

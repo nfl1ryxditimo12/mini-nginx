@@ -17,12 +17,12 @@
 namespace ws {
 
   class Socket {
-  
+
   public:
     typedef std::map<int, struct sockaddr_in> server_type;
-    typedef std::map<int, ws::RequestMessage> client_type;
+    typedef std::map<int, ws::RequestMessage*> client_type;
     typedef struct kevent*                    kevent_pointer;
-    typedef void (*kevent_func)(ws::Socket *self, struct kevent* event);
+    typedef void (*kevent_func)(ws::Socket::kevent_data* info);
 
   private:
 
@@ -44,6 +44,14 @@ namespace ws {
 
     ws::Kernel  _kernel;
 
+    struct kevent_data {
+      ws::Socket*     self;
+      struct kevent*  event;
+      ws::RequestMessage*     request;
+      // ws::ResponseMessage*  response;
+      kevent_func func;
+    };
+
     /* ====================================== */
     /*                  OCCF                  */
     /* ====================================== */
@@ -56,8 +64,11 @@ namespace ws {
     /*            Private Function            */
     /* ====================================== */
 
-    static void connect_client(ws::Socket *self, struct kevent* event);
-    static void ws::Socket::parse_request(ws::Socket *self, struct kevent* event);
+    static void connect_client(kevent_data* info);
+    static void parse_request(kevent_data* info);
+    static void send_response(kevent_data* info);
+
+    kevent_data init_kevent_udata(void* func, ws::RequestMessage* request);
 
   public:
 
