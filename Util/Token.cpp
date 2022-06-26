@@ -9,6 +9,10 @@ namespace ws {
 
   ws::Token::~Token() {}
 
+  char& ws::Token::back() throw() {
+    return this->operator[]((this->length() - 1) * (this->length() != 0));
+  }
+
   /*
   param: input stream to read
   return: *this

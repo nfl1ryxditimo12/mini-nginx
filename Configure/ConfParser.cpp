@@ -88,10 +88,10 @@ std::string ws::ConfParser::check_location_header(const std::string& block_name)
 
   this->rdword();
   std::string ret = _token;
-
+// working with cgi
   this->rdword();
-  if (_token != "{")
-    throw std::invalid_argument("Configure: wrong " + block_name + " header");
+  if (_token != "\n")
+    
 
   this->rdword();
   if (_token != "\n")
@@ -99,6 +99,14 @@ std::string ws::ConfParser::check_location_header(const std::string& block_name)
 
   return ret;
 }
+
+bool ws::ConfParser::check_block_end() {
+  if (_token.find("{") != _token.npos && _token != "{")
+    throw std::invalid_argument("Configure: wrong block end");
+  return true;
+}
+
+
 
 ws::Server ws::ConfParser::parse_server() {
   ws::Server ret;
@@ -119,9 +127,11 @@ ws::Server ws::ConfParser::parse_server() {
       (this->*server_iter->second)(ret);
     else if (option_iter != _option_parser.end())
       (this->*option_iter->second)(option);
-    else if (_token == "location") {
+    else if (_token == "location")
       this->parse_location(location, this->check_location_header("location"));
-    } else
+    else if (check_block_end())
+      break;
+    else
       throw std::invalid_argument("Configure: wrong field key");
 
     this->rdword();
@@ -155,6 +165,8 @@ void ws::ConfParser::parse_location(location_type& location, const std::string& 
       (this->*location_iter->second)(curr_location);
     else if (option_iter != _option_parser.end())
       (this->*option_iter->second)(option);
+    else if (this->check_block_end())
+      break;
     else
       throw std::invalid_argument("Configure: location: wrong field key");
 
@@ -176,7 +188,7 @@ void ws::ConfParser::parse_listen(ws::Server& server) {
 
   this->rdword();
 
-  if (_token[_token.length() - 1] != ';')
+  if (_token.back() != ';')
     throw std::invalid_argument("Configure: listen: `;' should appear at eol");
 
   _token.erase(_token.length() - 1, 1);
@@ -337,7 +349,27 @@ std::string ws::ConfParser::get_method(const std::string& method) const {
 }
 
 void ws::ConfParser::parse_return(ws::Location& location) {
-  (void) location; // todo
+  this->rdword();
+
+  int code = 0;
+  for (std::size_t i = 0; _token[i]; ++i) {
+    if (!std::isdigit(_token[i]))
+      throw std::invalid_argument("Configure: return: non numeric value in code");
+
+    code *= 10;
+    code += _token[i] - '0';
+
+
+    if (code > 999)
+      throw std::out_of_range("Configure: return: invalid return code");
+  }
+
+  this->rdword();
+
+  if (_token.back() != ';')
+    throw std::invalid_argument("Configure: return: `;' should appear at eol");
+
+  location.set_return_type(ws::Location::return_type(code, _token.substr(0, _token.length() - 1)));
 }
 
 void ws::ConfParser::parse_autoindex(ws::InnerOption& inner) {
