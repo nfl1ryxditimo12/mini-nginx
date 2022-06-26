@@ -66,6 +66,11 @@ void ws::Validator::check_request_header(header_type_& _request_header) {
         host = header_iter->second.substr(0, split);
         port = stoi(header_iter->second.substr(split + 1));
       }
+      // if (_server.get_server_name().find(host) == npos)
+      //   throw;
+      // if (_server.get_listen()->second.find(port) == npos)
+      //   throw;
+
       //1-1. string: localhost -> servername 
       // get_server_name()vector ->string == host
       for (ws::Server::server_name_type::iterator server_name_iter = _server.get_server_name().begin(); server_name_iter != _server.get_server_name().end(); server_name_iter++) {
@@ -75,10 +80,10 @@ void ws::Validator::check_request_header(header_type_& _request_header) {
           for (ws::Server::listen_type::iterator listen_iter = _server.get_listen().begin(); listen_iter != _server.get_listen().end() ; listen_iter++) {
             if (listen_iter->second == port)
               break;
+          }
         }
+        throw;
       }
-      throw;
-	  }
+    }
   }
 }
-
