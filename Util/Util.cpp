@@ -85,3 +85,21 @@ namespace ws {
     return line.find_first_not_of(" \t", pos);
   }
 }
+
+unsigned long stoul(const std::string& str, unsigned long limit = ULONG_MAX) {
+  unsigned long ret = 0;
+
+  for (std::string::size_type i = 0; i < str.length(); i++) {
+    if (!std::isdigit(str[i])) //numeric
+      return ULONG_MAX;
+    if (ret > limit / 10)
+      return ULONG_MAX;
+    ret *= 10;
+
+    if (ret > limit - (str[i] - '0'))
+      return ULONG_MAX;
+    ret += str[i] - '0';
+  }
+
+  return ret;
+}
