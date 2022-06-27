@@ -48,3 +48,20 @@ ws::Socket::~Socket() {}
 void ws::Socket::request_handler() {
 	
 }
+
+#include <map>
+void ws::Socket::send_response(kevent_data* info) {
+  int n;
+  std::map<int, ws::RequestMessage*>::iterator it = info->self->_client.find(info->event->ident);
+
+  if (it != info->self->_client.end())
+  {
+    if (info->self->_client[info->event->ident] != "")
+    {
+      if ((n = write(info->event->ident, info->self->_client[info->event->ident].c_str(),
+            info->self->_client[info->event->ident].size()) == -1))
+        throw;
+      info->self->_client[info->event->ident].clear();
+    }
+  }
+}
