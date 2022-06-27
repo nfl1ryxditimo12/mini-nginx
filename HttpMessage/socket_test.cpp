@@ -12,6 +12,7 @@
 #include <vector>
 
 // using namespace std;
+#include "RequestMessage.hpp"
 
 #define BUFFER_SIZE 128
 #define NC "\e[0m"
@@ -88,7 +89,7 @@ int main(int ac, char **av)
 	struct kevent event_temp[80];
 	struct kevent* curr_event;
 	memset(&event_temp, 0, sizeof(event_temp));
-	std::map<int, int> client;
+	std::map<int, ws::RequestMessage*> client;
 	int port = -1;
 
 	while (1) {
@@ -101,7 +102,7 @@ int main(int ac, char **av)
 		for (int i = 0; i < new_event; i++) {
 			curr_event = &event_temp[i];
 			std::map<int, struct sockaddr_in>::iterator server_iter = server.find(curr_event->ident);
-			std::map<int, int>::iterator client_iter = client.find(curr_event->ident);
+			std::map<int, ws::RequestMessage*>::iterator client_iter = client.find(curr_event->ident);
 			int client_socket_fd;
 
 			if (curr_event->filter == EVFILT_READ) {
@@ -113,17 +114,22 @@ int main(int ac, char **av)
 					// change_events(change_list, client_socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
 					std::cout << "[Client connected] - server_port: " << port << ", server_fd: " << server_iter->first << ", client_fd: " << client_socket_fd << std::endl;
 					change_events(change_list, client_socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
-					client.insert(std::pair<int, int>(client_socket_fd, curr_event->ident));
+					client.insert(std::pair<int, ws::RequestMessage*>(client_socket_fd, &ws::RequestMessage()));
 				}
 				else if (client_iter != client.end()) {
-					server_iter = server.find(client.find(client_iter->first)->second);
+					// server_iter = server.find(client.find(client_iter->first)->second);
 					std::cout << "[Client request] - server_port: " << port << ", server_fd: " << server_iter->first << ", client_fd: " << client_iter->first << std::endl;
 					std::cout << YLW << "\n=== Request Data ==========================" << NC << std::endl;
 					char buf[4096];
 					int n = read(curr_event->ident, buf, sizeof(buf));
+					client_iter->second->parse_request_message(buf, n);
 					std::cout << buf << std::endl;
 					std::cout << YLW << "===========================================\n" << NC << std::endl;
-					change_events(change_list, client_iter->first, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, NULL);
+
+					if (curr_event->data == n) {
+						/* validator, bussiness logic*/
+						change_events(change_list, client_iter->first, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, NULL);
+					}
 				}
 				else {
 					std::cout << "[READ Error] - server_port: " << port << ", server_fd: " << server_iter->first << ", client_fd: " << client_iter->first << std::endl;
