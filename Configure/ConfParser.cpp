@@ -36,6 +36,7 @@ void ws::ConfParser::init_option_parser() {
   _option_parser.insert(
     option_parser_func_map::value_type("client_max_body_size", &ConfParser::parse_client_max_body_size)
   );
+  _option_parser.insert(option_parser_func_map::value_type("error_page", &ConfParser::parse_error_page));
 }
 
 ws::Token& ws::ConfParser::get_token() throw() {
@@ -82,33 +83,35 @@ void ws::ConfParser::check_server_header(const std::string& block_name) {
     throw std::invalid_argument("Configure: wrong " + block_name + " header");
 }
 
-ws::ConfParser::location_value_type ws::ConfParser::check_location_header() {
+void ws::ConfParser::check_location_header(location_value_type& location_pair) {
   if (_token != "location")
     throw std::invalid_argument("Configure: wrong location header");
 
   this->rdword();
 
-  std::string dir(_token);
-
-  this->rdword();
-
   std::string cgi;
-  if (_token != "{")
-    cgi = _token;
+  std::string dir;
+  std::string temp;
+  temp = _token;
 
   this->rdword();
+
+  if (_token != "{") {
+    dir = _token;
+    cgi = temp;
+    this->rdword();
+  } else
+    dir = temp;
+
+  location_pair.second.set_cgi(cgi);
+
 
   if (_token != "{")
     throw std::invalid_argument("Configure: wrong location header");
-
-  ws::Location location;
-  location.set_cgi_type(cgi);
-
-  return location_value_type(dir, location);
 }
 
 bool ws::ConfParser::check_block_end() {
-  if (_token.find("{") != _token.npos && _token != "{")
+  if (_token.find("}") != _token.npos && _token != "}")
     throw std::invalid_argument("Configure: wrong block end");
   return true;
 }
@@ -138,8 +141,9 @@ ws::Server ws::ConfParser::parse_server() {
       location_value_type curr;
 
       this->check_location_header(curr);
-      this->parse_location(curr);
+      this->parse_location(curr.second);
       location.insert(curr);
+      std::cout << curr.first << std::endl;
     }
     else if (check_block_end())
       break;
@@ -158,9 +162,8 @@ ws::Server ws::ConfParser::parse_server() {
   return ret;
 }
 
-ws::ConfParser::location_value_type& ws::ConfParser::parse_location(location_value_type& location_value) {
+void ws::ConfParser::parse_location(ws::Location& location) {
   ws::InnerOption option;
-  ws::Location& location = location_value.second;
 
   while (!_buffer.eof()) {
     this->rdword();
@@ -186,8 +189,6 @@ ws::ConfParser::location_value_type& ws::ConfParser::parse_location(location_val
   }
 
   location.set_option(option);
-
-  return location_value;
 }
 
 // localhost: 127.0.0.1
@@ -510,7 +511,7 @@ std::vector<ws::Server> ws::ConfParser::parse() {
   while (!_buffer.eof()) {
     this->rdword();
 
-    if (_token == "\n")
+    if (_token == "\n" || _token == "")
       continue;
 
     this->check_server_header("server");

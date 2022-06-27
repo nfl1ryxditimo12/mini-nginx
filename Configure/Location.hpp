@@ -23,11 +23,11 @@ namespace ws {
 
     limit_except_type get_limit_except() const throw();
     return_type get_return_type() const throw();
-    cgi_type get_cgi_type() const throw();
+    cgi_type get_cgi() const throw();
 
     void set_limit_except(const std::string& method, bool value);
     void set_return_type(const return_type& value);
-    void set_cgi_type(const cgi_type& value);
+    void set_cgi(const cgi_type& value);
     void set_option(const ws::InnerOption& value);
   };
 }  // namespace ws

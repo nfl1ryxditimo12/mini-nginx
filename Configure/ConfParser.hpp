@@ -44,11 +44,11 @@ namespace ws {
     void init_option_parser();
 
     void check_server_header(const std::string& block_name);
-    location_value_type check_location_header();
+    void check_location_header(location_value_type& location_pair);
     bool check_block_end();
 
     ws::Server parse_server();
-    location_value_type& parse_location(location_value_type& location);
+    void parse_location(ws::Location& location);
 
     void parse_listen(ws::Server& server);
     void parse_listen_host(char delim, listen_value_type& value);

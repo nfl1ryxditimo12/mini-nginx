@@ -23,7 +23,7 @@ ws::Location::return_type ws::Location::get_return_type() const throw() {
   return _return;
 }
 
-ws::Location::cgi_type ws::Location::get_cgi_type() const throw() {
+ws::Location::cgi_type ws::Location::get_cgi() const throw() {
   return _cgi;
 }
 
@@ -39,4 +39,9 @@ void ws::Location::set_return_type(const return_type& value) {
 
 void ws::Location::set_option(const ws::InnerOption& value) {
   _option = value;
+}
+
+void ws::Location::set_cgi(const cgi_type& value) {
+  _cgi = value;
+  std::cout << value << std::endl;
 }
