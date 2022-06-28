@@ -8,13 +8,17 @@
 namespace ws {
   class ConfParser {
   private:
+    typedef std::vector<ws::Server> server_vec_type;
+    typedef ws::Server::listen_vec_type listen_vec_type;
+    typedef ws::Server::listen_type listen_type;
+
+    typedef ws::Server::location_map_type location_map_type;
+    typedef ws::Server::location_pair_type location_pair_type;
     // types for parse function pointer map
     typedef void (ConfParser::*server_parser_func_type) (ws::Server&);
     typedef std::map<std::string, server_parser_func_type> server_parser_func_map;
     typedef server_parser_func_map::iterator server_parser_iterator;
 
-    typedef ws::Server::location_type location_type;
-    typedef ws::Server::location_value_type location_value_type;
     typedef void (ConfParser::*location_parser_func_type) (ws::Location&);
     typedef std::map<std::string, location_parser_func_type> location_parser_func_map;
     typedef location_parser_func_map::iterator location_parser_iterator;
@@ -23,10 +27,7 @@ namespace ws {
     typedef std::map<std::string, option_parser_func_type> option_parser_func_map;
     typedef option_parser_func_map::iterator option_parser_iterator;
 
-    typedef ws::Server::listen_type listen_type;
-    typedef ws::Server::listen_value_type listen_value_type;
-
-    typedef ws::Location::limit_except_type limit_except_type;
+    typedef ws::Location::limit_except_map_type limit_except_type;
 
     ws::Token _token;
     std::stringstream _buffer;
@@ -43,7 +44,7 @@ namespace ws {
     void init_location_parser();
     void init_option_parser();
 
-    void check_server_header(const std::string& block_name);
+    void check_server_header();
     void check_location_header(std::string& dir, ws::Location& location);
     bool check_block_end();
 
@@ -51,8 +52,8 @@ namespace ws {
     void parse_location(ws::Location& location);
 
     void parse_listen(ws::Server& server);
-    void parse_listen_host(char delim, listen_value_type& value);
-    void parse_listen_port(listen_value_type& value);
+    void parse_listen_host(char delim, listen_type& value);
+    void parse_listen_port(listen_type& value);
 
     void parse_server_name(ws::Server& server);
 
