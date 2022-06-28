@@ -2,6 +2,7 @@
 
 #include <sstream>
 
+#include "Configure.hpp"
 #include "Server.hpp"
 #include "Token.hpp"
 
@@ -36,7 +37,7 @@ namespace ws {
     location_parser_func_map _location_parser;
     option_parser_func_map _option_parser;
 
-    std::string open_file(const std::string& file) const;
+    std::string read_file(const std::string& file) const;
 
     ws::Token& rdword();
 
@@ -79,6 +80,6 @@ namespace ws {
 
     std::stringstream& get_buffer() throw();
 
-    std::vector<ws::Server> parse();
+    void parse(ws::Configure& conf);
   };
 }

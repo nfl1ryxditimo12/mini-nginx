@@ -11,7 +11,7 @@
 
 // initialize buffer with configure file
 ws::ConfParser::ConfParser(const std::string& file, const std::string& curr_dir)
-  : _buffer(this->open_file(file)), _root_dir(curr_dir) {
+  : _buffer(this->read_file(file)), _root_dir(curr_dir) {
   init_server_parser();
   init_location_parser();
   init_option_parser();
@@ -47,7 +47,7 @@ std::stringstream& ws::ConfParser::get_buffer() throw() {
   return _buffer;
 }
 
-std::string ws::ConfParser::open_file(const std::string& file) const {
+std::string ws::ConfParser::read_file(const std::string& file) const {
   std::ifstream input;
   if (file.rfind(".conf") != file.length() - 5)
     throw std::invalid_argument("Configure: wrong file extension");
@@ -499,8 +499,8 @@ description: parse configure file.
 5. loop until stream's eof reached
 6. returns server vector
 */
-ws::ConfParser::server_vec_type ws::ConfParser::parse() {
-  server_vec_type ret;
+void ws::ConfParser::parse(ws::Configure& conf) {
+  server_vec_type server_vec;
 
   while (!_buffer.eof()) {
     this->rdword();
@@ -510,8 +510,8 @@ ws::ConfParser::server_vec_type ws::ConfParser::parse() {
 
     this->check_server_header();
 
-    ret.push_back(this->parse_server());
+    server_vec.push_back(this->parse_server());
   }
 
-  return ret;
+  conf.set_server_vec(server_vec);
 }

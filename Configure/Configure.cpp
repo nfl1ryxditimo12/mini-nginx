@@ -1,12 +1,15 @@
 #include "Configure.hpp"
 
-ws::Configure::Configure(const std::string& file, const std::string& curr_dir)
-    : _parser(file, curr_dir), _server_vec(_parser.parse()) {}
+ws::Configure::Configure() {}
 
 ws::Configure::~Configure() {}
 
 const ws::Configure::server_vec_type& ws::Configure::get_server_vec() const throw() {
   return _server_vec;
+}
+
+void ws::Configure::set_server_vec(const server_vec_type& value) {
+  _server_vec = value;
 }
 
 ws::Configure::listen_vec_type ws::Configure::get_host_list() const {

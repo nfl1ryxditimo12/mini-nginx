@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ConfParser.hpp"
+#include "Server.hpp"
 
 namespace ws {
   class Configure {
@@ -11,19 +11,19 @@ namespace ws {
     typedef ws::Server::listen_vec_type listen_vec_type;
 
   private:
-    ws::ConfParser _parser;
     server_vec_type _server_vec;
 
     Configure& operator=(const Configure& other);
     Configure(const Configure& other);
 
   public:
-    Configure(const std::string& file, const std::string& curr_dir);
+    Configure();
     ~Configure();
 
     const server_vec_type& get_server_vec() const throw();
 
+    void set_server_vec(const server_vec_type& value);
+
     listen_vec_type get_host_list() const;
-    //Server& find();
   };
 }
