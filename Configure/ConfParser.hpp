@@ -15,6 +15,10 @@ namespace ws {
 
     typedef ws::Server::location_map_type location_map_type;
     typedef ws::Server::location_pair_type location_pair_type;
+    typedef ws::Location::limit_except_map_type limit_except_type;
+
+    typedef ws::Server::index_type index_type;
+
     // types for parse function pointer map
     typedef void (ConfParser::*server_parser_func_type) (ws::Server&);
     typedef std::map<std::string, server_parser_func_type> server_parser_func_map;
@@ -27,8 +31,6 @@ namespace ws {
     typedef void (ConfParser::*option_parser_func_type) (ws::InnerOption&);
     typedef std::map<std::string, option_parser_func_type> option_parser_func_map;
     typedef option_parser_func_map::iterator option_parser_iterator;
-
-    typedef ws::Location::limit_except_map_type limit_except_type;
 
     ws::Token _token;
     std::stringstream _buffer;
@@ -68,6 +70,9 @@ namespace ws {
     void parse_client_max_body_size(ws::InnerOption& inner);
     void parse_error_page(ws::InnerOption& inner);
     int parse_error_code() const;
+
+    void set_default_server(ws::Server& server);
+    void set_default_location(ws::Location& location);
 
     ConfParser(const ConfParser& other);
     ConfParser& operator=(const ConfParser& other);

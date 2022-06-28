@@ -67,3 +67,19 @@ void ws::Server::set_location_map(const location_map_type& value) {
 void ws::Server::set_option(const ws::InnerOption& value) {
   _option = value;
 }
+
+void ws::Server::set_autoindex(const autoindex_type& value) {
+  _option.set_autoindex(value);
+}
+
+void ws::Server::set_root(const root_type& value) {
+  _option.set_root(value);
+}
+
+void ws::Server::set_index(const index_type& value) {
+  _option.set_index(value);
+}
+
+void ws::Server::set_client_max_body_size(const client_max_body_size_type& value) {
+  _option.set_client_max_body_size(value);
+}

@@ -139,6 +139,9 @@ ws::Server ws::ConfParser::parse_server() {
 
       this->check_location_header(dir, location);
       this->parse_location(location);
+
+      this->set_default_location(location);
+
       location_map.insert(location_pair_type(dir, location));
     } else if (check_block_end())
       break;
@@ -153,6 +156,7 @@ ws::Server ws::ConfParser::parse_server() {
 
   ret.set_location_map(location_map);
   ret.set_option(option);
+  this->set_default_server(ret);
 
   return ret;
 }
@@ -184,6 +188,7 @@ void ws::ConfParser::parse_location(ws::Location& location) {
   }
 
   location.set_option(option);
+  this->set_default_location(location);
 }
 
 // localhost: 127.0.0.1
@@ -310,7 +315,7 @@ void ws::ConfParser::parse_client_max_body_size(ws::InnerOption& option) {
 }
 
 void ws::ConfParser::parse_limit_except(ws::Location& location) {
-  ws::Location::limit_except_map_type limit_except(location.get_limit_except());
+  ws::Location::limit_except_map_type limit_except(location.get_limit_except_map());
 
   for (limit_except_type::iterator it = limit_except.begin(); it != limit_except.end(); ++it) {
     if (it->second != -1)
@@ -355,6 +360,9 @@ std::string ws::ConfParser::get_method(const std::string& method) const {
 }
 
 void ws::ConfParser::parse_return(ws::Location& location) {
+  if (location.get_return().first != 0)
+    throw std::invalid_argument("Configure: location: return: duplicated return");
+
   this->rdword();
 
   int code = 0;
@@ -372,10 +380,10 @@ void ws::ConfParser::parse_return(ws::Location& location) {
 
   this->rdword();
 
-  if (_token.back() != ';')
+  if (_token[0] == ';' || _token.back() != ';')
     throw std::invalid_argument("Configure: return: `;' should appear at eol");
 
-  location.set_return_type(ws::Location::return_type(code, _token.substr(0, _token.length() - 1)));
+  location.set_return(ws::Location::return_type(code, _token.substr(0, _token.length() - 1)));
 }
 
 void ws::ConfParser::parse_autoindex(ws::InnerOption& option) {
@@ -484,6 +492,38 @@ int ws::ConfParser::parse_error_code() const {
     throw std::out_of_range("Configure: error_page: error code range must be between 300 and 599");
 
   return ret;
+}
+
+
+void ws::ConfParser::set_default_server(ws::Server& server) {
+    if (server.get_listen_vec().empty())
+      server.set_listen_vec(listen_type(htonl(INADDR_ANY), htons(80)));
+    if (server.get_client_max_body_size() == kCLIENT_MAX_BODY_SIZE_UNSET)
+      server.set_client_max_body_size(1024 * 1024);
+    if (server.get_autoindex() == kAUTOINDEX_UNSET)
+      server.set_autoindex(false);
+    if (server.get_root().empty())
+      server.set_root(_root_dir);
+    if (server.get_index_vec().empty())
+      server.set_index(index_type("index.html"));
+}
+
+// should do after parsing
+void ws::ConfParser::set_default_location(ws::Location& location) {
+  if (location.get_limit_except_map().empty()) {
+    location.set_limit_except("GET", true);
+    location.set_limit_except("POST", true);
+    location.set_limit_except("DELETE", true);
+    location.set_limit_except("HEAD", true);
+  }
+  if (location.get_client_max_body_size() == kCLIENT_MAX_BODY_SIZE_UNSET)
+    location.set_client_max_body_size(1024 * 1024);
+  if (location.get_autoindex() == kAUTOINDEX_UNSET)
+    location.set_autoindex(false);
+  if (location.get_root().empty())
+    location.set_root(_root_dir);
+  if (location.get_index_vec().empty())
+    location.set_index(index_type("index.html"));
 }
 
 /*
