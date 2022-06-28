@@ -1,7 +1,6 @@
 #include "InnerOption.hpp"
 
 #include <stdexcept>
-#include <iostream>//todo
 
 ws::InnerOption::InnerOption() : _autoindex(kAUTOINDEX_UNSET), _client_max_body_size(kCLIENT_MAX_BODY_SIZE_UNSET) {
   // this->_root = "~/webserv/www/";
@@ -34,26 +33,21 @@ const ws::InnerOption::error_page_type& ws::InnerOption::get_error_page() const 
 
 void ws::InnerOption::set_autoindex(const autoindex_type& value) {
   _autoindex = value;
-  std::cout << "set: " << value << std::endl;
 }
 
 void ws::InnerOption::set_root(const root_type& value) {
   _root = value;
-  std::cout << "set: " << value << std::endl;
 }
 
 void ws::InnerOption::set_index(const index_value_type& value) {
   _index.push_back(value);
-  std::cout << "set: " << value << std::endl;
 }
 
 void ws::InnerOption::set_client_max_body_size(const client_max_body_size_type& value) {
   _client_max_body_size = value;
-  std::cout << "set: " << value << std::endl;
 }
 
 void ws::InnerOption::set_error_page(const error_page_value_type& value) {
   _error_page.insert(value);
-  std::cout << "set: " << value.first << "," << value.second << std::endl;
 }
 

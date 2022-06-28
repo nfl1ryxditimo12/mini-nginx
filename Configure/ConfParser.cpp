@@ -8,7 +8,7 @@
 #include <cctype>
 
 #include "Util.hpp"
-#include <iostream> // todo
+
 // initialize buffer with configure file
 ws::ConfParser::ConfParser(const std::string& file, const std::string& curr_dir)
   : _buffer(this->open_file(file)), _root_dir(curr_dir) {
@@ -83,16 +83,14 @@ void ws::ConfParser::check_server_header(const std::string& block_name) {
     throw std::invalid_argument("Configure: wrong " + block_name + " header");
 }
 
-void ws::ConfParser::check_location_header(location_value_type& location_pair) {
+void ws::ConfParser::check_location_header(std::string& dir, ws::Location& location) {
   if (_token != "location")
     throw std::invalid_argument("Configure: wrong location header");
 
   this->rdword();
 
   std::string cgi;
-  std::string dir;
-  std::string temp;
-  temp = _token;
+  std::string temp(_token);
 
   this->rdword();
 
@@ -103,8 +101,7 @@ void ws::ConfParser::check_location_header(location_value_type& location_pair) {
   } else
     dir = temp;
 
-  location_pair.second.set_cgi(cgi);
-
+  location.set_cgi(cgi);
 
   if (_token != "{")
     throw std::invalid_argument("Configure: wrong location header");
@@ -138,12 +135,12 @@ ws::Server ws::ConfParser::parse_server() {
     else if (option_iter != _option_parser.end())
       (this->*option_iter->second)(option);
     else if (_token == "location") {
-      location_value_type curr;
+      std::string dir;
+      ws::Location curr;
 
-      this->check_location_header(curr);
-      this->parse_location(curr.second);
-      location.insert(curr);
-      std::cout << curr.first << std::endl;
+      this->check_location_header(dir, curr);
+      this->parse_location(curr);
+      location.insert(location_value_type(dir, curr));
     }
     else if (check_block_end())
       break;

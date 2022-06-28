@@ -2,7 +2,6 @@
 
 #include <arpa/inet.h>
 #include <stdexcept>
-#include <iostream> //todo
 
 ws::Server::Server() {
   // this->_server_names.push_back("_");
@@ -59,12 +58,10 @@ void ws::Server::set_listen(const listen_value_type& value) {
   }
 
   _listen.push_back(value);
-  std::cout << "set: " << value.first << ", " << value.second << std::endl;
 }
 
 void ws::Server::set_server_name(const server_name_value_type& value) {
   _server_name.push_back(value);
-  std::cout << "set: " << value << std::endl;
 }
 
 void ws::Server::set_location(const location_type& value) {
@@ -77,25 +74,20 @@ void ws::Server::set_option(const ws::InnerOption& value) {
 
 void ws::Server::set_autoindex(const autoindex_type& value) {
   _option.set_autoindex(value);
-  std::cout << "set: " << value << std::endl;
 }
 
 void ws::Server::set_root(const root_type& value) {
   _option.set_root(value);
-  std::cout << "set: " << value << std::endl;
 }
 
 void ws::Server::set_index(const index_value_type& value) {
   _option.set_index(value);
-  std::cout << "set: " << value << std::endl;
 }
 
 void ws::Server::set_client_max_body_size(const client_max_body_size_type& value) {
   _option.set_client_max_body_size(value);
-  std::cout << "set: " << value << std::endl;
 }
 
 void ws::Server::set_error_page(const error_page_value_type& value) {
   _option.set_error_page(value);
-  std::cout << "set: " << value.first << "," << value.second << std::endl;
 }

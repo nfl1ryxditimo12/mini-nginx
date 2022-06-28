@@ -44,7 +44,7 @@ namespace ws {
     void init_option_parser();
 
     void check_server_header(const std::string& block_name);
-    void check_location_header(location_value_type& location_pair);
+    void check_location_header(std::string& dir, ws::Location& location);
     bool check_block_end();
 
     ws::Server parse_server();
