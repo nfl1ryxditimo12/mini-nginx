@@ -141,8 +141,7 @@ ws::Server ws::ConfParser::parse_server() {
       this->check_location_header(dir, curr);
       this->parse_location(curr);
       location.insert(location_value_type(dir, curr));
-    }
-    else if (check_block_end())
+    } else if (check_block_end())
       break;
     else
       throw std::invalid_argument("Configure: wrong field key");

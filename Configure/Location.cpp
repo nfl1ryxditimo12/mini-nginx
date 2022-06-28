@@ -33,6 +33,7 @@ void ws::Location::set_limit_except(const std::string& method, bool value) {
 
 void ws::Location::set_return_type(const return_type& value) {
   _return = value;
+  std::cout << value.first << ", " << value.second << std::endl;
 }
 
 void ws::Location::set_option(const ws::InnerOption& value) {
