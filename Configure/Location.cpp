@@ -1,5 +1,5 @@
 #include "Location.hpp"
-#include <iostream> // todo
+
 ws::Location::Location() : _return(return_type(0, "")), _cgi("", "") {
   init_limit_except();
   // this->_return = std::pair<int, std::string>();  // 나중에 찍어봐야함
@@ -23,13 +23,12 @@ ws::Location::return_type ws::Location::get_return_type() const throw() {
   return _return;
 }
 
-ws::Location::cgi_type ws::Location::get_cgi_type() const throw() {
+ws::Location::cgi_type ws::Location::get_cgi() const throw() {
   return _cgi;
 }
 
 void ws::Location::set_limit_except(const std::string& method, bool value) {
   _limit_except.find(method)->second = value;
-  std::cout << method << ", " << value << std::endl;
 }
 
 void ws::Location::set_return_type(const return_type& value) {
@@ -39,4 +38,8 @@ void ws::Location::set_return_type(const return_type& value) {
 
 void ws::Location::set_option(const ws::InnerOption& value) {
   _option = value;
+}
+
+void ws::Location::set_cgi(const cgi_type& value) {
+  _cgi = value;
 }
