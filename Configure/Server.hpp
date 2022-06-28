@@ -32,6 +32,7 @@ namespace ws {
     const listen_type& get_listen() const throw();
     const server_name_type& get_server_name() const throw();
     const location_type& get_location() const throw();
+    const location_value_type& get_location(const std::string& dir) const throw();
     const ws::InnerOption& get_option() const throw();
     
     const autoindex_type& get_autoindex() const throw();

@@ -24,6 +24,10 @@ const ws::Server::location_type& ws::Server::get_location() const throw() {
   return _location;
 }
 
+const ws::Server::location_value_type& ws::Server::get_location(const std::string& dir) const throw() {
+  return *(_location.find(dir));
+}
+
 const ws::InnerOption& ws::Server::get_option() const throw() {
   return _option;
 }
