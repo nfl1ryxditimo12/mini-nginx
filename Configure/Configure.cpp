@@ -1,21 +1,24 @@
 #include "Configure.hpp"
 
-ws::Configure::Configure(const std::string& file, const std::string& curr_dir)
-    : _parser(file, curr_dir), _server(_parser.parse()) {}
+ws::Configure::Configure() {}
 
 ws::Configure::~Configure() {}
 
-const std::vector<ws::Server>& ws::Configure::get_server() const throw() {
-  return _server;
+const ws::Configure::server_vec_type& ws::Configure::get_server_vec() const throw() {
+  return _server_vec;
 }
 
-ws::Configure::listen_type ws::Configure::get_host_list() const {
-  listen_type ret;
+void ws::Configure::set_server_vec(const server_vec_type& value) {
+  _server_vec = value;
+}
 
-  for (std::vector<ws::Server>::size_type i = 0; i < _server.size(); ++i) {
-    listen_type curr = _server[i].get_listen();
+ws::Configure::listen_vec_type ws::Configure::get_host_list() const {
+  listen_vec_type ret;
 
-    for (listen_type::size_type j = 0; j < curr.size(); ++j)
+  for (std::vector<ws::Server>::size_type i = 0; i < _server_vec.size(); ++i) {
+    listen_vec_type curr = _server_vec[i].get_listen_vec();
+
+    for (listen_vec_type::size_type j = 0; j < curr.size(); ++j)
       ret.push_back(curr[j]);
   }
 

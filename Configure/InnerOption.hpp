@@ -13,18 +13,18 @@ namespace ws {
   public:
     typedef int autoindex_type;
     typedef std::string root_type;
-    typedef std::vector<std::string> index_type;
-    typedef index_type::value_type index_value_type;
+    typedef std::string index_type;
+    typedef std::vector<index_type> index_vec_type;
     typedef unsigned long client_max_body_size_type;
-    typedef std::map<int, std::string> error_page_type;
-    typedef error_page_type::value_type error_page_value_type;
+    typedef std::pair<int, std::string> error_page_type;
+    typedef std::map<error_page_type::first_type, error_page_type::second_type> error_page_map_type;
 
   private:
     autoindex_type _autoindex;
     root_type _root;
-    index_type _index;
+    index_vec_type _index_vec;
     client_max_body_size_type _client_max_body_size;
-    error_page_type _error_page;
+    error_page_map_type _error_page_map;
 
   public:
     InnerOption();
@@ -32,14 +32,14 @@ namespace ws {
 
     const autoindex_type& get_autoindex() const throw();
     const root_type& get_root() const throw();
-    const index_type& get_index() const throw();
+    const index_vec_type& get_index_vec() const throw();
     const client_max_body_size_type& get_client_max_body_size() const throw();
-    const error_page_type& get_error_page() const throw();
+    const error_page_map_type& get_error_page_map() const throw();
 
     void set_autoindex(const autoindex_type& value);
     void set_root(const root_type& value);
-    void set_index(const index_value_type& value);
+    void set_index(const index_type& value);
     void set_client_max_body_size(const client_max_body_size_type& value);
-    void set_error_page(const error_page_value_type& value);
+    void set_error_page_map(const error_page_type& value);
   };
 }
