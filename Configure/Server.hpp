@@ -25,6 +25,7 @@ namespace ws {
     location_map_type _location_map;
     ws::InnerOption _option;
 
+    
   public:
     Server();
     ~Server();
@@ -40,10 +41,16 @@ namespace ws {
     const client_max_body_size_type& get_client_max_body_size() const throw();
     const error_page_map_type& get_error_page_map() const throw();
 
-    void set_listen_vec(const listen_type& value);
-    void set_server_name_vec(const server_name_type& value);
+    void add_listen(const listen_type& value);
+    void set_listen_vec(const listen_vec_type& value);
+    void add_server_name(const server_name_type& value);
 
     void set_location_map(const location_map_type& value);
     void set_option(const ws::InnerOption& value);
+
+    void set_autoindex(const autoindex_type& value);
+    void set_root(const root_type& value);
+    void add_index(const index_type& value);
+    void set_client_max_body_size(const client_max_body_size_type& value);
   };
 }

@@ -39,7 +39,7 @@ void ws::InnerOption::set_root(const root_type& value) {
   _root = value;
 }
 
-void ws::InnerOption::set_index(const index_type& value) {
+void ws::InnerOption::add_index(const index_type& value) {
   _index_vec.push_back(value);
 }
 
@@ -47,7 +47,7 @@ void ws::InnerOption::set_client_max_body_size(const client_max_body_size_type& 
   _client_max_body_size = value;
 }
 
-void ws::InnerOption::set_error_page_map(const error_page_type& value) {
+void ws::InnerOption::add_error_page(const error_page_type& value) {
   _error_page_map.insert(value);
 }
 

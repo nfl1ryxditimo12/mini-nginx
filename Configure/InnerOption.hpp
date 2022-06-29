@@ -38,8 +38,8 @@ namespace ws {
 
     void set_autoindex(const autoindex_type& value);
     void set_root(const root_type& value);
-    void set_index(const index_type& value);
+    void add_index(const index_type& value);
     void set_client_max_body_size(const client_max_body_size_type& value);
-    void set_error_page_map(const error_page_type& value);
+    void add_error_page(const error_page_type& value);
   };
 }
