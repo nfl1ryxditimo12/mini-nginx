@@ -9,6 +9,24 @@ namespace ws {
 
     typedef ws::Server::listen_type listen_type;
     typedef ws::Server::listen_vec_type listen_vec_type;
+    typedef ws::Server::server_name_type server_name_type;
+    typedef ws::Server::server_name_vec_type server_name_vec_type;
+
+    typedef ws::Server::location_map_type location_map_type;
+    typedef ws::Server::location_pair_type location_pair_type;
+
+    typedef ws::Location::limit_except_type limit_except_type;
+    typedef ws::Location::limit_except_vec_type limit_except_vec_type;
+    typedef ws::Location::return_type return_type;
+    typedef ws::Location::cgi_type cgi_type;
+
+    typedef ws::InnerOption::autoindex_type autoindex_type;
+    typedef ws::InnerOption::root_type root_type;
+    typedef ws::InnerOption::index_type index_type;
+    typedef ws::InnerOption::index_vec_type index_vec_type;
+    typedef ws::InnerOption::client_max_body_size_type client_max_body_size_type;
+    typedef ws::InnerOption::error_page_type error_page_type;
+    typedef ws::InnerOption::error_page_map_type error_page_map_type;
 
   private:
     server_vec_type _server_vec;
@@ -25,5 +43,11 @@ namespace ws {
     void set_server_vec(const server_vec_type& value);
 
     listen_vec_type get_host_list() const;
+
+    void print_server(const ws::Server& server) const throw();
+    void print_location_map(const location_map_type& location_map) const throw();
+    void print_location(const ws::Location& location) const throw();
+    void print_option(const ws::InnerOption& option) const throw();
+    void print_configure() const throw();
   };
 }

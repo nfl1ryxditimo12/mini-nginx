@@ -47,7 +47,7 @@ const ws::Server::error_page_map_type& ws::Server::get_error_page_map() const th
   return _option.get_error_page_map();
 }
 
-void ws::Server::set_listen_vec(const listen_type& value) {
+void ws::Server::add_listen(const listen_type& value) {
   for (listen_vec_type::iterator iter = _listen_vec.begin(); iter != _listen_vec.end(); ++iter) {
     if (*iter == value)
       throw std::invalid_argument("Configure: listen: duplicated value appeared");
@@ -56,12 +56,23 @@ void ws::Server::set_listen_vec(const listen_type& value) {
   _listen_vec.push_back(value);
 }
 
-void ws::Server::set_server_name_vec(const server_name_type& value) {
+void ws::Server::set_listen_vec(const listen_vec_type& value) {
+  _listen_vec = value;
+}
+
+void ws::Server::add_server_name(const server_name_type& value) {
   _server_name_vec.push_back(value);
 }
 
 void ws::Server::set_location_map(const location_map_type& value) {
-  _location_map = value;
+  for (location_map_type::const_iterator it = value.begin(); it != value.end(); ++it) {
+    std::string dir(it->second.get_root());
+    if (it->first[0] != '/')
+      dir += "/";
+    dir += it->first;
+
+    _location_map.insert(location_pair_type(dir, it->second));
+  }
 }
 
 void ws::Server::set_option(const ws::InnerOption& value) {
@@ -76,8 +87,8 @@ void ws::Server::set_root(const root_type& value) {
   _option.set_root(value);
 }
 
-void ws::Server::set_index(const index_type& value) {
-  _option.set_index(value);
+void ws::Server::add_index(const index_type& value) {
+  _option.add_index(value);
 }
 
 void ws::Server::set_client_max_body_size(const client_max_body_size_type& value) {

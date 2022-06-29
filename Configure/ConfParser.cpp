@@ -115,8 +115,7 @@ bool ws::ConfParser::check_block_end() {
 
 
 
-ws::Server ws::ConfParser::parse_server() {
-  ws::Server ret;
+void ws::ConfParser::parse_server(ws::Server& server) {
   location_map_type location_map;
   ws::InnerOption option;
 
@@ -130,7 +129,7 @@ ws::Server ws::ConfParser::parse_server() {
     option_parser_iterator option_iter = _option_parser.find(_token);
 
     if (server_iter != _server_parser.end())
-      (this->*server_iter->second)(ret);
+      (this->*server_iter->second)(server);
     else if (option_iter != _option_parser.end())
       (this->*option_iter->second)(option);
     else if (_token == "location") {
@@ -139,8 +138,6 @@ ws::Server ws::ConfParser::parse_server() {
 
       this->check_location_header(dir, location);
       this->parse_location(location);
-
-      this->set_default_location(location);
 
       location_map.insert(location_pair_type(dir, location));
     } else if (check_block_end())
@@ -154,11 +151,13 @@ ws::Server ws::ConfParser::parse_server() {
       throw std::invalid_argument("Configure: wrong field argument number");
   }
 
-  ret.set_location_map(location_map);
-  ret.set_option(option);
-  this->set_default_server(ret);
+  server.set_option(option);
+  this->set_default_server(server);
+  this->set_default_location(server, location_map);
+  server.set_location_map(location_map);
 
-  return ret;
+  this->delete_duplicated_listen(server);
+  this->update_listen_checker(server.get_listen_vec());
 }
 
 void ws::ConfParser::parse_location(ws::Location& location) {
@@ -188,7 +187,6 @@ void ws::ConfParser::parse_location(ws::Location& location) {
   }
 
   location.set_option(option);
-  this->set_default_location(location);
 }
 
 // localhost: 127.0.0.1
@@ -207,15 +205,15 @@ void ws::ConfParser::parse_listen(ws::Server& server) {
   if (_token.find(":") != _token.npos) {
     ConfParser::parse_listen_host(':', listen);
     ConfParser::parse_listen_port(listen);
-    server.set_listen_vec(listen);
+    server.add_listen(listen);
   } else if (_token.find(".") != _token.npos) {
     ConfParser::parse_listen_host(0, listen);
     listen.second = htons(80);
-    server.set_listen_vec(listen);
+    server.add_listen(listen);
   } else {
     ConfParser::parse_listen_port(listen);
     listen.first = htonl(INADDR_ANY);
-    server.set_listen_vec(listen);
+    server.add_listen(listen);
   }
 }
 
@@ -272,14 +270,14 @@ void ws::ConfParser::parse_server_name(ws::Server& server) {
         throw std::invalid_argument("Configure: server_name: `;' should appear at eol");
       if (pos == 0)
         throw std::invalid_argument("Configure: server_name: `;' should appear at eol");
-      server.set_server_name_vec(_token.substr(0, pos));
+      server.add_server_name(_token.substr(0, pos));
       break;
     } else {
       if (!_token.length())
         throw std::invalid_argument("Configure: server_name: invalid format");
       if (_token == "\n")
         throw std::invalid_argument("Configure: server_name: invalid format");
-      server.set_server_name_vec(_token);
+      server.add_server_name(_token);
     }
   }
 }
@@ -315,28 +313,27 @@ void ws::ConfParser::parse_client_max_body_size(ws::InnerOption& option) {
 }
 
 void ws::ConfParser::parse_limit_except(ws::Location& location) {
-  ws::Location::limit_except_map_type limit_except(location.get_limit_except_map());
-
-  for (limit_except_type::iterator it = limit_except.begin(); it != limit_except.end(); ++it) {
-    if (it->second != -1)
-      throw std::invalid_argument("Configure: location: limit_except: duplicated limit_except");
-  }
+  const limit_except_vec_type& limit_except_vec = location.get_limit_except_vec();
+  if (!limit_except_vec.empty())
+    throw std::invalid_argument("Configure: location: limit_except: duplicated limit_except");
 
   std::string method;
 
   while (1) {
     this->rdword();
-    ws::Location::limit_except_map_type::size_type pos = _token.find(";");
+    ws::Location::limit_except_vec_type::size_type pos = _token.find(";");
 
-    if (pos != _token.npos && (_token[pos] != ';' || _token[0] == ';'))
-        throw std::invalid_argument("Configure: location: limit_except: wrong format");
+    if (pos != _token.npos && (_token.back() != ';' || _token[0] == ';'))
+        throw std::invalid_argument("Configure: location: limit_except: `;' should appear at eol");
 
     method = get_method(_token.substr(0, std::min(pos, _token.length())));
 
-    if (limit_except.find(method)->second != -1)
-      throw std::invalid_argument("Configure: location: limit_except: duplicated method");
+    for (limit_except_vec_type::const_iterator it = limit_except_vec.begin(); it != limit_except_vec.end(); ++it) {
+      if (method == *it)
+        throw std::invalid_argument("Configure: location: limit_except: duplicated method");
+    }
 
-    location.set_limit_except(method, true);
+    location.add_limit_except(method);
 
     if (pos != _token.npos)
       break;
@@ -431,14 +428,14 @@ void ws::ConfParser::parse_index(ws::InnerOption& option) {
         throw std::invalid_argument("Configure: index: `;' should appear at eol");
       if (pos == 0)
         throw std::invalid_argument("Configure: index: `;' should appear at eol");
-      option.set_index(_token.substr(0, pos));
+      option.add_index(_token.substr(0, pos));
       break;
     } else {
       if (!_token.length())
         throw std::invalid_argument("Configure: index: invalid format");
       if (_token == "\n")
         throw std::invalid_argument("Configure: index: invalid format");
-      option.set_index(_token);
+      option.add_index(_token);
     }
   }
 }
@@ -474,7 +471,7 @@ void ws::ConfParser::parse_error_page(ws::InnerOption& option) {
     throw std::invalid_argument("Configure: error_pgae: need error code");
 
   for (std::vector<int>::size_type i = 0; i < error_code.size(); ++i)
-    option.set_error_page_map(ws::Server::error_page_type(error_code[i], file));
+    option.add_error_page(ws::Server::error_page_type(error_code[i], file));
 }
 
 int ws::ConfParser::parse_error_code() const {
@@ -495,9 +492,9 @@ int ws::ConfParser::parse_error_code() const {
 }
 
 
-void ws::ConfParser::set_default_server(ws::Server& server) {
+void ws::ConfParser::set_default_server(ws::Server& server) const {
     if (server.get_listen_vec().empty())
-      server.set_listen_vec(listen_type(htonl(INADDR_ANY), htons(80)));
+      server.add_listen(listen_type(htonl(INADDR_ANY), htons(80)));
     if (server.get_client_max_body_size() == kCLIENT_MAX_BODY_SIZE_UNSET)
       server.set_client_max_body_size(1024 * 1024);
     if (server.get_autoindex() == kAUTOINDEX_UNSET)
@@ -505,25 +502,51 @@ void ws::ConfParser::set_default_server(ws::Server& server) {
     if (server.get_root().empty())
       server.set_root(_root_dir);
     if (server.get_index_vec().empty())
-      server.set_index(index_type("index.html"));
+      server.add_index(index_type("index.html"));
 }
 
-// should do after parsing
-void ws::ConfParser::set_default_location(ws::Location& location) {
-  if (location.get_limit_except_map().empty()) {
-    location.set_limit_except("GET", true);
-    location.set_limit_except("POST", true);
-    location.set_limit_except("DELETE", true);
-    location.set_limit_except("HEAD", true);
+void ws::ConfParser::set_default_location(ws::Server& server, location_map_type& location_map) const {
+  for (location_map_type::iterator it = location_map.begin(); it != location_map.end(); ++it) {
+    ws::Location& location = it->second;
+
+    if (location.get_limit_except_vec().empty()) {
+      location.add_limit_except("GET");
+      location.add_limit_except("POST");
+      location.add_limit_except("DELETE");
+      location.add_limit_except("HEAD");
+    }
+
+    if (location.get_client_max_body_size() == kCLIENT_MAX_BODY_SIZE_UNSET)
+      location.set_client_max_body_size(server.get_client_max_body_size());
+    if (location.get_autoindex() == kAUTOINDEX_UNSET)
+      location.set_autoindex(server.get_autoindex());
+    if (location.get_root().empty())
+      location.set_root(server.get_root());
+    if (location.get_index_vec().empty()) {
+      const index_vec_type& index_vec = server.get_index_vec();
+
+      for (index_vec_type::const_iterator it = index_vec.begin(); it != index_vec.end(); ++it)
+        location.add_index(*it);
+    }
   }
-  if (location.get_client_max_body_size() == kCLIENT_MAX_BODY_SIZE_UNSET)
-    location.set_client_max_body_size(1024 * 1024);
-  if (location.get_autoindex() == kAUTOINDEX_UNSET)
-    location.set_autoindex(false);
-  if (location.get_root().empty())
-    location.set_root(_root_dir);
-  if (location.get_index_vec().empty())
-    location.set_index(index_type("index.html"));
+
+}
+
+void ws::ConfParser::delete_duplicated_listen(ws::Server& server) const {
+  listen_vec_type temp;
+
+  const listen_vec_type& curr = server.get_listen_vec();
+  for (listen_vec_type::const_iterator it = curr.begin(); it != curr.end(); ++it) {
+    if (_listen_checker.find(*it) == _listen_checker.end())
+      temp.push_back(*it);
+  }
+
+  server.set_listen_vec(temp);
+}
+
+void ws::ConfParser::update_listen_checker(const listen_vec_type& listen_vec) {
+  for (listen_vec_type::const_iterator it = listen_vec.begin(); it != listen_vec.end(); ++it)
+    _listen_checker.insert(*it);
 }
 
 /*
@@ -539,6 +562,7 @@ description: parse configure file.
 5. loop until stream's eof reached
 6. returns server vector
 */
+
 void ws::ConfParser::parse(ws::Configure& conf) {
   server_vec_type server_vec;
 
@@ -550,7 +574,11 @@ void ws::ConfParser::parse(ws::Configure& conf) {
 
     this->check_server_header();
 
-    server_vec.push_back(this->parse_server());
+    ws::Server server;
+    this->parse_server(server);
+
+    if (!server.get_listen_vec().empty())
+      server_vec.push_back(server);
   }
 
   conf.set_server_vec(server_vec);
