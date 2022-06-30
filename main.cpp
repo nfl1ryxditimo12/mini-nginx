@@ -2,6 +2,7 @@
 
 #include "Configure.hpp"
 #include "Util.hpp"
+#include "Socket.hpp"
 
 int main(int argc, char** argv) {
   if (argc != 2) {
@@ -9,8 +10,12 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  ws::check_executed_dir();
+  ws::Socket socket(std::stoi(argv[1]));
 
-  ws::Configure conf(argv[1], ws::get_curr_dir());
-  (void) conf;
+  socket.request_handler();
+
+//   ws::check_executed_dir();
+
+//   ws::Configure conf(argv[1], ws::get_curr_dir());
+//   (void) conf;
 }

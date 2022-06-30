@@ -18,11 +18,20 @@ namespace ws {
 
   class Socket {
 
+  private:
+    struct kevent_data {
+      ws::Socket*     self;
+      struct kevent*  event;
+      ws::RequestMessage*     request;
+      // ws::ResponseMessage*  response;
+      void (*func)(struct kevent_data* info);
+    };
+
   public:
+    typedef struct kevent_data    kevent_data;
     typedef std::map<int, struct sockaddr_in> server_type;
     typedef std::map<int, ws::RequestMessage*> client_type;
-    typedef struct kevent*                    kevent_pointer;
-    typedef void (*kevent_func)(ws::Socket::kevent_data* info);
+    typedef void (*kevent_func)(kevent_data* info);
 
   private:
 
@@ -44,14 +53,6 @@ namespace ws {
 
     ws::Kernel  _kernel;
 
-    struct kevent_data {
-      ws::Socket*     self;
-      struct kevent*  event;
-      ws::RequestMessage*     request;
-      // ws::ResponseMessage*  response;
-      kevent_func func;
-    };
-
     /* ====================================== */
     /*                  OCCF                  */
     /* ====================================== */
@@ -68,7 +69,7 @@ namespace ws {
     static void parse_request(kevent_data* info);
     static void send_response(kevent_data* info);
 
-    kevent_data init_kevent_udata(void* func, ws::RequestMessage* request);
+    kevent_data init_kevent_udata(kevent_func func, ws::RequestMessage* request);
 
   public:
 
@@ -76,6 +77,7 @@ namespace ws {
     /*                Structor                */
     /* ====================================== */
 
+    Socket(int port); // 지워야함
     Socket(const ws::Configure& cls);
     ~Socket();
 

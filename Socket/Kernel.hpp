@@ -39,15 +39,20 @@ namespace ws {
     ~Kernel();
 
     void  resize_event_list(int server_count);
+    void  reset_event_list();
+    void  reset_change_list();
 
     /*
       On call pending state until kernel fetches new events
     */
-    const kevent_vector& event_handler();
+    void            kevent_ctl(uintptr_t ident, int16_t filter,
+        uint16_t flags, uint32_t fflags, intptr_t data, void *udata);
+    struct kevent   kevent_wait();
+
 
     /*
       Append data to look up to the kevent struct
     */
-    void add_change_list(uintptr_t ident, int16_t filter, uint16_t flags, uint32_t fflags, intptr_t data, void *udata) throw();
+    struct kevent add_change_list(uintptr_t ident, int16_t filter, uint16_t flags, uint32_t fflags, intptr_t data, void *udata) throw();
   };
 }

@@ -35,5 +35,6 @@ namespace ws {
 
     void  parse_request_message(const char* message, int buffer_size);
     void  print_message();
+    RequestMessage* get_RequestMessage();
   };
 }

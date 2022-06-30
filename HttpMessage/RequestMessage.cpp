@@ -5,14 +5,14 @@
 #include <iostream> // todo
 #include <stdexcept>
 
-ws::RequestMessage::RequestMessage(): _method(kNOTHING), _request_uri(""), _body(""), _http_version(""), _request_size(0) {}
+ws::RequestMessage::RequestMessage(): _method(kNOTHING), _request_uri(""), _query_string(""), _http_version(""), _body(""), _request_size(0) {}
 
 ws::RequestMessage::~RequestMessage() {}
 
 void	ws::RequestMessage::parse_request_body(ws::Token& token, std::stringstream& buffer) {
   token.rdall(buffer);
 
-  for (int i = 0; i < token.length(); i++)
+  for (size_t i = 0; i < token.length(); i++)
     _body.push_back(token[i]);
 }
 
@@ -63,14 +63,14 @@ void	ws::RequestMessage::parse_request_message(const char* message, int buffer_s
 }
 
 /* test */
-#define NC "\e[0m"
-#define RED "\e[0;31m"
-#define GRN "\e[0;32m"
-#define YLW "\e[0;33m"
-#define CYN "\e[0;36m"
+#define NC "\33[0m"
+#define RED "\33[0;31m"
+#define GRN "\33[0;32m"
+#define YLW "\33[0;33m"
+#define CYN "\33[0;36m"
 
 void	ws::RequestMessage::print_message() {
-  std::cout << "\n" << YLW << "= TEST =========================================" << NC << "\n" << std::endl;
+  std::cout << YLW << "\n= TEST =========================================\n" << NC << std::endl;
 
   std::cout << (_method == kGET
                   ? "GET"
@@ -90,5 +90,9 @@ void	ws::RequestMessage::print_message() {
   std::cout << "Body:" << std::endl;
   std::cout << _body << std::endl;
 
-  std::cout << "\n" << YLW << "================================================" << NC << "\n" << std::endl;
+  std::cout << YLW << "\n================================================\n" << NC << std::endl;
+}
+
+ws::RequestMessage* ws::RequestMessage::get_RequestMessage() {
+  return this;
 }
