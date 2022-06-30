@@ -2,26 +2,25 @@
 
 #include <arpa/inet.h>
 #include <stdexcept>
-#include <iostream> //todo
 
 ws::Server::Server() {
   // this->_server_names.push_back("_");
-  // this->_location.insert(std::pair<std::string, ws::Location>("/", ws::Location()));
-  // this->_listen.insert(std::pair<int, std::string>(8000, LOCALHOST));
+  // this->_location_map.insert(std::pair<std::string, ws::Location>("/", ws::Location()));
+  // this->_listen_vec.insert(std::pair<int, std::string>(8000, LOCALHOST));
 }
 
 ws::Server::~Server() {}
 
-const ws::Server::listen_type& ws::Server::get_listen() const throw() {
-  return _listen;
+const ws::Server::listen_vec_type& ws::Server::get_listen_vec() const throw() {
+  return _listen_vec;
 }
 
-const ws::Server::server_name_type& ws::Server::get_server_name() const throw() {
-  return _server_name;
+const ws::Server::server_name_vec_type& ws::Server::get_server_name_vec() const throw() {
+  return _server_name_vec;
 }
 
-const ws::Server::location_type& ws::Server::get_location() const throw() {
-  return _location;
+const ws::Server::location_map_type& ws::Server::get_location_map() const throw() {
+  return _location_map;
 }
 
 const ws::InnerOption& ws::Server::get_option() const throw() {
@@ -36,54 +35,62 @@ const ws::Server::root_type& ws::Server::get_root() const throw() {
   return _option.get_root();
 }
 
-const ws::Server::index_type& ws::Server::get_index() const throw() {
-  return _option.get_index();
+const ws::Server::index_vec_type& ws::Server::get_index_vec() const throw() {
+  return _option.get_index_vec();
 }
 
 const ws::Server::client_max_body_size_type& ws::Server::get_client_max_body_size() const throw() {
   return _option.get_client_max_body_size();
 }
 
-const ws::Server::error_page_type& ws::Server::get_error_page() const throw() {
-  return _option.get_error_page();
+const ws::Server::error_page_map_type& ws::Server::get_error_page_map() const throw() {
+  return _option.get_error_page_map();
 }
 
-void ws::Server::set_listen(const listen_value_type& value) {
-  for (std::vector<listen_value_type>::iterator iter = _listen.begin(); iter != _listen.end(); ++iter) {
+void ws::Server::add_listen(const listen_type& value) {
+  for (listen_vec_type::iterator iter = _listen_vec.begin(); iter != _listen_vec.end(); ++iter) {
     if (*iter == value)
       throw std::invalid_argument("Configure: listen: duplicated value appeared");
   }
 
-  _listen.push_back(value);
-  std::cout << "set: " << value.first << ", " << value.second << std::endl;
+  _listen_vec.push_back(value);
 }
 
-void ws::Server::set_server_name(const server_name_value_type& value) throw() {
-  _server_name.push_back(value);
-  std::cout << "set: " << value << std::endl;
+void ws::Server::set_listen_vec(const listen_vec_type& value) {
+  _listen_vec = value;
 }
 
-void ws::Server::set_autoindex(const autoindex_type& value) throw() {
+void ws::Server::add_server_name(const server_name_type& value) {
+  _server_name_vec.push_back(value);
+}
+
+void ws::Server::set_location_map(const location_map_type& value) {
+  for (location_map_type::const_iterator it = value.begin(); it != value.end(); ++it) {
+    std::string dir(it->second.get_root());
+    if (it->first[0] != '/')
+      dir += "/";
+    dir += it->first;
+
+    _location_map.insert(location_pair_type(dir, it->second));
+  }
+}
+
+void ws::Server::set_option(const ws::InnerOption& value) {
+  _option = value;
+}
+
+void ws::Server::set_autoindex(const autoindex_type& value) {
   _option.set_autoindex(value);
-  std::cout << "set: " << value << std::endl;
 }
 
-void ws::Server::set_root(const root_type& value) throw() {
+void ws::Server::set_root(const root_type& value) {
   _option.set_root(value);
-  std::cout << "set: " << value << std::endl;
 }
 
-void ws::Server::set_index(const index_value_type& value) throw() {
-  _option.set_index(value);
-  std::cout << "set: " << value << std::endl;
+void ws::Server::add_index(const index_type& value) {
+  _option.add_index(value);
 }
 
-void ws::Server::set_client_max_body_size(const client_max_body_size_type& value) throw() {
+void ws::Server::set_client_max_body_size(const client_max_body_size_type& value) {
   _option.set_client_max_body_size(value);
-  std::cout << "set: " << value << std::endl;
-}
-
-void ws::Server::set_error_page(const error_page_value_type& value) throw() {
-  _option.set_error_page(value);
-  std::cout << "set: " << value.first << "," << value.second << std::endl;
 }

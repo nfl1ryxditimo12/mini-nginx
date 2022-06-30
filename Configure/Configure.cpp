@@ -1,10 +1,109 @@
 #include "Configure.hpp"
 
-ws::Configure::Configure(const std::string& file, const std::string& curr_dir)
-    : _parser(file, curr_dir), _server(_parser.parse()) {}
+#include <iostream>
+
+ws::Configure::Configure() {}
 
 ws::Configure::~Configure() {}
 
-const std::vector<ws::Server>& ws::Configure::get_server() const throw() {
-  return _server;
+const ws::Configure::server_vec_type& ws::Configure::get_server_vec() const throw() {
+  return _server_vec;
+}
+
+void ws::Configure::set_server_vec(const server_vec_type& value) {
+  _server_vec = value;
+}
+
+ws::Configure::listen_vec_type ws::Configure::get_host_list() const {
+  listen_vec_type ret;
+
+  for (std::vector<ws::Server>::size_type i = 0; i < _server_vec.size(); ++i) {
+    listen_vec_type curr = _server_vec[i].get_listen_vec();
+
+    for (listen_vec_type::size_type j = 0; j < curr.size(); ++j)
+      ret.push_back(curr[j]);
+  }
+
+  return ret;
+}
+
+void ws::Configure::print_server(const ws::Server& server) const throw() {
+  std::cout << "\n--listen list--\n";
+  const listen_vec_type& listen_vec = server.get_listen_vec();
+  for (listen_vec_type::const_iterator it = listen_vec.begin(); it != listen_vec.end(); ++it)
+    std::cout << "host: " << it->first << ", port: " << it->second << "\n";
+
+  const server_name_vec_type& server_name_vec = server.get_server_name_vec();
+  for (server_name_vec_type::const_iterator it = server_name_vec.begin(); it != server_name_vec.end(); ++it)
+    std::cout << "server name: " << *it << "\n";
+
+  std::cout << "\n----server option end----\n";
+
+  this->print_option(server.get_option());
+
+  std::cout << "\n----server inner option end----\n";
+
+  this->print_location_map(server.get_location_map());
+
+  std::cout << "\n----server end----\n";
+}
+
+void ws::Configure::print_location_map(const location_map_type& location_map) const throw() {
+  std::cout << "\n--location_blocks--\n";
+  for (location_map_type::const_iterator it = location_map.begin(); it != location_map.end(); ++it) {
+    std::cout << "\n-block dir " << it->first << " -\n";
+    this->print_location(it->second);
+  }
+
+  std::cout << "\n----location blocks end----\n";
+}
+
+void ws::Configure::print_location(const ws::Location& location) const throw() {
+  const limit_except_vec_type limit_except_vec = location.get_limit_except_vec();
+  std::cout << "limit exception: ";
+  for (limit_except_vec_type::const_iterator it = limit_except_vec.begin(); it != limit_except_vec.end(); ++it) {
+    std::cout << *it << " ";
+  }
+  std::cout << "\n";
+
+  std::cout << "return status code: " << location.get_return().first << " value: " << location.get_return().second << "\n";
+
+  std::cout << "cgi: " << location.get_cgi() << "\n";
+
+  std::cout << "\n----location option end----\n";
+
+  this->print_option(location.get_option());
+
+  std::cout << "\n----location inner option end----\n";
+
+  std::cout << "\n----location end----\n";
+}
+
+void ws::Configure::print_option(const ws::InnerOption& option) const throw() {
+  std::cout << "autoindex: " << option.get_autoindex() << "\n";
+  std::cout << "root: " << option.get_root() << "\n";
+
+  const index_vec_type& index_vec = option.get_index_vec();
+  std::cout << "index: ";
+  for (index_vec_type::const_iterator it = index_vec.begin(); it != index_vec.end(); ++it) {
+    std::cout << *it << " ";
+  }
+  std::cout << "\n";
+
+  std::cout << "client_max_body_size: " << option.get_client_max_body_size() << "\n";
+
+  const error_page_map_type& error_page_map = option.get_error_page_map();
+  for (error_page_map_type::const_iterator it = error_page_map.begin(); it != error_page_map.end(); ++it)
+    std::cout << "error status code: " << it->first << ", value: " << it->second << "\n";
+}
+
+void ws::Configure::print_configure() const throw() {
+  std::size_t cnt = 1;
+
+  for (server_vec_type::const_iterator it = _server_vec.begin(); it != _server_vec.end(); ++it, ++cnt) {
+    std::cout << "===========server block " << cnt << " ===========\n";
+    this->print_server(*it);
+  }
+
+  std::cout << "print configure end" << std::endl;
 }

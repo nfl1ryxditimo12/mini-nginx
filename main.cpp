@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "Configure.hpp"
+#include "ConfParser.hpp"
 #include "Util.hpp"
 
 int main(int argc, char** argv) {
@@ -11,6 +11,12 @@ int main(int argc, char** argv) {
 
   ws::check_executed_dir();
 
-  ws::Configure conf(argv[1], ws::get_curr_dir());
-  (void) conf;
+  ws::Configure conf;
+
+  {
+    ws::ConfParser config_parser(argv[1], ws::get_curr_dir());
+    config_parser.parse(conf);
+  }
+
+  conf.print_configure();
 }
