@@ -1,20 +1,18 @@
-#include "RequestMessage.hpp"
+#include "Request.hpp"
 #include "Token.hpp"
 
 #include <map>
 #include <iostream> // todo
 #include <stdexcept>
 
-ws::RequestMessage::RequestMessage(): _method(""), _request_uri(""), _body(""), _http_version(""), _request_size(0) {}
+ws::Request::Request(): _method(""), _request_uri(""), _http_version(""), _request_body("") {}
 
-ws::RequestMessage::~RequestMessage() {}
+ws::Request::~Request() {}
 
-void	ws::RequestMessage::parse_request_message(const char* message, int buffer_size) {
+void	ws::Request::parse_request_message(const char* message) {
 	
 	ws::Token token;
 	std::stringstream buffer;
-
-	_request_size += buffer_size;
 
 	buffer << message;
 
@@ -31,7 +29,7 @@ void	ws::RequestMessage::parse_request_message(const char* message, int buffer_s
 		if (token == "\r\n")
 			break;
 		if (token.find(":") == token.npos || token[token.length() - 1] != ':')
-			throw std::invalid_argument("RequestMessage: wrong header form: key"); //400 error : 잘못된 문법
+			throw std::invalid_argument("Request: wrong header form: key"); //400 error : 잘못된 문법
 		key = token.substr(0, token.length() - 1);
 		value = token.rd_http_line(buffer).substr(1, token.length() - 1);
 		_request_header.insert(std::pair<std::string, std::string>(key, value));
@@ -43,28 +41,24 @@ void	ws::RequestMessage::parse_request_message(const char* message, int buffer_s
 }
 
 /* getter */
-std::string ws::RequestMessage::get_method() const throw() {
+std::string ws::Request::get_method() const throw() {
 	return _method;
 }
 
-std::string ws::RequestMessage::get_uri() const throw() {
+std::string ws::Request::get_uri() const throw() {
 	return _request_uri;
 }
 
-std::string ws::RequestMessage::get_version() const throw() {
+std::string ws::Request::get_version() const throw() {
 	return _http_version;
 }
 
-ws::RequestMessage::header_type ws::RequestMessage::get_request_header() const throw() {
+ws::Request::header_type ws::Request::get_request_header() const throw() {
 	return _request_header;
 }
 
-std::string ws::RequestMessage::get_request_body() const throw() {
+std::string ws::Request::get_request_body() const throw() {
 	return _request_body;
-}
-
-std::string::size_type ws::RequestMessage::get_request_size() const throw() {
-	return _request_size;
 }
 
 
@@ -75,7 +69,7 @@ std::string::size_type ws::RequestMessage::get_request_size() const throw() {
 #define YLW "\e[0;33m"
 #define CYN "\e[0;36m"
 
-void	ws::RequestMessage::print_message() {
+void	ws::Request::print_message() {
 	std::cout << "\n" << YLW << "= TEST =========================================" << NC << "\n" << std::endl;
 
 	std::cout << _method << " " << _request_uri << " HTTP/1.1\n" << std::endl;

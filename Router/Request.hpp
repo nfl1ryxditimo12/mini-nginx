@@ -9,7 +9,7 @@
 #include "Token.hpp"
 
 namespace ws {
-  class RequestMessage {
+  class Request {
   public:
     typedef std::map<std::string, std::string> header_type;
 
@@ -22,14 +22,14 @@ namespace ws {
     std::string _request_body;
     // std::string::size_type  _request_size;
 
-    RequestMessage& operator=(const RequestMessage& other);
-    RequestMessage(const RequestMessage& other);
+    Request& operator=(const Request& other);
+    Request(const Request& other);
 
   public:
-    RequestMessage();
-    ~RequestMessage();
+    Request();
+    ~Request();
 
-    void  parse_request_message(const char* message, int buffer_size);
+    void  parse_request_message(const char* message);
     void  print_message();
 
     //getter
