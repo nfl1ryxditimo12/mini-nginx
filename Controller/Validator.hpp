@@ -23,5 +23,5 @@ namespace ws {
 
 		bool check_request_header(ws::Configure* _conf, ws::RequestMessage* _request);
 
-	};	
+	};
 }
