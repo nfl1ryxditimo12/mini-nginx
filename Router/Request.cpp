@@ -5,7 +5,11 @@
 #include <iostream> // todo
 #include <stdexcept>
 
-ws::Request::Request(): _method(""), _request_uri(""), _http_version(""), _request_body("") {}
+ws::Request::Request(ws::Configure::listen_type listen)
+: _listen(listen), _method(""), _request_uri(""), _http_version(""), _request_body("") {}
+
+ws::Request::Request(const Request& cls)
+: _listen(cls._listen), _method(cls._method), _request_uri(cls._request_uri), _http_version(cls._http_version), _request_body(cls._request_body) {}
 
 ws::Request::~Request() {}
 
