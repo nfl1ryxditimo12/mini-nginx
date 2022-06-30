@@ -11,9 +11,33 @@
 
 // initialize buffer with configure file
 ws::ConfParser::ConfParser(const std::string& file, const std::string& curr_dir)
-  : _buffer(this->open_file(file)), _root_dir(curr_dir) {}
+  : _buffer(this->read_file(file)), _root_dir(curr_dir) {
+  init_server_parser();
+  init_location_parser();
+  init_option_parser();
+}
 
 ws::ConfParser::~ConfParser() {}
+
+void ws::ConfParser::init_server_parser() {
+  _server_parser.insert(server_parser_func_map::value_type("listen", &ConfParser::parse_listen));
+  _server_parser.insert(server_parser_func_map::value_type("server_name", &ConfParser::parse_server_name));
+}
+
+void ws::ConfParser::init_location_parser() {
+  _location_parser.insert(location_parser_func_map::value_type("limit_except", &ConfParser::parse_limit_except));
+  _location_parser.insert(location_parser_func_map::value_type("return", &ConfParser::parse_return));
+}
+
+void ws::ConfParser::init_option_parser() {
+  _option_parser.insert(option_parser_func_map::value_type("autoindex", &ConfParser::parse_autoindex));
+  _option_parser.insert(option_parser_func_map::value_type("root", &ConfParser::parse_root));
+  _option_parser.insert(option_parser_func_map::value_type("index", &ConfParser::parse_index));
+  _option_parser.insert(
+    option_parser_func_map::value_type("client_max_body_size", &ConfParser::parse_client_max_body_size)
+  );
+  _option_parser.insert(option_parser_func_map::value_type("error_page", &ConfParser::parse_error_page));
+}
 
 ws::Token& ws::ConfParser::get_token() throw() {
   return _token;
@@ -23,7 +47,7 @@ std::stringstream& ws::ConfParser::get_buffer() throw() {
   return _buffer;
 }
 
-std::string ws::ConfParser::open_file(const std::string& file) const {
+std::string ws::ConfParser::read_file(const std::string& file) const {
   std::ifstream input;
   if (file.rfind(".conf") != file.length() - 5)
     throw std::invalid_argument("Configure: wrong file extension");
@@ -46,110 +70,169 @@ ws::Token& ws::ConfParser::rdword() {
 
 
 
-void ws::ConfParser::check_block_header(const std::string& block_name) {
-  if (_token != block_name)
-    throw std::invalid_argument("Configure: wrong " + block_name + " header");
+void ws::ConfParser::check_server_header() {
+  if (_token != "server")
+    throw std::invalid_argument("Configure: wrong server header");
 
   this->rdword();
   if (_token != "{")
-    throw std::invalid_argument("Configure: wrong " + block_name + " header");
+    throw std::invalid_argument("Configure: wrong server header");
 
   this->rdword();
   if (_token != "\n")
-    throw std::invalid_argument("Configure: wrong " + block_name + " header");  
+    throw std::invalid_argument("Configure: wrong server header");
 }
-#include <iostream>
-ws::Server ws::ConfParser::parse_server() {
-  ws::Server ret;
 
-  std::string line;
+void ws::ConfParser::check_location_header(std::string& dir, ws::Location& location) {
+  if (_token != "location")
+    throw std::invalid_argument("Configure: wrong location header");
 
-  server_parser_func_map server_parser_func;
+  this->rdword();
 
-  this->init_server_parser_func(server_parser_func);
+  std::string cgi;
+  std::string temp(_token);
+
+  this->rdword();
+
+  if (_token != "{") {
+    dir = _token;
+    cgi = temp;
+    this->rdword();
+  } else
+    dir = temp;
+
+  location.set_cgi(cgi);
+
+  if (_token != "{")
+    throw std::invalid_argument("Configure: wrong location header");
+}
+
+bool ws::ConfParser::check_block_end() {
+  if (_token.find("}") != _token.npos && _token != "}")
+    throw std::invalid_argument("Configure: wrong block end");
+  return true;
+}
+
+
+
+void ws::ConfParser::parse_server(ws::Server& server) {
+  location_map_type location_map;
+  ws::InnerOption option;
+
+  while (!_buffer.eof()) {
+    this->rdword();
+
+    if (_token == "\n")
+      continue;
+
+    server_parser_iterator server_iter = _server_parser.find(_token);
+    option_parser_iterator option_iter = _option_parser.find(_token);
+
+    if (server_iter != _server_parser.end())
+      (this->*server_iter->second)(server);
+    else if (option_iter != _option_parser.end())
+      (this->*option_iter->second)(option);
+    else if (_token == "location") {
+      std::string dir;
+      ws::Location location;
+
+      this->check_location_header(dir, location);
+      this->parse_location(location);
+
+      location_map.insert(location_pair_type(dir, location));
+    } else if (check_block_end())
+      break;
+    else
+      throw std::invalid_argument("Configure: wrong field key");
+
+    this->rdword();
+
+    if (_token != "\n")
+      throw std::invalid_argument("Configure: wrong field argument number");
+  }
+
+  server.set_option(option);
+  this->set_default_server(server);
+  this->set_default_location(server, location_map);
+  server.set_location_map(location_map);
+
+  this->delete_duplicated_listen(server);
+  this->update_listen_checker(server.get_listen_vec());
+}
+
+void ws::ConfParser::parse_location(ws::Location& location) {
+  ws::InnerOption option;
 
   while (!_buffer.eof()) {
     this->rdword();
     if (_token == "\n")
       continue;
 
-    server_parser_func_map::iterator iter;
+    location_parser_iterator location_iter = _location_parser.find(_token);
+    option_parser_iterator option_iter = _option_parser.find(_token);
 
-    iter = server_parser_func.find(_token);
-    if (iter == server_parser_func.end())
-      throw std::invalid_argument("Configure: wrong field key");
-    (this->*iter->second)(ret);
+    if (location_iter != _location_parser.end())
+      (this->*location_iter->second)(location);
+    else if (option_iter != _option_parser.end())
+      (this->*option_iter->second)(option);
+    else if (this->check_block_end())
+      break;
+    else
+      throw std::invalid_argument("Configure: location: wrong field key");
+
     this->rdword();
-    if (_token != "\n") {
-      std::cout << _token <<"asd" << std::endl;;
-      throw std::invalid_argument("Configure: wrong field argument number");
-    }
 
-    // else if (!line.compare(pos, 12, "limit_except"))
-    //   ret.set_limit_except(this->parse_limit_except(line), skip_whitespace(line, pos + 12));
-    // else if (!line.compare(pos, 6, "return"))
-    //   ret.set_return(this->parse_return(line), skip_whitespace(line, pos + 6));
-    // else if (!line.compare(pos, 10, "error_page"))
-    //   ret.set_error_page(this->parse_error_page(line), skip_whitespace(line, pos + 10));
+    if (_token != "\n")
+      throw std::invalid_argument("Configure: location: wrong field argument number");
   }
-  return ret;
-}
 
-void ws::ConfParser::init_server_parser_func(server_parser_func_map& server_parser_func) const {
-  server_parser_func.insert(server_parser_func_map::value_type("listen", &ConfParser::parse_listen));
-  server_parser_func.insert(server_parser_func_map::value_type("server_name", &ConfParser::parse_server_name));
-  server_parser_func.insert(
-    server_parser_func_map::value_type("client_max_body_size", &ConfParser::parse_client_max_body_size)
-  );
-  server_parser_func.insert(server_parser_func_map::value_type("autoindex", &ConfParser::parse_autoindex));
-  server_parser_func.insert(server_parser_func_map::value_type("root", &ConfParser::parse_root));
-  server_parser_func.insert(server_parser_func_map::value_type("index", &ConfParser::parse_index));
+  location.set_option(option);
 }
 
 // localhost: 127.0.0.1
 static const int kLOCALHOST = 2130706433;
 
 void ws::ConfParser::parse_listen(ws::Server& server) {
-  listen_value_type value;
+  listen_type listen;
 
   this->rdword();
 
-  if (_token[_token.length() - 1] != ';')
+  if (_token.back() != ';')
     throw std::invalid_argument("Configure: listen: `;' should appear at eol");
 
   _token.erase(_token.length() - 1, 1);
 
   if (_token.find(":") != _token.npos) {
-    ConfParser::parse_listen_host(':', value);
-    ConfParser::parse_listen_port(value);
-    server.set_listen(value);
+    ConfParser::parse_listen_host(':', listen);
+    ConfParser::parse_listen_port(listen);
+    server.add_listen(listen);
   } else if (_token.find(".") != _token.npos) {
-    ConfParser::parse_listen_host(0, value);
-    value.second = htons(80);
-    server.set_listen(value);
+    ConfParser::parse_listen_host(0, listen);
+    listen.second = htons(80);
+    server.add_listen(listen);
   } else {
-    ConfParser::parse_listen_port(value);
-    value.first = htonl(INADDR_ANY);
-    server.set_listen(value);
+    ConfParser::parse_listen_port(listen);
+    listen.first = htonl(INADDR_ANY);
+    server.add_listen(listen);
   }
 }
 
-void ws::ConfParser::parse_listen_host(char delim, listen_value_type& value) {
+void ws::ConfParser::parse_listen_host(char delim, listen_type& listen) {
   ws::Token::size_type end;
 
   if (!_token.compare(0, 9, "localhost")) {
     end = 9;
-    value.first = htonl(kLOCALHOST);
+    listen.first = htonl(kLOCALHOST);
   } else {
     end = std::min(_token.find(":"), _token.length());
-    value.first = inet_addr(_token.substr(0, end).c_str());
+    listen.first = inet_addr(_token.substr(0, end).c_str());
   }
 
-  if ((_token[end] != delim) || (value.first == INADDR_NONE))
+  if ((_token[end] != delim) || (listen.first == INADDR_NONE))
     throw std::invalid_argument("Configure: listen: wrong host");
 }
 
-void ws::ConfParser::parse_listen_port(listen_value_type& value) {
+void ws::ConfParser::parse_listen_port(listen_type& listen) {
   if (!_token.length())
     throw std::invalid_argument("Configure: listen: need port");
 
@@ -163,7 +246,7 @@ void ws::ConfParser::parse_listen_port(listen_value_type& value) {
 
   for (; _token[i]; ++i) {
     if (!std::isdigit(_token[i]))
-      throw std::invalid_argument("Configure: listen: non numeric value in port");
+      throw std::invalid_argument("Configure: listen: non numeric listen in port");
 
     port *= 10;
     port += _token[i] - '0';
@@ -171,7 +254,7 @@ void ws::ConfParser::parse_listen_port(listen_value_type& value) {
       throw std::out_of_range("Configure: listen: port out of range");
   }
 
-  value.second = htons(port);
+  listen.second = htons(port);
 }
 
 void ws::ConfParser::parse_server_name(ws::Server& server) {
@@ -187,20 +270,20 @@ void ws::ConfParser::parse_server_name(ws::Server& server) {
         throw std::invalid_argument("Configure: server_name: `;' should appear at eol");
       if (pos == 0)
         throw std::invalid_argument("Configure: server_name: `;' should appear at eol");
-      server.set_server_name(_token.substr(0, pos));
+      server.add_server_name(_token.substr(0, pos));
       break;
     } else {
       if (!_token.length())
         throw std::invalid_argument("Configure: server_name: invalid format");
       if (_token == "\n")
         throw std::invalid_argument("Configure: server_name: invalid format");
-      server.set_server_name(_token);
+      server.add_server_name(_token);
     }
   }
 }
 
-void ws::ConfParser::parse_client_max_body_size(ws::Server& server) {
-  if (server.get_client_max_body_size() != kCLIENT_MAX_BODY_SIZE_UNSET)
+void ws::ConfParser::parse_client_max_body_size(ws::InnerOption& option) {
+  if (option.get_client_max_body_size() != kCLIENT_MAX_BODY_SIZE_UNSET)
     throw std::invalid_argument("Configure: client_max_body_size: duplicated client_max_body_size");
 
   this->rdword();
@@ -226,11 +309,82 @@ void ws::ConfParser::parse_client_max_body_size(ws::Server& server) {
   if (size >= kCLIENT_MAX_BODY_SIZE_LIMIT / 1024)
     throw std::out_of_range("Configure: client_max_body_size: too large value");
 
-  server.set_client_max_body_size(size * 1024);
+  option.set_client_max_body_size(size * 1024);
 }
 
-void ws::ConfParser::parse_autoindex(ws::Server& server) {
-  if (server.get_autoindex() != kAUTOINDEX_UNSET)
+void ws::ConfParser::parse_limit_except(ws::Location& location) {
+  const limit_except_vec_type& limit_except_vec = location.get_limit_except_vec();
+  if (!limit_except_vec.empty())
+    throw std::invalid_argument("Configure: location: limit_except: duplicated limit_except");
+
+  std::string method;
+
+  while (1) {
+    this->rdword();
+    ws::Location::limit_except_vec_type::size_type pos = _token.find(";");
+
+    if (pos != _token.npos && (_token.back() != ';' || _token[0] == ';'))
+        throw std::invalid_argument("Configure: location: limit_except: `;' should appear at eol");
+
+    method = get_method(_token.substr(0, std::min(pos, _token.length())));
+
+    for (limit_except_vec_type::const_iterator it = limit_except_vec.begin(); it != limit_except_vec.end(); ++it) {
+      if (method == *it)
+        throw std::invalid_argument("Configure: location: limit_except: duplicated method");
+    }
+
+    location.add_limit_except(method);
+
+    if (pos != _token.npos)
+      break;
+  }
+}
+
+std::string ws::ConfParser::get_method(const std::string& method) const {
+  static const std::string method_list[] = {
+    "GET",
+    "POST",
+    "DELETE",
+    "HEAD"
+  };
+
+  for (std::size_t i = 0; ; ++i) {
+    if (i > 3)
+      throw std::invalid_argument("Configure: location: limit_except: wrong method");
+    if (method == method_list[i])
+      return std::string(method_list[i]);
+  }
+}
+
+void ws::ConfParser::parse_return(ws::Location& location) {
+  if (location.get_return().first != 0)
+    throw std::invalid_argument("Configure: location: return: duplicated return");
+
+  this->rdword();
+
+  int code = 0;
+  for (std::size_t i = 0; _token[i]; ++i) {
+    if (!std::isdigit(_token[i]))
+      throw std::invalid_argument("Configure: return: non numeric value in code");
+
+    code *= 10;
+    code += _token[i] - '0';
+
+
+    if (code > 999)
+      throw std::out_of_range("Configure: return: invalid return code");
+  }
+
+  this->rdword();
+
+  if (_token[0] == ';' || _token.back() != ';')
+    throw std::invalid_argument("Configure: return: `;' should appear at eol");
+
+  location.set_return(ws::Location::return_type(code, _token.substr(0, _token.length() - 1)));
+}
+
+void ws::ConfParser::parse_autoindex(ws::InnerOption& option) {
+  if (option.get_autoindex() != kAUTOINDEX_UNSET)
     throw std::invalid_argument("Configure: autoindex: duplicated autoindex");
 
   this->rdword();
@@ -239,15 +393,15 @@ void ws::ConfParser::parse_autoindex(ws::Server& server) {
     throw std::invalid_argument("Configure: autoindex: `;' should appear at eol");
 
   if (!_token.compare(0, std::max(_token.length() - 1, 2UL), "on"))
-    server.set_autoindex(true);
+    option.set_autoindex(true);
   else if (!_token.compare(0, std::max(_token.length() - 1, 2UL), "off"))
-    server.set_autoindex(false);
+    option.set_autoindex(false);
   else
     throw std::invalid_argument("Configure: autoindex: wrong value");
 }
 
-void ws::ConfParser::parse_root(ws::Server& server) {
-  if (server.get_root().length())
+void ws::ConfParser::parse_root(ws::InnerOption& option) {
+  if (option.get_root().length())
     throw std::invalid_argument("Configure: root: duplicated root");
 
   this->rdword();
@@ -256,12 +410,12 @@ void ws::ConfParser::parse_root(ws::Server& server) {
     throw std::invalid_argument("Configure: root: `;' should appear at eol");
 
   if (!_token.compare(0, std::max(_token.length() - 1, 4UL), "html"))
-    server.set_root(_root_dir);
+    option.set_root(_root_dir);
   else
-    server.set_root(_token.substr(0, _token.length() - 1));
+    option.set_root(_token.substr(0, _token.length() - 1));
 }
 
-void ws::ConfParser::parse_index(ws::Server& server) {
+void ws::ConfParser::parse_index(ws::InnerOption& option) {
   this->rdword();
 
   for (
@@ -274,19 +428,19 @@ void ws::ConfParser::parse_index(ws::Server& server) {
         throw std::invalid_argument("Configure: index: `;' should appear at eol");
       if (pos == 0)
         throw std::invalid_argument("Configure: index: `;' should appear at eol");
-      server.set_index(_token.substr(0, pos));
+      option.add_index(_token.substr(0, pos));
       break;
     } else {
       if (!_token.length())
         throw std::invalid_argument("Configure: index: invalid format");
       if (_token == "\n")
         throw std::invalid_argument("Configure: index: invalid format");
-      server.set_index(_token);
+      option.add_index(_token);
     }
   }
 }
 
-void ws::ConfParser::parse_error_page(ws::Server& server) {
+void ws::ConfParser::parse_error_page(ws::InnerOption& option) {
   this->rdword();
 
   std::vector<int> error_code;
@@ -317,7 +471,7 @@ void ws::ConfParser::parse_error_page(ws::Server& server) {
     throw std::invalid_argument("Configure: error_pgae: need error code");
 
   for (std::vector<int>::size_type i = 0; i < error_code.size(); ++i)
-    server.set_error_page(ws::Server::error_page_value_type(error_code[i], file));
+    option.add_error_page(ws::Server::error_page_type(error_code[i], file));
 }
 
 int ws::ConfParser::parse_error_code() const {
@@ -337,6 +491,64 @@ int ws::ConfParser::parse_error_code() const {
   return ret;
 }
 
+
+void ws::ConfParser::set_default_server(ws::Server& server) const {
+    if (server.get_listen_vec().empty())
+      server.add_listen(listen_type(htonl(INADDR_ANY), htons(80)));
+    if (server.get_client_max_body_size() == kCLIENT_MAX_BODY_SIZE_UNSET)
+      server.set_client_max_body_size(1024 * 1024);
+    if (server.get_autoindex() == kAUTOINDEX_UNSET)
+      server.set_autoindex(false);
+    if (server.get_root().empty())
+      server.set_root(_root_dir);
+    if (server.get_index_vec().empty())
+      server.add_index(index_type("index.html"));
+}
+
+void ws::ConfParser::set_default_location(ws::Server& server, location_map_type& location_map) const {
+  for (location_map_type::iterator it = location_map.begin(); it != location_map.end(); ++it) {
+    ws::Location& location = it->second;
+
+    if (location.get_limit_except_vec().empty()) {
+      location.add_limit_except("GET");
+      location.add_limit_except("POST");
+      location.add_limit_except("DELETE");
+      location.add_limit_except("HEAD");
+    }
+
+    if (location.get_client_max_body_size() == kCLIENT_MAX_BODY_SIZE_UNSET)
+      location.set_client_max_body_size(server.get_client_max_body_size());
+    if (location.get_autoindex() == kAUTOINDEX_UNSET)
+      location.set_autoindex(server.get_autoindex());
+    if (location.get_root().empty())
+      location.set_root(server.get_root());
+    if (location.get_index_vec().empty()) {
+      const index_vec_type& index_vec = server.get_index_vec();
+
+      for (index_vec_type::const_iterator it = index_vec.begin(); it != index_vec.end(); ++it)
+        location.add_index(*it);
+    }
+  }
+
+}
+
+void ws::ConfParser::delete_duplicated_listen(ws::Server& server) const {
+  listen_vec_type temp;
+
+  const listen_vec_type& curr = server.get_listen_vec();
+  for (listen_vec_type::const_iterator it = curr.begin(); it != curr.end(); ++it) {
+    if (_listen_checker.find(*it) == _listen_checker.end())
+      temp.push_back(*it);
+  }
+
+  server.set_listen_vec(temp);
+}
+
+void ws::ConfParser::update_listen_checker(const listen_vec_type& listen_vec) {
+  for (listen_vec_type::const_iterator it = listen_vec.begin(); it != listen_vec.end(); ++it)
+    _listen_checker.insert(*it);
+}
+
 /*
 param: configuration file, current directory(which should be project root directory)
 return: server vector, storing multiple server blocks
@@ -350,20 +562,24 @@ description: parse configure file.
 5. loop until stream's eof reached
 6. returns server vector
 */
-std::vector<ws::Server> ws::ConfParser::parse() {
-  std::string line;
-  std::vector<ws::Server> ret;
+
+void ws::ConfParser::parse(ws::Configure& conf) {
+  server_vec_type server_vec;
 
   while (!_buffer.eof()) {
     this->rdword();
 
-    if (_token == "\n")
+    if (_token == "\n" || _token.empty())
       continue;
 
-    this->check_block_header("server");
+    this->check_server_header();
 
-    ret.push_back(this->parse_server());
+    ws::Server server;
+    this->parse_server(server);
+
+    if (!server.get_listen_vec().empty())
+      server_vec.push_back(server);
   }
 
-  return ret;
+  conf.set_server_vec(server_vec);
 }

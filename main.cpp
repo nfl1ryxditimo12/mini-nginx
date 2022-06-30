@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "Configure.hpp"
+#include "ConfParser.hpp"
 #include "Util.hpp"
 #include "Socket.hpp"
 
@@ -12,10 +12,12 @@ int main(int argc, char** argv) {
 
   ws::Socket socket(std::stoi(argv[1]));
 
-  socket.request_handler();
+  ws::Configure conf;
 
-//   ws::check_executed_dir();
+  {
+    ws::ConfParser config_parser(argv[1], ws::get_curr_dir());
+    config_parser.parse(conf);
+  }
 
-//   ws::Configure conf(argv[1], ws::get_curr_dir());
-//   (void) conf;
+  conf.print_configure();
 }

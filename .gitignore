@@ -7,3 +7,5 @@ test*
 a.out.dSYM
 .DS_Store
 output
+# clion
+.idea
