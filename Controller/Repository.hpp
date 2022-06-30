@@ -1,4 +1,5 @@
 #include "Configure.hpp"
+#include "Socket.hpp"
 
 namespace ws {
   class Repository {
@@ -58,7 +59,10 @@ namespace ws {
       void set_autoindex(const autoindex_type& value);
       void set_root(const root_type& value);
       void set_index_vec(const index_vec_type& value);
-      void slient_max_body_size(const client_max_body_size_type& value);
-      void srror_page_map(const error_page_map_type& value);
+      void client_max_body_size(const client_max_body_size_type& value);
+      void error_page_map(const error_page_map_type& value);
+
+      void get_repository(const ws::Configure* _conf, const ws::Request* _request) throw();
+      void set_repository(const ws::Server curr_server);
   };
 }

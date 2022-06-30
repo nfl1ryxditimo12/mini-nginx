@@ -12,6 +12,7 @@ namespace ws {
   class Request {
   public:
     typedef std::map<std::string, std::string> header_type;
+    typedef ws::Configure::listen_type listen_type;
 
   private:
     std::string _method;
@@ -21,6 +22,8 @@ namespace ws {
     header_type _request_header;
     std::string _request_body;
     // std::string::size_type  _request_size;
+    listen_type _listen;
+
 
     Request& operator=(const Request& other);
     Request(const Request& other);
@@ -33,11 +36,12 @@ namespace ws {
     void  print_message();
 
     //getter
-    std::string get_method() const throw();
-    std::string get_uri() const throw();
-    std::string get_version() const throw();
-    header_type get_request_header() const throw();
-    std::string get_request_body() const throw();
+    const std::string& get_method() const throw();
+    const std::string& get_uri() const throw();
+    const std::string& get_version() const throw();
+    const header_type& get_request_header() const throw();
+    const std::string& get_request_body() const throw();
+    const listen_type& get_listen() const throw();
     // std::string::size_type get_request_size() const throw();
   };
 }
