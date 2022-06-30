@@ -16,7 +16,7 @@ namespace ws {
     typedef std::string index_type;
     typedef std::vector<index_type> index_vec_type;
     typedef unsigned long client_max_body_size_type;
-    typedef std::pair<int, std::string> error_page_type;
+    typedef std::pair<unsigned int, std::string> error_page_type;
     typedef std::map<error_page_type::first_type, error_page_type::second_type> error_page_map_type;
 
   private:

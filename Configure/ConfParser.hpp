@@ -21,6 +21,7 @@ namespace ws {
 
     typedef ws::Server::index_type index_type;
     typedef ws::Server::index_vec_type index_vec_type;
+    typedef ws::Server::error_page_type error_page_type;
 
     // types for parse function pointer map
     typedef void (ConfParser::*server_parser_func_type) (ws::Server&);
@@ -65,7 +66,7 @@ namespace ws {
     void parse_server_name(ws::Server& server);
 
     void parse_limit_except(ws::Location&);
-    std::string get_method(const std::string& method) const;
+    limit_except_type get_method(const std::string& method) const;
     void parse_return(ws::Location&);
 
     void parse_autoindex(ws::InnerOption& inner);
@@ -73,7 +74,7 @@ namespace ws {
     void parse_index(ws::InnerOption& inner);
     void parse_client_max_body_size(ws::InnerOption& inner);
     void parse_error_page(ws::InnerOption& inner);
-    int parse_error_code() const;
+    error_page_type::first_type parse_error_code() const;
 
     void set_default_server(ws::Server& server) const;
     void set_default_location(ws::Server& server, location_map_type& location_map) const;
