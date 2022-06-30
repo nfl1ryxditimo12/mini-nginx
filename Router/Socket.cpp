@@ -33,19 +33,19 @@ ws::Socket::Socket(int port): _kernel() {
       info = init_kevent_udata(&Socket::connect_client, NULL);
       _server.insert(std::pair<int, struct sockaddr_in>(socket_fd, addr_info));
       std::string test = "hello world";
-      _kernel.kevent_ctl(socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, static_cast<void*>(&test));
+      _kernel.kevent_ctl(socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::connect_client));
   }
 
   _kernel.resize_event_list(10);
 }
 
 ws::Socket::Socket(const ws::Configure& cls): _kernel() {
-  std::vector<ws::Server> server_config = cls.get_server();
+  ws::Configure::server_vec_type server_block = cls.get_server_vec();
 
-  for (size_t i = 0; i < server_config.size(); i++) {
-    ws::Server::listen_type listen_block = server_config[i].get_listen();
+  for (size_t i = 0; i < server_block.size(); i++) {
+    ws::Configure::listen_vec_type listen_block = server_block[i].get_listen_vec();
 
-    for (size_t j = 0; j < server_config[i].get_listen().size(); j++) {
+    for (size_t j = 0; j < listen_block.size(); j++) {
       int                 socket_fd;
       struct sockaddr_in  addr_info;
 
@@ -76,14 +76,15 @@ void ws::Socket::request_handler() {
   while (1) {
     struct kevent event_list = _kernel.kevent_wait();
 
-    kevent_data* info = static_cast<kevent_data*>(event_list.udata);
-
-    if (event_list.udata != NULL) {
-      info->event = &event_list;
-      if (info->func != NULL) {
-        (*info->func)(info);
-      }
-    }  
+    kevent_func func = reinterpret_cast<kevent_func>(event_list.udata);
+    kevent_data data;
+    (*func)(&data);
+    // if (event_list.udata != NULL) {
+    //   info->event = &event_list;
+    //   if (info->func != NULL) {
+    //     (*info->func)(info);
+    //   }
+    // }  
 
   //   for (size_t i = 0; i < event_list.size(); i++) {
   //     struct kevent* curr_event = &event_list[i];
@@ -102,7 +103,7 @@ void ws::Socket::request_handler() {
 /* Private function */
 
 /* 마지막 인자로 ws::ResponseMessage = NULL 받아와야함 #추후수정 */
-ws::Socket::kevent_data ws::Socket::init_kevent_udata(kevent_func func, ws::RequestMessage* request) {
+ws::Socket::kevent_data ws::Socket::init_kevent_udata(kevent_func func, ws::Request* request) {
   kevent_data info;
 
   info.self = NULL;
@@ -115,14 +116,14 @@ ws::Socket::kevent_data ws::Socket::init_kevent_udata(kevent_func func, ws::Requ
 
 void ws::Socket::connect_client(kevent_data* info) {
   kevent_data new_info = info->self->init_kevent_udata(&Socket::parse_request, NULL);
-  ws::RequestMessage request;
+  ws::Request request;
   int client_socket_fd;
 
   if ((client_socket_fd = accept(info->event->ident, NULL, NULL)) == -1)
     throw; // require custom exception
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
   info->self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, static_cast<void*>(&new_info));
-  info->self->_client.insert(client_type::value_type(client_socket_fd, request.get_RequestMessage()));
+  // info->self->_client.insert(client_type::value_type(client_socket_fd, request.get_Request()));
 }
 
 void ws::Socket::parse_request(kevent_data* info) {
@@ -133,7 +134,7 @@ void ws::Socket::parse_request(kevent_data* info) {
     throw; // require custom exception
 
   if (n > 0)
-    info->self->_client.find(info->event->ident)->second->parse_request_message(buffer, n);
+    info->self->_client.find(info->event->ident)->second->parse_request_message(buffer);
   if (info->event->data == n) {
     kevent_data new_info = info->self->init_kevent_udata(&Socket::send_response, NULL);
 
