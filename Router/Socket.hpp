@@ -12,7 +12,7 @@
 
 #include "Configure.hpp"
 #include "Kernel.hpp"
-#include "RequestMessage.hpp"
+#include "Request.hpp"
 
 namespace ws {
 
@@ -22,7 +22,7 @@ namespace ws {
     struct kevent_data {
       ws::Socket*     self;
       struct kevent*  event;
-      ws::RequestMessage*     request;
+      ws::Request*     request;
       // ws::ResponseMessage*  response;
       void (*func)(struct kevent_data* info);
     };
@@ -30,7 +30,7 @@ namespace ws {
   public:
     typedef struct kevent_data    kevent_data;
     typedef std::map<int, struct sockaddr_in> server_type;
-    typedef std::map<int, ws::RequestMessage*> client_type;
+    typedef std::map<int, ws::Request*> client_type;
     typedef void (*kevent_func)(kevent_data* info);
 
   private:
@@ -69,7 +69,7 @@ namespace ws {
     static void parse_request(kevent_data* info);
     static void send_response(kevent_data* info);
 
-    kevent_data init_kevent_udata(kevent_func func, ws::RequestMessage* request);
+    kevent_data init_kevent_udata(kevent_func func, ws::Request* request);
 
   public:
 
