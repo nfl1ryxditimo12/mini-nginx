@@ -13,7 +13,6 @@ ws::Socket::Socket(int port): _kernel() {
   std::vector<struct kevent> change_list;
 
   for (int i = 0; i < 10; i++) {
-    kevent_data info;
     int socket_fd;
     struct sockaddr_in addr_info;
 
@@ -30,10 +29,9 @@ ws::Socket::Socket(int port): _kernel() {
       if (listen(socket_fd, 5) == -1)
         throw; // reuqire custom exception
       fcntl(socket_fd, F_SETFL, O_NONBLOCK);
-      info = init_kevent_udata(&Socket::connect_client, NULL);
-      _server.insert(std::pair<int, struct sockaddr_in>(socket_fd, addr_info));
-      std::string test = "hello world";
-      _kernel.kevent_ctl(socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::connect_client));
+      // info = init_kevent_udata(&Socket::connect_client, NULL);
+      // _server.insert(std::pair<int, struct sockaddr_in>(socket_fd, addr_info));
+  
   }
 
   _kernel.resize_event_list(10);
@@ -62,8 +60,8 @@ ws::Socket::Socket(const ws::Configure& cls): _kernel() {
       if (listen(socket_fd, 5) == -1)
         throw; // reuqire custom exception
       fcntl(socket_fd, F_SETFL, O_NONBLOCK);
-      _server.insert(std::pair<int, struct sockaddr_in>(socket_fd, addr_info));
-      // _kernel.add_change_list(socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, static_cast<void*>(init_kevent_udata(&Socket::connect_client, NULL)));
+      _server.insert(server_type::value_type(socket_fd, listen_block[j]));
+      _kernel.kevent_ctl(socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::connect_client));
     }
   }
 
@@ -77,8 +75,7 @@ void ws::Socket::request_handler() {
     struct kevent event_list = _kernel.kevent_wait();
 
     kevent_func func = reinterpret_cast<kevent_func>(event_list.udata);
-    kevent_data data;
-    (*func)(&data);
+    (*func)(this, event_list);
     // if (event_list.udata != NULL) {
     //   info->event = &event_list;
     //   if (info->func != NULL) {
@@ -102,50 +99,41 @@ void ws::Socket::request_handler() {
 
 /* Private function */
 
-/* 마지막 인자로 ws::ResponseMessage = NULL 받아와야함 #추후수정 */
-ws::Socket::kevent_data ws::Socket::init_kevent_udata(kevent_func func, ws::Request* request) {
-  kevent_data info;
-
-  info.self = NULL;
-  info.event = NULL;
-  info.func = func;
-  info.request = request;
-  // info.response = response;
-  return info;
-}
-
-void ws::Socket::connect_client(kevent_data* info) {
-  kevent_data new_info = info->self->init_kevent_udata(&Socket::parse_request, NULL);
-  ws::Request request;
+void ws::Socket::connect_client(ws::Socket* self, struct kevent event) {
+  server_type::iterator it = self->_server.find(event.ident);
   int client_socket_fd;
 
-  if ((client_socket_fd = accept(info->event->ident, NULL, NULL)) == -1)
+  if ((client_socket_fd = accept(event.ident, NULL, NULL)) == -1)
     throw; // require custom exception
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
-  info->self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, static_cast<void*>(&new_info));
-  // info->self->_client.insert(client_type::value_type(client_socket_fd, request.get_Request()));
+  self->_client.insert(client_type::value_type(client_socket_fd, ws::Request(it->second)));
+  self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::parse_request));
 }
 
-void ws::Socket::parse_request(kevent_data* info) {
+#include <iostream>
+
+void ws::Socket::parse_request(ws::Socket* self, struct kevent event) {
   char buffer[1024];
   int  n;
 
-  if ((n = read(info->event->ident, buffer, sizeof(buffer))) == -1)
+  if ((n = read(event.ident, buffer, sizeof(buffer))) == -1)
     throw; // require custom exception
 
-  if (n > 0)
-    info->self->_client.find(info->event->ident)->second->parse_request_message(buffer);
-  if (info->event->data == n) {
-    kevent_data new_info = info->self->init_kevent_udata(&Socket::send_response, NULL);
+  std::cout << n << ", " << event.data << std::endl;
 
-    info->self->_kernel.kevent_ctl(info->event->ident, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, static_cast<void*>(&new_info));
+  if (n > 0)
+    self->_client.find(event.ident)->second.parse_request_message(buffer);
+  if (event.data == n) {
+    /* validator */
+    /* business logic */
+    self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
   }
 }
 
-void ws::Socket::send_response(kevent_data* info) {
-  std::string body = "hello world " + std::to_string(info->event->ident);
+void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
+  std::string body = "hello world " + std::to_string(event.ident);
   std::string response = std::string("HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nConnection: keep-alive\r\nContent-Length: ") + std::to_string(body.length()) + std::string("\r\nContent-Type: text\r\nDate: Mon, 20 Jun 2022 02:59:03 GMT\r\nETag: \"62afd0a1-267\"\r\nLast-Modified: Mon, 20 Jun 2022 01:42:57 GMT\r\nServer: webserv\r\n\r\n") + body;
-  write(info->event->ident, response.c_str(), response.size());
-  info->self->_client.erase(info->event->ident);
-  close(info->event->ident);
+  write(event.ident, response.c_str(), response.size());
+  self->_client.erase(event.ident);
+  close(event.ident);
 }

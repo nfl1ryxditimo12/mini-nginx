@@ -29,9 +29,9 @@ namespace ws {
 
   public:
     typedef struct kevent_data    kevent_data;
-    typedef std::map<int, struct sockaddr_in> server_type;
-    typedef std::map<int, ws::Request*> client_type;
-    typedef void (*kevent_func)(kevent_data* info);
+    typedef std::map<int, ws::Configure::listen_type> server_type;
+    typedef std::map<int, ws::Request> client_type;
+    typedef void (*kevent_func)(ws::Socket* self, struct kevent event);
 
   private:
 
@@ -65,9 +65,9 @@ namespace ws {
     /*            Private Function            */
     /* ====================================== */
 
-    static void connect_client(kevent_data* info);
-    static void parse_request(kevent_data* info);
-    static void send_response(kevent_data* info);
+    static void connect_client(ws::Socket* self, struct kevent event);
+    static void parse_request(ws::Socket* self, struct kevent event);
+    static void send_response(ws::Socket* self, struct kevent event);
 
     kevent_data init_kevent_udata(kevent_func func, ws::Request* request);
 

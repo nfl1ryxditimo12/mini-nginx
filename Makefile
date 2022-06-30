@@ -16,15 +16,15 @@ CONFIGURE_INCLUDES  :=  Configure.hpp ConfParser.hpp Server.hpp Location.hpp Inn
 CONFIGURE_INCLUDES  :=  $(addprefix $(CONFIGURE_DIR)/, $(CONFIGURE_INCLUDES))
 
 CONTROLLER_DIR      :=  Controller
-CONTROLLER_SRCS     :=  RequestMessage.cpp
+CONTROLLER_SRCS     :=  #Validator.cpp
 CONTROLLER_SRCS     :=  $(addprefix $(CONTROLLER_DIR)/, $(CONTROLLER_SRCS))
-CONTROLLER_INCLUDES :=  RequestMessage.hpp
+CONTROLLER_INCLUDES :=  #Validator.hpp
 CONTROLLER_INCLUDES :=  $(addprefix $(CONTROLLER_DIR)/, $(CONTROLLER_INCLUDES))
 
 ROUTER_DIR          :=  Router
-ROUTER_SRCS         :=  Socket.cpp Kernel.cpp
+ROUTER_SRCS         :=  Socket.cpp Kernel.cpp Request.cpp
 ROUTER_SRCS         :=  $(addprefix $(ROUTER_DIR)/, $(ROUTER_SRCS))
-ROUTER_INCLUDES     :=  Socket.hpp Kernel.hpp
+ROUTER_INCLUDES     :=  Socket.hpp Kernel.hpp Request.hpp
 ROUTER_INCLUDES     :=  $(addprefix $(ROUTER_DIR)/, $(ROUTER_INCLUDES))
 
 SRCS        :=  main.cpp $(UTIL_SRCS) $(CONFIGURE_SRCS) $(CONTROLLER_SRCS) $(ROUTER_SRCS)
