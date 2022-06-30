@@ -20,7 +20,6 @@ namespace ws {
     /*server*/
       listen_vec_type _listen_vec;
       server_name_vec_type _server_name_vec;
-      location_map_type _location_map;
     /*location*/
       limit_except_vec_type _limit_except_vec;
       return_type _return;
@@ -39,7 +38,6 @@ namespace ws {
     /*getter*/
       const listen_vec_type& get_listen_vec() const throw();
       const server_name_vec_type& get_server_name_vec() const throw();
-      const location_map_type& get_location_map() const throw();
       const limit_except_vec_type& get_limit_except_vec() const throw();
       const return_type& get_return() const throw();
       const cgi_type& get_cgi() const throw();
@@ -52,7 +50,6 @@ namespace ws {
     /*setter*/
       void set_listen_vec(const listen_vec_type& value);
       void set_server_name_vec(const server_name_vec_type& value);
-      void set_location_map(const location_map_type& value);
       void set_limit_except_vec(const limit_except_vec_type& value);
       void set_return(const return_type& value);
       void set_cgi(const cgi_type& value);
@@ -62,7 +59,8 @@ namespace ws {
       void client_max_body_size(const client_max_body_size_type& value);
       void error_page_map(const error_page_map_type& value);
 
-      void get_repository(const ws::Configure* _conf, const ws::Request* _request) throw();
-      void set_repository(const ws::Server curr_server);
+      void get_repository(const ws::Configure* _conf, const ws::Request* _request);
+      void set_repository(const ws::Server curr_server, const ws::Request* _requset);
+      void set_option(const ws::InnerOption& option);
   };
 }
