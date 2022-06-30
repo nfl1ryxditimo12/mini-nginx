@@ -59,8 +59,8 @@ namespace ws {
       void client_max_body_size(const client_max_body_size_type& value);
       void error_page_map(const error_page_map_type& value);
 
-      void get_repository(const ws::Configure* _conf, const ws::Request* _request);
-      void set_repository(const ws::Server curr_server, const ws::Request* _requset);
+      void get_repository(const ws::Configure& _conf, const ws::Request& request);
+      void set_repository(const ws::Server& curr_server, const ws::Request& requset);
       void set_option(const ws::InnerOption& option);
   };
 }
