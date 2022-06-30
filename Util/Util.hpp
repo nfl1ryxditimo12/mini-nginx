@@ -9,7 +9,7 @@ namespace ws {
 
   unsigned long stoul(
     const std::string& str,
-    unsigned long min = 0,
-    unsigned long max = std::numeric_limits<unsigned long>::max() - 1
+    unsigned long max = std::numeric_limits<unsigned long>::max() - 1,
+    unsigned long min = 0
   ) throw();
 }

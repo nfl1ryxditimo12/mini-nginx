@@ -88,7 +88,7 @@ std::string::size_type skip_whitespace(const std::string& line, std::string::siz
 // return: unsigned long value, ULONG_MAX if failed
 // exception none
 
-unsigned long ws::stoul(const std::string& str, unsigned long min, unsigned long max) throw() {
+unsigned long ws::stoul(const std::string& str, unsigned long max, unsigned long min) throw() {
   unsigned long ret = 0;
 
   for (std::string::size_type i = 0; i < str.length(); i++) {
