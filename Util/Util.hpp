@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <string>
+#include <limits.h>
 
 namespace ws {
   std::string get_curr_dir() throw();

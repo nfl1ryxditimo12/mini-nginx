@@ -2,6 +2,7 @@
 
 #include "ConfParser.hpp"
 #include "Util.hpp"
+#include "Socket.hpp"
 
 int main(int argc, char** argv) {
   if (argc != 2) {
@@ -9,7 +10,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  ws::check_executed_dir();
+  ws::Socket socket(std::stoi(argv[1]));
 
   ws::Configure conf;
 
