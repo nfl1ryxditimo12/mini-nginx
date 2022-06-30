@@ -2,7 +2,10 @@
 *.o
 a.out
 webserv
-test.cpp
+test*
+*.gch
 a.out.dSYM
+.DS_Store
+output
 # clion
 .idea
