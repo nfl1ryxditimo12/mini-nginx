@@ -11,31 +11,80 @@
 #include <vector>
 
 #include "Configure.hpp"
+#include "Kernel.hpp"
+#include "RequestMessage.hpp"
 
 namespace ws {
 
-	class Socket {
-	
-	public:
-		typedef std::vector<std::pair<int, int> >	socket_type;
+  class Socket {
 
-	private:
-		std::vector<sockaddr_in> _server_addr;
+  private:
+    struct kevent_data {
+      ws::Socket*     self;
+      struct kevent*  event;
+      ws::RequestMessage*     request;
+      // ws::ResponseMessage*  response;
+      void (*func)(struct kevent_data* info);
+    };
 
-		/*
-			first: server socket fd
-			second: server kqueue fd
-		*/
-		socket_type _server_fd;
+  public:
+    typedef struct kevent_data    kevent_data;
+    typedef std::map<int, struct sockaddr_in> server_type;
+    typedef std::map<int, ws::RequestMessage*> client_type;
+    typedef void (*kevent_func)(kevent_data* info);
 
-		Socket& operator=(const Socket& cls);
-		Socket(const Socket& cls);
-		Socket();
+  private:
 
-	public:
-		Socket(const Configure& cls);
-		~Socket();
+    /* ====================================== */
+    /*             Member Variable            */
+    /* ====================================== */
 
-		void request_handler();
-	};
+    /*
+      first: server socket fd
+      second: server socket address info
+    */
+    server_type _server;
+
+    /*
+      first: client socket fd
+      second: server socket fd
+    */
+    client_type _client;
+
+    ws::Kernel  _kernel;
+
+    /* ====================================== */
+    /*                  OCCF                  */
+    /* ====================================== */
+
+    Socket& operator=(const Socket& cls);
+    Socket(const Socket& cls);
+    Socket();
+
+    /* ====================================== */
+    /*            Private Function            */
+    /* ====================================== */
+
+    static void connect_client(kevent_data* info);
+    static void parse_request(kevent_data* info);
+    static void send_response(kevent_data* info);
+
+    kevent_data init_kevent_udata(kevent_func func, ws::RequestMessage* request);
+
+  public:
+
+    /* ====================================== */
+    /*                Structor                */
+    /* ====================================== */
+
+    Socket(int port); // 지워야함
+    Socket(const ws::Configure& cls);
+    ~Socket();
+
+    /* ====================================== */
+    /*            Public Function             */
+    /* ====================================== */
+
+    void request_handler();
+  };
 }
