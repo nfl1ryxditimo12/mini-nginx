@@ -10,7 +10,6 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  ws::Socket socket(std::stoi(argv[1]));
 
   ws::Configure conf;
 
@@ -20,4 +19,9 @@ int main(int argc, char** argv) {
   }
 
   conf.print_configure();
+
+  // ws::Socket socket(std::stoi(argv[1]));
+  ws::Socket socket(conf);
+
+  socket.connection();
 }

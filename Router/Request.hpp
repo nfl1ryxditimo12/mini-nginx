@@ -7,6 +7,7 @@
 
 // #include "Enum.hpp"
 #include "Token.hpp"
+#include "Configure.hpp"
 
 namespace ws {
   class Request {
@@ -15,6 +16,7 @@ namespace ws {
     typedef ws::Configure::listen_type listen_type;
 
   private:
+    ws::Configure::listen_type _listen;
     std::string _method;
     std::string _request_uri;
     // std::string _request_uri_query = "";
@@ -25,11 +27,12 @@ namespace ws {
     listen_type _listen;
 
 
-    Request& operator=(const Request& other);
-    Request(const Request& other);
+    Request();
+    Request& operator=(const Request& cls);
 
   public:
-    Request();
+    Request(ws::Configure::listen_type listen);
+    Request(const Request& cls);
     ~Request();
 
     void  parse_request_message(const char* message);
