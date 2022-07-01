@@ -1,14 +1,15 @@
 #include "Socket.hpp"
 
-/*
-  kevent udata 구조체 초기화 이슈
-  주소를 넘겨주고, 내부적으로 초기화가 되나?
-  1. 객체를 넘겨줘 보자.
-  2. 다른 타입으로도 해보자.
-  3. 다른 임시 구조체를 생성해서 한번 해보자
-  4. 형변환 시 초기화 되는 이유를 알아보면 좋을 것 같다.
-*/
+/* console test code */
+#include <iostream> // 지울거임
+#define NC "\e[0m"
+#define RED "\e[0;31m"
+#define GRN "\e[0;32m"
+#define YLW "\e[0;33m"
+#define CYN "\e[0;36m"
+/* console test code */
 
+/* test code */
 ws::Socket::Socket(int port): _kernel() {
   std::vector<struct kevent> change_list;
 
@@ -31,13 +32,16 @@ ws::Socket::Socket(int port): _kernel() {
       fcntl(socket_fd, F_SETFL, O_NONBLOCK);
       // info = init_kevent_udata(&Socket::connect_client, NULL);
       // _server.insert(std::pair<int, struct sockaddr_in>(socket_fd, addr_info));
-  
   }
-
-  _kernel.resize_event_list(10);
 }
+/* test code */
 
 ws::Socket::Socket(const ws::Configure& cls): _kernel() {
+
+  /* console test code */
+  std::cout << YLW << "\n===================================================\n" << NC << std::endl;
+  /* console test code */
+
   ws::Configure::server_vec_type server_block = cls.get_server_vec();
 
   for (size_t i = 0; i < server_block.size(); i++) {
@@ -55,77 +59,76 @@ ws::Socket::Socket(const ws::Configure& cls): _kernel() {
       addr_info.sin_addr.s_addr = listen_block[j].first;
       addr_info.sin_port = listen_block[j].second;
 
-      if (bind(socket_fd, (struct sockaddr*)&addr_info, sizeof(addr_info)) == -1)
+      if (bind(socket_fd, (struct sockaddr*)&addr_info, sizeof(addr_info)) == -1) {
+        std::cout << strerror(errno) << std::endl;
         throw; // reuqire custom exception
+      }
       if (listen(socket_fd, 5) == -1)
         throw; // reuqire custom exception
       fcntl(socket_fd, F_SETFL, O_NONBLOCK);
-      _server.insert(server_type::value_type(socket_fd, listen_block[j]));
+      _server.insert(server_map_type::value_type(socket_fd, listen_block[j]));
       _kernel.kevent_ctl(socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::connect_client));
+
+      /* console test code */
+      std::cout << socket_fd << ", " << ntohs(listen_block[j].second) << std::endl;
+      /* console test code */
     }
   }
 
-  _kernel.resize_event_list(_server.size());
+  /* console test code */
+  std::cout << YLW << "\n===================================================\n" << NC << std::endl;
+  /* console test code */
 }
 
 ws::Socket::~Socket() {}
 
-void ws::Socket::request_handler() {
+void ws::Socket::connection() {
   while (1) {
     struct kevent event_list = _kernel.kevent_wait();
 
+    /* console test code */
+    server_map_type::iterator server_it = _server.find(event_list.ident);
+    std::cout << (server_it != _server.end() ? "[Server] " : "[Client] ") << event_list.ident << ", " << (event_list.filter == EVFILT_READ ? std::string(RED) + "READ" : std::string(GRN) + "WRITE") << NC << std::endl;
+    /* console test code */
+
+    /* 이부분 kevent error시 예외처리 로직 들어가야함 */
     kevent_func func = reinterpret_cast<kevent_func>(event_list.udata);
     (*func)(this, event_list);
-    // if (event_list.udata != NULL) {
-    //   info->event = &event_list;
-    //   if (info->func != NULL) {
-    //     (*info->func)(info);
-    //   }
-    // }  
-
-  //   for (size_t i = 0; i < event_list.size(); i++) {
-  //     struct kevent* curr_event = &event_list[i];
-  //     kevent_data* info = static_cast<kevent_data*>(curr_event->udata);
-
-  //     if (curr_event->udata != NULL) {
-  //       info->event = curr_event;
-  //       if (info->func != NULL) {
-  //         (*info->func)(info);
-  //       }
-  //     }
-  //   }
   }
 }
 
 /* Private function */
 
 void ws::Socket::connect_client(ws::Socket* self, struct kevent event) {
-  server_type::iterator it = self->_server.find(event.ident);
+  server_map_type::iterator it = self->_server.find(event.ident);
   int client_socket_fd;
 
   if ((client_socket_fd = accept(event.ident, NULL, NULL)) == -1)
     throw; // require custom exception
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
-  self->_client.insert(client_type::value_type(client_socket_fd, ws::Request(it->second)));
-  self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::parse_request));
+  self->_client.insert(client_map_type::value_type(client_socket_fd, ws::Request(it->second)));
+  self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::recv_request));
 }
 
-#include <iostream>
-
-void ws::Socket::parse_request(ws::Socket* self, struct kevent event) {
+void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   char buffer[1024];
   int  n;
 
   if ((n = read(event.ident, buffer, sizeof(buffer))) == -1)
     throw; // require custom exception
 
-  std::cout << n << ", " << event.data << std::endl;
+  /* console test code */
+  // std::cout << n << ", " << event.data << std::endl;
+  /* console test code */
 
   if (n > 0)
     self->_client.find(event.ident)->second.parse_request_message(buffer);
   if (event.data == n) {
     /* validator */
-    /* business logic */
+    /*
+      business logic
+      비즈니스 로직 처리 후 어떤 식으로 response data 저장할 지 생각해 봐야 함
+    */
     self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
   }
 }
@@ -136,4 +139,5 @@ void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
   write(event.ident, response.c_str(), response.size());
   self->_client.erase(event.ident);
   close(event.ident);
+  // self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 }

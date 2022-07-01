@@ -18,19 +18,13 @@ namespace ws {
 
   class Socket {
 
-  private:
-    struct kevent_data {
-      ws::Socket*     self;
-      struct kevent*  event;
-      ws::Request*     request;
-      // ws::ResponseMessage*  response;
-      void (*func)(struct kevent_data* info);
-    };
-
   public:
-    typedef struct kevent_data    kevent_data;
-    typedef std::map<int, ws::Configure::listen_type> server_type;
-    typedef std::map<int, ws::Request> client_type;
+    typedef std::pair<int, ws::Configure::listen_type> server_type;
+    typedef std::map<server_type::first_type, server_type::second_type> server_map_type;
+
+    typedef std::pair<int, ws::Request> client_type;
+    typedef std::map<client_type::first_type, client_type::second_type> client_map_type;
+
     typedef void (*kevent_func)(ws::Socket* self, struct kevent event);
 
   private:
@@ -43,13 +37,13 @@ namespace ws {
       first: server socket fd
       second: server socket address info
     */
-    server_type _server;
+    server_map_type _server;
 
     /*
       first: client socket fd
       second: server socket fd
     */
-    client_type _client;
+    client_map_type _client;
 
     ws::Kernel  _kernel;
 
@@ -66,10 +60,8 @@ namespace ws {
     /* ====================================== */
 
     static void connect_client(ws::Socket* self, struct kevent event);
-    static void parse_request(ws::Socket* self, struct kevent event);
+    static void recv_request(ws::Socket* self, struct kevent event);
     static void send_response(ws::Socket* self, struct kevent event);
-
-    kevent_data init_kevent_udata(kevent_func func, ws::Request* request);
 
   public:
 
@@ -85,6 +77,6 @@ namespace ws {
     /*            Public Function             */
     /* ====================================== */
 
-    void request_handler();
+    void connection();
   };
 }

@@ -23,5 +23,5 @@ int main(int argc, char** argv) {
   // ws::Socket socket(std::stoi(argv[1]));
   ws::Socket socket(conf);
 
-  socket.request_handler();
+  socket.connection();
 }
