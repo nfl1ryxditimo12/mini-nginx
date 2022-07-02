@@ -135,12 +135,14 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
     self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD | EV_ENABLE, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request));
 }
 
+/* 이 함수는 나중에 non blocking 형태로 추가적인 분리가 될 수 있음 */
 void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
-  // curr_server = _conf->get_server_map().find(std::pair<listen, server_name>)->second;
-  // /* repository */
-  // ws::Repository repository(curr_server, request);
-  // /* validator */
-  // ws::Validator::Validator(repository);
+  ws::Request& request = self->_client.find(event.ident)->second;
+  const ws::Server* curr_server = self->_conf->find_server(request.get_listen(), request.get_server_name());
+  /* repository */
+  ws::Repository repository(curr_server, request);
+  /* validator */
+  ws::Validator validator(request, repository);
   /*
     business logic
     비즈니스 로직 처리 후 어떤 식으로 response data 저장할 지 생각해 봐야 함
@@ -155,9 +157,9 @@ void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
   int n;
   std::string body = "hello world " + std::to_string(event.ident);
   std::string response = std::string("HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nConnection: keep-alive\r\nContent-Length: ") + std::to_string(body.length()) + std::string("\r\nContent-Type: text\r\nDate: Mon, 20 Jun 2022 02:59:03 GMT\r\nETag: \"62afd0a1-267\"\r\nLast-Modified: Mon, 20 Jun 2022 01:42:57 GMT\r\nServer: webserv\r\n\r\n") + body;
-  struct stat test;
-  int ret = fstat(event.ident, &test);
-  std::cout << ret << ", " << test.st_size << ", " << (S_ISSOCK(test.st_mode) ? "SOCKET" : "ELSE") << std::endl;
+  // struct stat test;
+  // int ret = fstat(event.ident, &test);
+  // std::cout << ret << ", " << test.st_size << ", " << (S_ISSOCK(test.st_mode) ? "SOCKET" : "ELSE") << std::endl;
   n = write(event.ident, response.c_str(), response.size());
   if (event.data == n) {
     self->_client.erase(event.ident);

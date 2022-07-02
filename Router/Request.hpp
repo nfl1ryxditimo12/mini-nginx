@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <arpa/inet.h>
 
 // #include "Enum.hpp"
 #include "Token.hpp"
@@ -21,6 +22,7 @@ namespace ws {
     std::string _request_uri;
     // std::string _request_uri_query = "";
     std::string _http_version; //protocol
+    std::string _server_name;
     header_type _request_header;
     std::string _request_body;
     // std::string::size_type  _request_size;
@@ -43,6 +45,7 @@ namespace ws {
     const std::string& get_method() const throw();
     const std::string& get_uri() const throw();
     const std::string& get_version() const throw();
+    const std::string& get_server_name() const throw();
     const header_type& get_request_header() const throw();
     const std::string& get_request_body() const throw();
     const listen_type& get_listen() const throw();

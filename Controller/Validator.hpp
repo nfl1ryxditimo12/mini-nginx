@@ -8,29 +8,35 @@ namespace ws {
   public:
     // typedef ws::Request::header_type header_type_;
     // typedef header_type_::iterator	header_iterator;
+    typedef void (Validator::*func)(const std::string&);
+    typedef std::map<std::string, func> validate_func;
+
+    typedef ws::Request::header_type  header_type;
 
   private:
-    const ws::Configure _conf;
     const ws::Request _request;
-    // const ws::Server _server;
+    const ws::Repository _repository;
+
+    validate_func _validate_func;
+
+    void check_method();
+    void check_uri();
+    void check_version();
 
     Validator();
+    Validator(const Validator& cls);
+    Validator& operator=(const Validator& cls);
     
   public:
     Validator(const Request& request, const ws::Repository& repository);
     ~Validator();
 
-    void check_method(ws::Request& request, const ws::Repository& repository);
-    void check_uri(ws::Request& request, const ws::Repository& repository);
-    void check_version(ws::Request& request, const ws::Repository& repository);
-
-
-    // void ws::Validator::check_const_length();
-    // void ws::Validator::check_connection();
-    // void ws::Validator::check_content_type();
-    // void ws::Validator::check_transger_encoding();
-    // void ws::Validator::check_host();
-    void check_request_header(ws::Request& request, const ws::Repository& repository);
+    void ws::Validator::check_content_length(const std::string&);
+    void ws::Validator::check_connection(const std::string&);
+    void ws::Validator::check_content_type(const std::string&);
+    void ws::Validator::check_transger_encoding(const std::string&);
+    void ws::Validator::check_host(const std::string&);
+    void check_request_header();
 
   };
 }

@@ -6,7 +6,7 @@ namespace ws {
     public:
       typedef ws::Server::listen_type listen_type;
       typedef ws::Server::server_name_type server_name_type;
-      // typedef std::string location_dir_type;
+      typedef std::string location_dir_type;
       typedef ws::Server::location_map_type location_map_type;
       typedef ws::Location::limit_except_vec_type limit_except_vec_type;
       typedef ws::Location::return_type return_type;
@@ -21,7 +21,7 @@ namespace ws {
     /*server*/
       const listen_type* _listen;
       const server_name_type* _server_name;
-      // const location_dir_type* _location_dir;
+      const location_dir_type* _location_dir;
     /*location*/
       const limit_except_vec_type* _limit_except_vec;
       const return_type* _return;
@@ -36,13 +36,13 @@ namespace ws {
       Repository();
 
     public:
-      Repository(const ws::Server& curr_server, const ws::Request& request);
+      Repository(const ws::Server* curr_server, const ws::Request& request);
       ~Repository();
 
     /*getter*/
       const listen_type& get_listen() const throw();
       const server_name_type& get_server_name() const throw();
-      // const location_dir_type& get_dir() const throw();
+      const location_dir_type& get_dir() const throw();
       const limit_except_vec_type& get_limit_except_vec() const throw();
       const return_type& get_return() const throw();
       const cgi_type& get_cgi() const throw();

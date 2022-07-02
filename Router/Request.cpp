@@ -40,6 +40,14 @@ void	ws::Request::parse_request_header(ws::Token& token, std::stringstream& buff
     _request_header.insert(std::pair<std::string, std::string>(key, value));
   }
 
+  std::string server_name = _request_header.find("Host")->second;
+  server_name = server_name.substr(0, server_name.find_first_of(":"));
+
+  if (inet_addr(server_name.c_str()) == -1)
+    _server_name = "_";
+  else
+    _server_name = server_name;
+
   if (token != "\r\n")
     throw; // error response
 }
@@ -58,24 +66,32 @@ void	ws::Request::parse_request_message(const char* message) {
 }
 
 /* getter */
-std::string ws::Request::get_method() const throw() {
+const std::string& ws::Request::get_method() const throw() {
 	return _method;
 }
 
-std::string ws::Request::get_uri() const throw() {
+const std::string& ws::Request::get_uri() const throw() {
 	return _request_uri;
 }
 
-std::string ws::Request::get_version() const throw() {
+const std::string& ws::Request::get_version() const throw() {
 	return _http_version;
 }
 
-ws::Request::header_type ws::Request::get_request_header() const throw() {
+const std::string& ws::Request::get_server_name() const throw() {
+  return _server_name;
+}
+
+const ws::Request::header_type& ws::Request::get_request_header() const throw() {
 	return _request_header;
 }
 
-std::string ws::Request::get_request_body() const throw() {
+const std::string& ws::Request::get_request_body() const throw() {
 	return _request_body;
+}
+
+const ws::Request::listen_type& ws::Request::get_listen() const throw() {
+  return _listen;
 }
 
 
