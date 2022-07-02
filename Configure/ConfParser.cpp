@@ -248,6 +248,8 @@ void ws::ConfParser::parse_listen_port(listen_type& listen) {
 void ws::ConfParser::parse_server_name(ws::Server& server) {
   this->rdword();
 
+  std::string server_name;
+
   for (
     Token::size_type pos = _token.find(";");
     !(_buffer.eof());
@@ -258,16 +260,21 @@ void ws::ConfParser::parse_server_name(ws::Server& server) {
         throw std::invalid_argument("Configure: server_name: `;' should appear at eol");
       if (pos == 0)
         throw std::invalid_argument("Configure: server_name: `;' should appear at eol");
-      server.add_server_name(_token.substr(0, pos));
+      server_name = _token.substr(0, pos);
+      if (is_valid_server_name(server_name))
+        server.add_server_name(_token.substr(0, pos));
       break;
     } else {
       if (!_token.length())
         throw std::invalid_argument("Configure: server_name: invalid format");
       if (_token == "\n")
         throw std::invalid_argument("Configure: server_name: invalid format");
-      server.add_server_name(_token);
+      if (is_valid_server_name(server_name))
+        server.add_server_name(_token);
     }
   }
+
+  server.add_server_name("_");
 }
 
 void ws::ConfParser::parse_client_max_body_size(ws::InnerOption& option) {
