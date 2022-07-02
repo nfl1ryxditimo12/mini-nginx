@@ -42,7 +42,6 @@ namespace ws {
     server_parser_func_map _server_parser;
     location_parser_func_map _location_parser;
     option_parser_func_map _option_parser;
-    std::set<listen_type> _listen_checker;
 
     std::string read_file(const std::string& file) const;
 
@@ -78,8 +77,6 @@ namespace ws {
 
     void set_default_server(ws::Server& server) const;
     void set_default_location(ws::Server& server, location_map_type& location_map) const;
-    void delete_duplicated_listen(ws::Server& server) const;
-    void update_listen_checker(const listen_vec_type& listen_vec);
 
     ConfParser(const ConfParser& other);
     ConfParser& operator=(const ConfParser& other);

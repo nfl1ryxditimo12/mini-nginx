@@ -9,6 +9,18 @@ ws::Server::Server() {
   // this->_listen_vec.insert(std::pair<int, std::string>(8000, LOCALHOST));
 }
 
+ws::Server::Server(const Server& other)
+  : _listen_vec(other._listen_vec),
+  _server_name_vec(other._server_name_vec),
+  _location_map(other._location_map),
+  _option(other._option) {}
+
+ws::Server& ws::Server::operator=(const Server& other) {
+  Server temp(other);
+  std::swap(*this, temp);
+  return *this;
+}
+
 ws::Server::~Server() {}
 
 const ws::Server::listen_vec_type& ws::Server::get_listen_vec() const throw() {

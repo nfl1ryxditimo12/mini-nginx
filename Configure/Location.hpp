@@ -23,8 +23,11 @@ namespace ws {
     cgi_type _cgi;
     ws::InnerOption _option;
 
+    Location& operator=(const Location& other);
+
   public:
     Location();
+    explicit Location(const Location& other);
     ~Location();
 
     const limit_except_vec_type& get_limit_except_vec() const throw();

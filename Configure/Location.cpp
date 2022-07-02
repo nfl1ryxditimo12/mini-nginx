@@ -5,6 +5,12 @@ ws::Location::Location() : _return(return_type(0, "")), _cgi("", "") {
   // this->_cgi = std::pair<std::string, std::string>();
 }
 
+ws::Location::Location(const ws::Location& other) 
+  : _limit_except_vec(other._limit_except_vec),
+  _return(other._return),
+  _cgi(other._cgi),
+  _option(other._option) {}
+
 ws::Location::~Location() {}
 
 const ws::Location::limit_except_vec_type& ws::Location::get_limit_except_vec() const throw() {

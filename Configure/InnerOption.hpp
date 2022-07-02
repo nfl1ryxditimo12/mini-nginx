@@ -28,6 +28,8 @@ namespace ws {
 
   public:
     InnerOption();
+    explicit InnerOption(const InnerOption& other);
+    InnerOption& operator=(const InnerOption& other);
     ~InnerOption();
 
     const autoindex_type& get_autoindex() const throw();

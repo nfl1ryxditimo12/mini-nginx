@@ -25,9 +25,11 @@ namespace ws {
     location_map_type _location_map;
     ws::InnerOption _option;
 
-    
+
   public:
     Server();
+    explicit Server(const Server& other);
+    Server& operator=(const Server& other);
     ~Server();
 
     const listen_vec_type& get_listen_vec() const throw();

@@ -2,11 +2,25 @@
 
 #include <stdexcept>
 
-ws::InnerOption::InnerOption() : _autoindex(kAUTOINDEX_UNSET), _client_max_body_size(kCLIENT_MAX_BODY_SIZE_UNSET) {
-  // this->_root = "~/webserv/www/";
-  // this->_index_vec.push_back("index.html");
-  // this->_client_max_body_size = 1024 * 1024;
-  // this->_directory_flag = false;
+ws::InnerOption::InnerOption() : _autoindex(kAUTOINDEX_UNSET), _client_max_body_size(kCLIENT_MAX_BODY_SIZE_UNSET) {}
+
+ws::InnerOption::InnerOption(const InnerOption& other)
+  : _autoindex(other._autoindex),
+  _root(other._root),
+  _index_vec(other._index_vec),
+  _client_max_body_size(other._client_max_body_size),
+  _error_page_map(other._error_page_map) {}
+
+ws::InnerOption& ws::InnerOption::operator=(const InnerOption& other) {
+  InnerOption temp(other);
+
+  std::swap(_autoindex, temp._autoindex);
+  std::swap(_root, temp._root);
+  std::swap(_index_vec, temp._index_vec);
+  std::swap(_client_max_body_size, temp._client_max_body_size);
+  std::swap(_error_page_map, temp._error_page_map);
+
+  return *this;
 }
 
 ws::InnerOption::~InnerOption() {}
@@ -50,4 +64,3 @@ void ws::InnerOption::set_client_max_body_size(const client_max_body_size_type& 
 void ws::InnerOption::add_error_page(const error_page_type& value) {
   _error_page_map.insert(value);
 }
-

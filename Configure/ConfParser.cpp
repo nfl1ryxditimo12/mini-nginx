@@ -155,9 +155,6 @@ void ws::ConfParser::parse_server(ws::Server& server) {
   this->set_default_server(server);
   this->set_default_location(server, location_map);
   server.set_location_map(location_map);
-
-  this->delete_duplicated_listen(server);
-  this->update_listen_checker(server.get_listen_vec());
 }
 
 void ws::ConfParser::parse_location(ws::Location& location) {
@@ -505,23 +502,6 @@ void ws::ConfParser::set_default_location(ws::Server& server, location_map_type&
     }
   }
 
-}
-
-void ws::ConfParser::delete_duplicated_listen(ws::Server& server) const {
-  listen_vec_type temp;
-
-  const listen_vec_type& curr = server.get_listen_vec();
-  for (listen_vec_type::const_iterator it = curr.begin(); it != curr.end(); ++it) {
-    if (_listen_checker.find(*it) == _listen_checker.end())
-      temp.push_back(*it);
-  }
-
-  server.set_listen_vec(temp);
-}
-
-void ws::ConfParser::update_listen_checker(const listen_vec_type& listen_vec) {
-  for (listen_vec_type::const_iterator it = listen_vec.begin(); it != listen_vec.end(); ++it)
-    _listen_checker.insert(*it);
 }
 
 /*
