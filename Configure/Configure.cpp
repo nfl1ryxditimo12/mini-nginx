@@ -1,6 +1,7 @@
 #include "Configure.hpp"
 
 #include <iostream>
+#include <set>
 
 ws::Configure::Configure() {}
 
@@ -14,14 +15,17 @@ void ws::Configure::set_server_vec(const server_vec_type& value) {
   _server_vec = value;
 }
 
-ws::Configure::listen_vec_type ws::Configure::get_host_list() const {
+const ws::Configure::listen_vec_type& ws::Configure::get_host_list() const {
   listen_vec_type ret;
+  std::set<listen_type> duplicate_checker;
 
-  for (std::vector<ws::Server>::size_type i = 0; i < _server_vec.size(); ++i) {
-    listen_vec_type curr = _server_vec[i].get_listen_vec();
+  for (server_vec_type::const_iterator it = _server_vec.begin(); it != _server_vec.end(); ++it) {
+    const listen_vec_type& curr = it->get_listen_vec();
 
-    for (listen_vec_type::size_type j = 0; j < curr.size(); ++j)
-      ret.push_back(curr[j]);
+    for (listen_vec_type::const_iterator it_ = curr.begin(); it_ != curr.end(); ++it_) {
+      if ((duplicate_checker.insert(*it_)).second)
+        ret.push_back(*it_);
+    }
   }
 
   return ret;
