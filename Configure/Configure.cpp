@@ -35,10 +35,19 @@ ws::Configure::listen_vec_type ws::Configure::get_host_list() const {
   return ret;
 }
 
-const ws::Server* ws::Configure::find_server(const listen_type& listen, const server_name_type& server_name) {
-  server_finder_type::iterator result = _server_finder.find(server_finder_type::key_type(listen, server_name));
-  if (result == _server_finder.end())
-    return NULL;
+const ws::Server* ws::Configure::find_server(
+  const listen_type& listen, const server_name_type& server_name
+) const throw() {
+
+  server_finder_type::key_type key(listen, server_name);
+
+  server_finder_type::const_iterator result = _server_finder.find(key);
+
+  if (result == _server_finder.end()) {
+    key.second = "_";
+    return _server_finder.find(key)->second;
+  }
+
   return result->second;
 }
 
