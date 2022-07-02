@@ -1,6 +1,7 @@
 #include "Socket.hpp"
 #include "Repository.hpp"
 #include "Request.hpp"
+#include "Validator.hpp"
 
 /* console test code */
 #include <iostream> // 지울거임
@@ -126,28 +127,12 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   if (n > 0)
     self->_client.find(event.ident)->second.parse_request_message(buffer);
   if (event.data == n) {
-
-    /* find curr server (find(listen_type), find(server_name)) */
-    // for (
-    // ws::Configure::server_vec_type::const_iterator server_iter = conf.get_server_vec().begin();
-    // server_iter != conf.get_server_vec().end();
-    // server_iter++
-    // ) {
-    // for (
-    //   ws::Server::listen_vec_type::const_iterator listen_iter = server_iter->get_listen_vec().begin();
-    //   listen_iter != server_iter->get_listen_vec().end();
-    //   listen_iter++
-    // ) {
-    //   if (request.get_listen() == *listen_iter) {
-    //     ws::Repository::set_repository(*server_iter, request);
-    //     return;
-    //   }
-    // }
-
     /* repository */
-    // ws::Repository repository(curr_server, request);
+    curr_server = *(get_server_map().find(std::pair<listen, server_name>)->second);
+    ws::Repository repository(curr_server, request);
     /* validator */
-    // validator(repository);
+    ws::Validator::Validator(repository);
+    
     /*
       business logic
       비즈니스 로직 처리 후 어떤 식으로 response data 저장할 지 생각해 봐야 함
