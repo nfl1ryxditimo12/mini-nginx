@@ -123,3 +123,12 @@ unsigned long stoul(const std::string& str, unsigned long limit = ULONG_MAX) {
 
   return ret;
 }
+
+bool ws::is_valid_server_name(const std::string& str) {
+  for (std::string::const_iterator it = str.begin(); it != str.end(); ++it) {
+    if (!std::isalnum(*it) && (*it != '-'))
+      return false;
+  }
+
+  return true;
+}
