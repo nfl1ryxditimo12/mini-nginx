@@ -49,7 +49,7 @@ namespace ws {
     // returns server vector for binding socket
     listen_vec_type get_host_list() const;
     // find server block with listen, server_name for set ws::Repository
-    const Server* find_server(const listen_type& listen, const server_name_type& server_name);
+    const Server* find_server(const listen_type& listen, const server_name_type& server_name) const;
 
     void print_server(const ws::Server& server) const throw();
     void print_location_map(const location_map_type& location_map) const throw();
