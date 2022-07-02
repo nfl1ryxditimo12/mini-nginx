@@ -1,14 +1,14 @@
 #include "Repository.hpp"
 #include "Request.hpp"
 
-ws::Repository::Repository(const ws::Server& curr_server, const ws::Request& request) {
+ws::Repository::Repository(const ws::Server* curr_server, const ws::Request& request) {
   /*set server*/
   _listen = &(request.get_listen());
   _server_name = &(request.get_request_header().find("Host")->second);
   // _server_name = &(request.get_server_name());
   
   /*set location*/
-  const ws::Location* curr_location = curr_server.find_location(request.get_uri());
+  const ws::Location* curr_location = curr_server->find_location(request.get_uri());
 
   if (curr_location != NULL) {
     _limit_except_vec = &(curr_location->get_limit_except_vec());
@@ -17,7 +17,7 @@ ws::Repository::Repository(const ws::Server& curr_server, const ws::Request& req
   /*set option*/
     ws::Repository::set_option(curr_location->get_option());
   }
-  ws::Repository::set_option(curr_server.get_option());
+  ws::Repository::set_option(curr_server->get_option());
 }
 
 void ws::Repository::set_option(const ws::InnerOption& option) {
@@ -39,9 +39,9 @@ const ws::Repository::server_name_type& ws::Repository::get_server_name() const 
   return *_server_name;
 }
 
-// const ws::Repository::location_dir_type& ws::Repository::get_dir() const throw() {
-//   return *_location_dir;
-// }
+const ws::Repository::location_dir_type& ws::Repository::get_dir() const throw() {
+  return *_location_dir;
+}
 
 const ws::Repository::limit_except_vec_type& ws::Repository::get_limit_except_vec() const throw() {
   return *_limit_except_vec;
