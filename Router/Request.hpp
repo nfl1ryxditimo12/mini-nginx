@@ -16,7 +16,7 @@ namespace ws {
     typedef ws::Configure::listen_type listen_type;
 
   private:
-    ws::Configure::listen_type _listen;
+    listen_type _listen;
     std::string _method;
     std::string _request_uri;
     // std::string _request_uri_query = "";
@@ -24,7 +24,6 @@ namespace ws {
     header_type _request_header;
     std::string _request_body;
     // std::string::size_type  _request_size;
-    listen_type _listen;
 
 
     Request();
