@@ -1,4 +1,7 @@
 #include "Socket.hpp"
+#include "Repository.hpp"
+#include "Request.hpp"
+#include "Validator.hpp"
 
 /* console test code */
 #include <iostream> // 지울거임
@@ -36,43 +39,39 @@ ws::Socket::Socket(int port): _kernel() {
 }
 /* test code */
 
-ws::Socket::Socket(const ws::Configure& cls): _kernel() {
+ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel() {
 
   /* console test code */
   std::cout << YLW << "\n===================================================\n" << NC << std::endl;
   /* console test code */
 
-  ws::Configure::server_vec_type server_block = cls.get_server_vec();
+  ws::Configure::listen_vec_type host = cls.get_host_list();
 
-  for (size_t i = 0; i < server_block.size(); i++) {
-    ws::Configure::listen_vec_type listen_block = server_block[i].get_listen_vec();
+  for (size_t i = 0; i < host.size(); i++) {
+    int                 socket_fd;
+    struct sockaddr_in  addr_info;
 
-    for (size_t j = 0; j < listen_block.size(); j++) {
-      int                 socket_fd;
-      struct sockaddr_in  addr_info;
+    if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
+      throw; // require custom exception
 
-      if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
-        throw; // require custom exception
+    memset(&addr_info, 0, sizeof(addr_info));
+    addr_info.sin_family = AF_INET;
+    addr_info.sin_addr.s_addr = host[i].first;
+    addr_info.sin_port = host[i].second;
 
-      memset(&addr_info, 0, sizeof(addr_info));
-      addr_info.sin_family = AF_INET;
-      addr_info.sin_addr.s_addr = listen_block[j].first;
-      addr_info.sin_port = listen_block[j].second;
-
-      if (bind(socket_fd, (struct sockaddr*)&addr_info, sizeof(addr_info)) == -1) {
-        std::cout << strerror(errno) << std::endl;
-        throw; // reuqire custom exception
-      }
-      if (listen(socket_fd, 5) == -1)
-        throw; // reuqire custom exception
-      fcntl(socket_fd, F_SETFL, O_NONBLOCK);
-      _server.insert(server_map_type::value_type(socket_fd, listen_block[j]));
-      _kernel.kevent_ctl(socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::connect_client));
-
-      /* console test code */
-      std::cout << socket_fd << ", " << ntohs(listen_block[j].second) << std::endl;
-      /* console test code */
+    if (bind(socket_fd, (struct sockaddr*)&addr_info, sizeof(addr_info)) == -1) {
+      std::cout << strerror(errno) << std::endl;
+      throw; // reuqire custom exception
     }
+    if (listen(socket_fd, 5) == -1)
+      throw; // reuqire custom exception
+    fcntl(socket_fd, F_SETFL, O_NONBLOCK);
+    _server.insert(server_map_type::value_type(socket_fd, host[i]));
+    _kernel.kevent_ctl(socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::connect_client));
+
+    /* console test code */
+    std::cout << socket_fd << ", " << ntohs(host[i].second) << std::endl;
+    /* console test code */
   }
 
   /* console test code */
@@ -84,16 +83,25 @@ ws::Socket::~Socket() {}
 
 void ws::Socket::connection() {
   while (1) {
-    struct kevent event_list = _kernel.kevent_wait();
+    struct kevent* event_list = _kernel.kevent_wait();
 
-    /* console test code */
-    server_map_type::iterator server_it = _server.find(event_list.ident);
-    std::cout << (server_it != _server.end() ? "[Server] " : "[Client] ") << event_list.ident << ", " << (event_list.filter == EVFILT_READ ? std::string(RED) + "READ" : std::string(GRN) + "WRITE") << NC << std::endl;
-    /* console test code */
+    for (int i = 0; event_list[i].ident != 0 && i < 80; i++) {
+      /* console test code */
+      server_map_type::iterator server_it = _server.find(event_list[i].ident);
+      std::cout << (server_it != _server.end() ? "[Server] " : "[Client] ") << event_list[i].ident << ", " << (event_list[i].filter == EVFILT_READ ? std::string(RED) + "READ" : (event_list[i].filter == EVFILT_WRITE ? std::string(GRN) + "WRITE" : "ELSE")) << NC << std::endl;
+      /* console test code */
 
-    /* 이부분 kevent error시 예외처리 로직 들어가야함 */
-    kevent_func func = reinterpret_cast<kevent_func>(event_list.udata);
-    (*func)(this, event_list);
+      // if (server_it == _server.end() && event_list[i].filter == EVFILT_READ && event_list[i].data == 0) {
+      //   _kernel.kevent_ctl(event_list[i].ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+      //   process_request(this, event_list[i]);
+      // }
+      // else {
+        /* 이부분 kevent error시 예외처리 로직 들어가야함 */
+        kevent_func func = reinterpret_cast<kevent_func>(event_list[i].udata);
+        (*func)(this, event_list[i]);
+      // }
+    }
+    delete event_list;
   }
 }
 
@@ -123,21 +131,36 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
 
   if (n > 0)
     self->_client.find(event.ident)->second.parse_request_message(buffer);
-  if (event.data == n) {
-    /* validator */
-    /*
-      business logic
-      비즈니스 로직 처리 후 어떤 식으로 response data 저장할 지 생각해 봐야 함
-    */
-    self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
-  }
+  if (event.data == n)
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD | EV_ENABLE, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request));
+}
+
+void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
+  // curr_server = _conf->get_server_map().find(std::pair<listen, server_name>)->second;
+  // /* repository */
+  // ws::Repository repository(curr_server, request);
+  // /* validator */
+  // ws::Validator::Validator(repository);
+  /*
+    business logic
+    비즈니스 로직 처리 후 어떤 식으로 response data 저장할 지 생각해 봐야 함
+  */
+
+  self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+  self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
+  self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
 }
 
 void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
+  int n;
   std::string body = "hello world " + std::to_string(event.ident);
   std::string response = std::string("HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nConnection: keep-alive\r\nContent-Length: ") + std::to_string(body.length()) + std::string("\r\nContent-Type: text\r\nDate: Mon, 20 Jun 2022 02:59:03 GMT\r\nETag: \"62afd0a1-267\"\r\nLast-Modified: Mon, 20 Jun 2022 01:42:57 GMT\r\nServer: webserv\r\n\r\n") + body;
-  write(event.ident, response.c_str(), response.size());
-  self->_client.erase(event.ident);
-  close(event.ident);
-  // self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+  struct stat test;
+  int ret = fstat(event.ident, &test);
+  std::cout << ret << ", " << test.st_size << ", " << (S_ISSOCK(test.st_mode) ? "SOCKET" : "ELSE") << std::endl;
+  n = write(event.ident, response.c_str(), response.size());
+  if (event.data == n) {
+    self->_client.erase(event.ident);
+    close(event.ident);
+  }
 }

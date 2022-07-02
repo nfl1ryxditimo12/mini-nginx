@@ -13,35 +13,48 @@ ws::Request::Request(const Request& cls)
 
 ws::Request::~Request() {}
 
-void	ws::Request::parse_request_message(const char* message) {
-	
-	ws::Token token;
-	std::stringstream buffer;
+void	ws::Request::parse_request_body(ws::Token& token, std::stringstream& buffer) {
+  token.rdall(buffer);
 
-	buffer << message;
+  for (size_t i = 0; i < token.length(); i++)
+    _request_body.push_back(token[i]);
+}
 
-	/*request line*/
+void	ws::Request::parse_request_header(ws::Token& token, std::stringstream& buffer) {
+  std::string key;
+  std::string value;
+
+  /* request start line */
 	_method = token.rdword(buffer);
 	_request_uri = token.rdword(buffer);
 	_http_version = token.rd_http_line(buffer);
+  
+  /* request header */
+  for (token.rdword(buffer); !buffer.eof(); token.rdword(buffer)) {
+    if (token == "\r\n")
+      break;
+    if (token.find(":") == token.npos || token[token.length() - 1] != ':')
+      throw std::invalid_argument("Request: wrong header form: key");
+    key = token.substr(0, token.length() - 1);
+    value = token.rd_http_line(buffer).substr(1, token.length() - 1);
+    _request_header.insert(std::pair<std::string, std::string>(key, value));
+  }
 
-	/*request header*/
-	std::string key;
-	std::string value;
+  if (token != "\r\n")
+    throw; // error response
+}
 
-	for (token.rdword(buffer); !buffer.eof(); token.rdword(buffer)) {
-		if (token == "\r\n")
-			break;
-		if (token.find(":") == token.npos || token[token.length() - 1] != ':')
-			throw std::invalid_argument("Request: wrong header form: key"); //400 error : 잘못된 문법
-		key = token.substr(0, token.length() - 1);
-		value = token.rd_http_line(buffer).substr(1, token.length() - 1);
-		_request_header.insert(std::pair<std::string, std::string>(key, value));
-	}
+void	ws::Request::parse_request_message(const char* message) {
+  
+  ws::Token token;
+  std::stringstream buffer;
 
-	/*body*/
-	_request_body = token.rdall(buffer);
-	buffer.clear();
+  buffer << message;
+
+  if (!_request_header.size())
+    parse_request_header(token, buffer);
+  else
+    parse_request_body(token, buffer);
 }
 
 /* getter */

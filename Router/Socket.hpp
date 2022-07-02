@@ -33,6 +33,10 @@ namespace ws {
     /*             Member Variable            */
     /* ====================================== */
 
+    const ws::Configure* _conf;
+
+    ws::Kernel  _kernel;
+
     /*
       first: server socket fd
       second: server socket address info
@@ -44,8 +48,6 @@ namespace ws {
       second: server socket fd
     */
     client_map_type _client;
-
-    ws::Kernel  _kernel;
 
     /* ====================================== */
     /*                  OCCF                  */
@@ -61,6 +63,7 @@ namespace ws {
 
     static void connect_client(ws::Socket* self, struct kevent event);
     static void recv_request(ws::Socket* self, struct kevent event);
+    static void process_request(ws::Socket* self, struct kevent event);
     static void send_response(ws::Socket* self, struct kevent event);
 
   public:
