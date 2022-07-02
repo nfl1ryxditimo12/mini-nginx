@@ -4,8 +4,8 @@
 ws::Repository::Repository(const ws::Server* curr_server, const ws::Request& request) {
   /*set server*/
   _listen = &(request.get_listen());
-  _server_name = &(request.get_request_header().find("Host")->second);
-  // _server_name = &(request.get_server_name());
+  // _server_name = &(request.get_request_header().find("Host")->second);
+  _server_name = &(request.get_server_name());
   
   /*set location*/
   const ws::Location* curr_location = curr_server->find_location(request.get_uri());

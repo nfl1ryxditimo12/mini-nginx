@@ -6,6 +6,7 @@ ws::Validator::Validator(const Request& request, const ws::Repository& repositor
   _validate_func.insert(validate_func::value_type("Content_type", &Validator::check_content_type));
   _validate_func.insert(validate_func::value_type("Transfer-Encoding", &Validator::check_transger_encoding));
   _validate_func.insert(validate_func::value_type("Host", &Validator::check_host));
+  //rfc 보면서 함수 만들기
 }
 
 ws::Validator::~Validator() {}
