@@ -7,7 +7,7 @@ namespace ws {
   public:
     typedef std::string limit_except_type;
     typedef std::vector<limit_except_type> limit_except_vec_type;
-    typedef std::pair<int, std::string> return_type;
+    typedef std::pair<unsigned int, std::string> return_type;
     typedef std::string cgi_type;
     typedef ws::InnerOption::autoindex_type autoindex_type;
     typedef ws::InnerOption::root_type root_type;

@@ -236,7 +236,6 @@ void ws::ConfParser::parse_listen_port(listen_type& listen) {
   if (!_token.length())
     throw std::invalid_argument("Configure: listen: need port");
 
-  u_int32_t port = 0;
 
   Token::size_type i = _token.find(":");
   if (i == _token.npos)
@@ -244,15 +243,7 @@ void ws::ConfParser::parse_listen_port(listen_type& listen) {
   else
     ++i;
 
-  for (; _token[i]; ++i) {
-    if (!std::isdigit(_token[i]))
-      throw std::invalid_argument("Configure: listen: non numeric listen in port");
-
-    port *= 10;
-    port += _token[i] - '0';
-    if (port > UINT16_MAX)
-      throw std::out_of_range("Configure: listen: port out of range");
-  }
+  listen_type::second_type port = ws::stoul(std::string(_token.c_str() + i), std::numeric_limits<uint16_t>::max());
 
   listen.second = htons(port);
 }
@@ -340,7 +331,7 @@ void ws::ConfParser::parse_limit_except(ws::Location& location) {
   }
 }
 
-std::string ws::ConfParser::get_method(const std::string& method) const {
+ws::ConfParser::limit_except_type ws::ConfParser::get_method(const std::string& method) const {
   static const std::string method_list[] = {
     "GET",
     "POST",
@@ -363,17 +354,8 @@ void ws::ConfParser::parse_return(ws::Location& location) {
   this->rdword();
 
   int code = 0;
-  for (std::size_t i = 0; _token[i]; ++i) {
-    if (!std::isdigit(_token[i]))
-      throw std::invalid_argument("Configure: return: non numeric value in code");
 
-    code *= 10;
-    code += _token[i] - '0';
-
-
-    if (code > 999)
-      throw std::out_of_range("Configure: return: invalid return code");
-  }
+  ws::stoul(_token, 999);
 
   this->rdword();
 
@@ -474,21 +456,14 @@ void ws::ConfParser::parse_error_page(ws::InnerOption& option) {
     option.add_error_page(ws::Server::error_page_type(error_code[i], file));
 }
 
-int ws::ConfParser::parse_error_code() const {
-  std::string curr(_token);
-  int ret = 0;
+ws::ConfParser::error_page_type::first_type ws::ConfParser::parse_error_code() const {
+  unsigned long ret;
 
-  for (std::string::size_type i = 0; (ret < 600) && curr[i]; ++i) {
-    if (!std::isdigit(curr[i]))
-      throw std::invalid_argument("Configure: error_page: non numeric in error code");
-    ret *= 10;
-    ret += curr[i] - '0';
-  }
+  ret = ws::stoul(_token, 599, 300);
+  if (ret == std::numeric_limits<unsigned long>::max())
+    throw std::invalid_argument("Configure: error_page: invalid error_code");
 
-  if (ret < 300 || ret > 599)
-    throw std::out_of_range("Configure: error_page: error code range must be between 300 and 599");
-
-  return ret;
+  return static_cast<error_page_type::first_type>(ret);
 }
 
 
