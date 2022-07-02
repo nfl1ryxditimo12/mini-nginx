@@ -25,7 +25,6 @@ namespace ws {
     location_map_type _location_map;
     ws::InnerOption _option;
 
-    
   public:
     Server();
     ~Server();

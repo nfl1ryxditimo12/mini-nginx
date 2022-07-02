@@ -1,4 +1,7 @@
 #include "Socket.hpp"
+#include "Repository.hpp"
+#include "Request.hpp"
+#include "Validator.hpp"
 
 /* console test code */
 #include <iostream> // 지울거임
@@ -133,7 +136,11 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
 }
 
 void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
-  /* validator */
+  // curr_server = _conf->get_server_map().find(std::pair<listen, server_name>)->second;
+  // /* repository */
+  // ws::Repository repository(curr_server, request);
+  // /* validator */
+  // ws::Validator::Validator(repository);
   /*
     business logic
     비즈니스 로직 처리 후 어떤 식으로 response data 저장할 지 생각해 봐야 함
