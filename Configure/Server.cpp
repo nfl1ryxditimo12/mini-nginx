@@ -106,3 +106,11 @@ void ws::Server::add_index(const index_type& value) {
 void ws::Server::set_client_max_body_size(const client_max_body_size_type& value) {
   _option.set_client_max_body_size(value);
 }
+#include <iostream>
+const ws::Location* ws::Server::find_location(const location_pair_type::first_type& dir) const throw() {
+  location_map_type::const_iterator result = _location_map.find(dir);
+
+  if (result == _location_map.end())
+    return NULL;
+  return &(result->second);
+}
