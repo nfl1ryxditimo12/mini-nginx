@@ -501,7 +501,28 @@ void ws::ConfParser::set_default_location(ws::Server& server, location_map_type&
         location.add_index(*it);
     }
   }
+}
 
+ws::ConfParser::server_finder_type ws::ConfParser::init_server_finder(const server_vec_type& server_vec) const {
+  server_finder_type server_finder;
+
+  for (server_vec_type::const_iterator serv_it = server_vec.begin(); serv_it != server_vec.end(); ++serv_it) {
+    const listen_vec_type& listen_vec = serv_it->get_listen_vec();
+    for (listen_vec_type::const_iterator listen_it = listen_vec.begin(); listen_it != listen_vec.end(); ++listen_it) {
+      const server_name_vec_type& serv_name_vec = serv_it->get_server_name_vec();
+      for (
+        server_name_vec_type::const_iterator serv_name_it = serv_name_vec.begin();
+        serv_name_it != serv_name_vec.end();
+        ++serv_name_it
+      ) {
+        server_finder.insert(
+          server_finder_type::value_type(server_finder_type::key_type(*listen_it, *serv_name_it), &(*serv_it))
+        );
+      }
+    }
+  }
+
+  return server_finder;
 }
 
 /*
@@ -537,4 +558,5 @@ void ws::ConfParser::parse(ws::Configure& conf) {
   }
 
   conf.set_server_vec(server_vec);
+  conf.set_server_finder(this->init_server_finder(conf.get_server_vec()));
 }

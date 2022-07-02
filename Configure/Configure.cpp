@@ -15,7 +15,11 @@ void ws::Configure::set_server_vec(const server_vec_type& value) {
   _server_vec = value;
 }
 
-const ws::Configure::listen_vec_type& ws::Configure::get_host_list() const {
+void ws::Configure::set_server_finder(const server_finder_type& value) {
+  _server_finder = value;
+}
+
+ws::Configure::listen_vec_type ws::Configure::get_host_list() const {
   listen_vec_type ret;
   std::set<listen_type> duplicate_checker;
 
@@ -29,6 +33,13 @@ const ws::Configure::listen_vec_type& ws::Configure::get_host_list() const {
   }
 
   return ret;
+}
+
+const ws::Server* ws::Configure::find_server(const listen_type& listen, const server_name_type& server_name) {
+  server_finder_type::iterator result = _server_finder.find(server_finder_type::key_type(listen, server_name));
+  if (result == _server_finder.end())
+    return NULL;
+  return result->second;
 }
 
 void ws::Configure::print_server(const ws::Server& server) const throw() {

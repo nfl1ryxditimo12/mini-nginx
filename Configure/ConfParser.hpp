@@ -13,6 +13,7 @@ namespace ws {
     typedef std::vector<ws::Server> server_vec_type;
     typedef ws::Server::listen_vec_type listen_vec_type;
     typedef ws::Server::listen_type listen_type;
+    typedef ws::Server::server_name_vec_type server_name_vec_type;
 
     typedef ws::Server::location_map_type location_map_type;
     typedef ws::Server::location_pair_type location_pair_type;
@@ -35,6 +36,8 @@ namespace ws {
     typedef void (ConfParser::*option_parser_func_type) (ws::InnerOption&);
     typedef std::map<std::string, option_parser_func_type> option_parser_func_map;
     typedef option_parser_func_map::iterator option_parser_iterator;
+
+    typedef Configure::server_finder_type server_finder_type;
 
     ws::Token _token;
     std::stringstream _buffer;
@@ -77,6 +80,7 @@ namespace ws {
 
     void set_default_server(ws::Server& server) const;
     void set_default_location(ws::Server& server, location_map_type& location_map) const;
+    server_finder_type init_server_finder(const server_vec_type& server_vec) const;
 
     ConfParser(const ConfParser& other);
     ConfParser& operator=(const ConfParser& other);
