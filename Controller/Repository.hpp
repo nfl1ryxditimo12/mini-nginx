@@ -32,12 +32,13 @@ namespace ws {
       const index_vec_type* _index_vec;
       const client_max_body_size_type* _client_max_body_size;
       const error_page_map_type* _error_page_map;
-      
-      Repository();
 
     public:
-      Repository(const ws::Server* curr_server, const ws::Request& request);
+      Repository();
+      Repository(const Repository& cls);
       ~Repository();
+
+      void operator()(const ws::Server* curr_server, const ws::Request& request);
 
     /*getter*/
       const listen_type& get_listen() const throw();
