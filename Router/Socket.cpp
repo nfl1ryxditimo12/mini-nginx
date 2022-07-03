@@ -12,34 +12,7 @@
 #define CYN "\e[0;36m"
 /* console test code */
 
-/* test code */
-ws::Socket::Socket(int port): _kernel() {
-  std::vector<struct kevent> change_list;
-
-  for (int i = 0; i < 10; i++) {
-    int socket_fd;
-    struct sockaddr_in addr_info;
-
-    if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
-        throw; // require custom exception
-
-      memset(&addr_info, 0, sizeof(addr_info));
-      addr_info.sin_family = AF_INET;
-      addr_info.sin_addr.s_addr = htonl(INADDR_ANY);
-      addr_info.sin_port = htons(port + i);
-
-      if (bind(socket_fd, (struct sockaddr*)&addr_info, sizeof(addr_info)) == -1)
-        throw; // reuqire custom exception
-      if (listen(socket_fd, 5) == -1)
-        throw; // reuqire custom exception
-      fcntl(socket_fd, F_SETFL, O_NONBLOCK);
-      // info = init_kevent_udata(&Socket::connect_client, NULL);
-      // _server.insert(std::pair<int, struct sockaddr_in>(socket_fd, addr_info));
-  }
-}
-/* test code */
-
-ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel() {
+ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel(), _validator() {
 
   /* console test code */
   std::cout << YLW << "\n===================================================\n" << NC << std::endl;
@@ -67,7 +40,7 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel() {
       throw; // reuqire custom exception
     fcntl(socket_fd, F_SETFL, O_NONBLOCK);
     _server.insert(server_map_type::value_type(socket_fd, host[i]));
-    _kernel.kevent_ctl(socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::connect_client));
+    _kernel.kevent_ctl(socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::connect_client));
 
     /* console test code */
     std::cout << socket_fd << ", " << ntohs(host[i].second) << std::endl;
@@ -108,14 +81,14 @@ void ws::Socket::connection() {
 /* Private function */
 
 void ws::Socket::connect_client(ws::Socket* self, struct kevent event) {
-  server_map_type::iterator it = self->_server.find(event.ident);
+  listen_type& listen = self->_server.find(event.ident)->second;
   int client_socket_fd;
 
   if ((client_socket_fd = accept(event.ident, NULL, NULL)) == -1)
     throw; // require custom exception
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
-  self->_client.insert(client_map_type::value_type(client_socket_fd, ws::Request(it->second)));
-  self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::recv_request));
+  self->_client.insert(client_map_type::value_type(client_socket_fd, client_value_type(ws::Request(listen), ws::Repository())));
+  self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::recv_request));
 }
 
 void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
@@ -130,27 +103,32 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   /* console test code */
 
   if (n > 0)
-    self->_client.find(event.ident)->second.parse_request_message(buffer);
-  if (event.data == n)
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD | EV_ENABLE, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request));
+    self->_client.find(event.ident)->second.first.parse_request_message(buffer);
+  if (event.data == n) {
+    self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::build_request));
+  }
 }
 
-/* 이 함수는 나중에 non blocking 형태로 추가적인 분리가 될 수 있음 */
-void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
-  ws::Request& request = self->_client.find(event.ident)->second;
+void ws::Socket::build_request(ws::Socket* self, struct kevent event) {
+  client_value_type& client_value = self->_client.find(event.ident)->second;
+  ws::Request& request = client_value.first;
+  ws::Repository& repository = client_value.second;
   const ws::Server* curr_server = self->_conf->find_server(request.get_listen(), request.get_server_name());
-  /* repository */
-  ws::Repository repository(curr_server, request);
-  /* validator */
-  ws::Validator validator(request, repository);
+  repository(curr_server, request);
+  self->_validator(client_value);
+
+  self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request));
+}
+
+void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   /*
     business logic
     비즈니스 로직 처리 후 어떤 식으로 response data 저장할 지 생각해 봐야 함
   */
 
-  self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
   self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
-  self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
+  self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
 }
 
 void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
