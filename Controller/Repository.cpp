@@ -1,7 +1,9 @@
 #include "Repository.hpp"
 #include "Request.hpp"
 
-ws::Repository::Repository(const ws::Server* curr_server, const ws::Request& request) {
+ws::Repository::Repository() {}
+
+void ws::Repository::operator()(const ws::Server* curr_server, const ws::Request& request) {
   /*set server*/
   _listen = &(request.get_listen());
   _server_name = &(request.get_request_header().find("Host")->second);

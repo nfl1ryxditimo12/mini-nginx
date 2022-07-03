@@ -38,7 +38,7 @@ namespace ws {
 
     void  parse_request_body(ws::Token &token, std::stringstream& buffer);
     void  parse_request_header(ws::Token &token, std::stringstream& buffer);
-    void  parse_request_message(const char* message);
+    int   parse_request_message(const char* message);
     void  print_message();
 
     //getter

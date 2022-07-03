@@ -13,10 +13,20 @@
 #include "Configure.hpp"
 #include "Kernel.hpp"
 #include "Request.hpp"
+#include "Repository.hpp"
+// #include "Validator.hpp"
 
 namespace ws {
 
   class Socket {
+
+  private:
+    struct client_data {
+      ws::Request*      request;
+      ws::Repository*   repository;
+      std::string       response_message;
+      int               status;
+    };
 
   public:
     typedef ws::Configure::listen_type                listen_type;
@@ -24,8 +34,8 @@ namespace ws {
     typedef std::pair<int, ws::Configure::listen_type> server_type;
     typedef std::map<server_type::first_type, server_type::second_type> server_map_type;
 
-    typedef std::pair<ws::Request, ws::Repository>                    client_value_type;
-    typedef std::pair<int, client_value_type>                           client_type;
+    typedef struct client_data                                          client_value_type;
+    typedef std::pair<int, client_value_type*>                          client_type;
     typedef std::map<client_type::first_type, client_type::second_type> client_map_type;
 
     typedef void (*kevent_func)(ws::Socket* self, struct kevent event);
@@ -40,7 +50,7 @@ namespace ws {
 
     ws::Kernel _kernel;
 
-    ws::Validator _validator;
+    // ws::Validator _validator;
 
     /*
       first: server socket fd
@@ -65,6 +75,10 @@ namespace ws {
     /* ====================================== */
     /*            Private Function            */
     /* ====================================== */
+
+    void init_client(int fd, listen_type listen, client_value_type* client_data);
+    void disconnect_client(int fd);
+    void exit_socket();
 
     static void connect_client(ws::Socket* self, struct kevent event);
     static void recv_request(ws::Socket* self, struct kevent event);

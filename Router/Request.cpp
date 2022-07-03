@@ -43,7 +43,7 @@ void	ws::Request::parse_request_header(ws::Token& token, std::stringstream& buff
   std::string server_name = _request_header.find("Host")->second;
   server_name = server_name.substr(0, server_name.find_first_of(":"));
 
-  if (inet_addr(server_name.c_str()) == -1)
+  if (inet_addr(server_name.c_str()) == static_cast<in_addr_t>(-1))
     _server_name = "_";
   else
     _server_name = server_name;
@@ -52,8 +52,8 @@ void	ws::Request::parse_request_header(ws::Token& token, std::stringstream& buff
     throw; // error response
 }
 
-void	ws::Request::parse_request_message(const char* message) {
-  
+int ws::Request::parse_request_message(const char* message) {
+
   ws::Token token;
   std::stringstream buffer;
 
@@ -63,6 +63,7 @@ void	ws::Request::parse_request_message(const char* message) {
     parse_request_header(token, buffer);
   else
     parse_request_body(token, buffer);
+  return (1);
 }
 
 /* getter */

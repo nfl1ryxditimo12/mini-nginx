@@ -1,7 +1,4 @@
 #include "Socket.hpp"
-#include "Repository.hpp"
-#include "Request.hpp"
-#include "Validator.hpp"
 
 /* console test code */
 #include <iostream> // 지울거임
@@ -12,7 +9,7 @@
 #define CYN "\e[0;36m"
 /* console test code */
 
-ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel(), _validator() {
+ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel() { // _validator() {
 
   /* console test code */
   std::cout << YLW << "\n===================================================\n" << NC << std::endl;
@@ -25,7 +22,7 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel(), _validator
     struct sockaddr_in  addr_info;
 
     if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
-      throw; // require custom exception
+      exit_socket();
 
     memset(&addr_info, 0, sizeof(addr_info));
     addr_info.sin_family = AF_INET;
@@ -34,10 +31,10 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel(), _validator
 
     if (bind(socket_fd, (struct sockaddr*)&addr_info, sizeof(addr_info)) == -1) {
       std::cout << strerror(errno) << std::endl;
-      throw; // reuqire custom exception
+        exit_socket();
     }
     if (listen(socket_fd, 5) == -1)
-      throw; // reuqire custom exception
+      exit_socket();
     fcntl(socket_fd, F_SETFL, O_NONBLOCK);
     _server.insert(server_map_type::value_type(socket_fd, host[i]));
     _kernel.kevent_ctl(socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::connect_client));
@@ -52,7 +49,9 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel(), _validator
   /* console test code */
 }
 
-ws::Socket::~Socket() {}
+ws::Socket::~Socket() {
+
+}
 
 void ws::Socket::connection() {
   while (1) {
@@ -80,43 +79,86 @@ void ws::Socket::connection() {
 
 /* Private function */
 
+void ws::Socket::init_client(int fd, listen_type listen, client_value_type* client_data) {
+  client_data->request = new ws::Request(listen);
+  client_data->repository = new ws::Repository();
+  client_data->response_message = "";
+  client_data->status = 0;
+  _client.insert(client_map_type::value_type(fd, client_data));
+}
+
+void ws::Socket::disconnect_client(int fd) {
+  client_map_type::iterator client_iter = _client.find(fd);
+
+  if (client_iter != _client.end())
+    return;
+
+  client_value_type* client_data = client_iter->second;
+
+  delete client_data->request;
+  delete client_data->repository;
+  delete client_data;
+
+  _client.erase(client_iter);
+  close(fd);
+}
+
+void ws::Socket::exit_socket() {
+  for (client_map_type::iterator it = _client.begin(); it != _client.end(); ++it) {
+    client_value_type* client_data = it->second;
+
+    delete client_data->request;
+    delete client_data->repository;
+    delete client_data;
+  }
+  exit(1);
+}
+
 void ws::Socket::connect_client(ws::Socket* self, struct kevent event) {
   listen_type& listen = self->_server.find(event.ident)->second;
   int client_socket_fd;
 
   if ((client_socket_fd = accept(event.ident, NULL, NULL)) == -1)
-    throw; // require custom exception
+    self->exit_socket();
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
-  self->_client.insert(client_map_type::value_type(client_socket_fd, client_value_type(ws::Request(listen), ws::Repository())));
+  self->init_client(client_socket_fd, listen, new client_value_type);
   self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::recv_request));
 }
 
 void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
+  client_value_type* client_data = self->_client.find(event.ident)->second;
   char buffer[1024];
   int  n;
 
   if ((n = read(event.ident, buffer, sizeof(buffer))) == -1)
-    throw; // require custom exception
+    self->exit_socket();
 
   /* console test code */
   // std::cout << n << ", " << event.data << std::endl;
   /* console test code */
-
+  if (event.flags == EV_EOF || event.fflags == EV_EOF) {
+    if (event.flags == EV_EOF)
+      std::cout << "event.flags == EV_EOF" << std::endl;
+    else
+      std::cout << "event.fflags == EV_EOF" << std::endl;
+  }
   if (n > 0)
-    self->_client.find(event.ident)->second.first.parse_request_message(buffer);
+    client_data->status = client_data->request->parse_request_message(buffer);
   if (event.data == n) {
     self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::build_request));
+    // if (!client_data->status)
+    //   self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::build_request));
+    // else
+    //   self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request));
+    self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
   }
 }
 
 void ws::Socket::build_request(ws::Socket* self, struct kevent event) {
-  client_value_type& client_value = self->_client.find(event.ident)->second;
-  ws::Request& request = client_value.first;
-  ws::Repository& repository = client_value.second;
-  const ws::Server* curr_server = self->_conf->find_server(request.get_listen(), request.get_server_name());
-  repository(curr_server, request);
-  self->_validator(client_value);
+  client_value_type* client_data = self->_client.find(event.ident)->second;
+  const ws::Server* curr_server = self->_conf->find_server((*client_data->request).get_listen(), (*client_data->request).get_server_name());
+  (*client_data->repository)(curr_server, *client_data->request);
+  // self->_validator(*client_data);
 
   self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request));
 }
@@ -138,9 +180,8 @@ void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
   // struct stat test;
   // int ret = fstat(event.ident, &test);
   // std::cout << ret << ", " << test.st_size << ", " << (S_ISSOCK(test.st_mode) ? "SOCKET" : "ELSE") << std::endl;
-  n = write(event.ident, response.c_str(), response.size());
-  if (event.data == n) {
-    self->_client.erase(event.ident);
-    close(event.ident);
-  }
+  if ((n = write(event.ident, response.c_str(), response.size())) == -1)
+    self->exit_socket();
+  if (event.data == n)
+    self->disconnect_client(event.ident);
 }

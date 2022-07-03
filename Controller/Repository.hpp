@@ -1,5 +1,8 @@
+#pragma once
+
 #include "Configure.hpp"
-#include "Socket.hpp"
+// #include "Socket.hpp"
+#include "Request.hpp"
 
 namespace ws {
   class Repository {
