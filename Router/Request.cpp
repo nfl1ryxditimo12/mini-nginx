@@ -16,6 +16,7 @@ ws::Request::Request(const ws::Configure::listen_type& listen): _listen(listen) 
   _chunked_byte = 0;
   _chunked_line_type = 0;
   _chunked = false;
+  _client_max_body_size = 0;
 }
 
 ws::Request::~Request() {}
@@ -26,9 +27,36 @@ ws::Request::~Request() {}
   만약 chunked-content-length보다 chunked-content가 적게 들어오면?
 */
 void	ws::Request::parse_request_chunked_body(ws::Token& token, std::stringstream& buffer) {
-  while (!buffer.eof()) {
 
+  while (!buffer.eof() && !_status) {
+    token.rd_http_line(buffer);
+    if (!_chunked_line_type) {
+      _chunked_byte = ws::hextoul(token);
+      _chunked_line_type = 1;
+      if (_chunked_byte == std::string::npos)
+        _status = BAD_REQUEST;
+    }
+    else {
+      if (_chunked_byte == 0 && token.length() == 0) {
+        _eof = true;
+        break;
+      }
+      for (std::string::size_type i = 0; i < token.length(); ++i, --_chunked_byte) {
+        if (_request_body.length() == _client_max_body_size) {
+          _eof = true;
+          break;
+        }
+        _request_body.push_back(token[i]);
+      }
+      if (_chunked_byte < 0)
+        _status = BAD_REQUEST;
+      else if (_chunked_byte == 0)
+        _chunked_line_type = 0;
+    }
   }
+
+  if (_status)
+    _eof = true;
 }
 
 /*
@@ -43,14 +71,14 @@ void	ws::Request::parse_request_body(ws::Token& token, std::stringstream& buffer
 
   _request_body = token.rdall(buffer);
 
-  for (char c = buffer.get(); i <= _content_length; c = buffer.get(), ++i) {
+  for (char c = buffer.get(); i <= _content_length && i <= _client_max_body_size; c = buffer.get(), ++i) {
     if (buffer.eof())
       break;
 
     _request_body.push_back(c);
   }
 
-  if (i == _content_length)
+  if (i == _content_length || i == _client_max_body_size)
     _eof = true;
 }
 
@@ -135,6 +163,7 @@ int ws::Request::parse_request_message(const ws::Configure* conf, ws::Repository
     parse_request_header(token, buffer);
     const ws::Server* curr_server = conf->find_server(this->get_listen(), this->get_server_name());
     (*repository)(curr_server, this);
+    _client_max_body_size = repository->get_client_max_body_size();
   }
 
   /* body가 없거나 _status가 양수일 경우 eof 설정 */

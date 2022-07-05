@@ -106,6 +106,27 @@ unsigned long ws::stoul(const std::string& str, unsigned long max, unsigned long
   return ret - ((ret - std::numeric_limits<unsigned long>::max()) * (ret < min));
 }
 
+unsigned long ws::hextoul(const std::string& str, unsigned long max, unsigned long min) throw() {
+  std::string hex = "0123456789ABCDEF";
+  unsigned long ret = 0;
+
+  for (std::string::size_type i = 0; i < str.length(); i++) {
+    int chartohex = hex.find(static_cast<char>(std::toupper(str[i]))) + 1;
+
+    if (!std::isxdigit(str[i]))
+      return std::numeric_limits<unsigned long>::max();
+    if (ret > max / 16)
+      return std::numeric_limits<unsigned long>::max();
+    ret *= 16;
+
+    if (ret > max - chartohex)
+      return std::numeric_limits<unsigned long>::max();
+    ret += chartohex;
+  }
+
+  return ret - ((ret - std::numeric_limits<unsigned long>::max()) * (ret < min));
+}
+
 unsigned long stoul(const std::string& str, unsigned long limit = ULONG_MAX) {
   unsigned long ret = 0;
 
