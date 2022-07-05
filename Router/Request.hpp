@@ -63,7 +63,6 @@ namespace ws {
     std::string _connection;
     std::string _transfer_encoding;
 
-
     /* =================================== */
     /*         Non-getter variable         */
     /* =================================== */
@@ -75,16 +74,18 @@ namespace ws {
       case   0: Right request message
       case > 0: Wrong request message
     */
-    int         _status;
-
-    /* Number of bytes being read */
-    int         _chunked_byte;
-
-    /* line type is "bytes to send" or "data" */
-    int         _chunked_line_type;
+    int                     _status;
 
     /* Request field is "Transfer-Encoding: chunked", true or false */
-    bool        _chunked;
+    bool                    _chunked;
+
+    /* line type is "bytes to send" or "data" */
+    int                     _chunked_line_type;
+
+    /* Number of bytes being read */
+    std::string::size_type  _chunked_byte;
+
+    std::string::size_type  _client_max_body_size;
 
     /* =================================== */
     /*                 OCCF                */
