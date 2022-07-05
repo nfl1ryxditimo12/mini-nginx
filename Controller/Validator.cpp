@@ -10,7 +10,7 @@ ws::Validator::Validator() {
 
 ws::Validator::~Validator() {}
 
-void ws::Validator::operator()(client_value_type* client_data) {
+void ws::Validator::operator()(const client_value_type* client_data) {
   _validate_func.insert(validate_func::value_type("Content-Length", &Validator::check_content_length));
   _validate_func.insert(validate_func::value_type("Connection", &Validator::check_connection));
   _validate_func.insert(validate_func::value_type("Content_type", &Validator::check_content_type));

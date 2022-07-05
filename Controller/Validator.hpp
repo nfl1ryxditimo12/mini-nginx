@@ -32,7 +32,7 @@ namespace ws {
     Validator();
     ~Validator();
 
-    void operator()(client_value_type* client_data);
+    void operator()(const client_value_type* client_data);
 
     void check_content_length(const std::string&);
     void check_connection(const std::string&);

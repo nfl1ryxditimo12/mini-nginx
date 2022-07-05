@@ -3,14 +3,14 @@
 
 ws::Repository::Repository() {}
 
-void ws::Repository::operator()(const ws::Server* curr_server, const ws::Request& request) {
+void ws::Repository::operator()(const ws::Server* curr_server, const ws::Request* request) {
   /*set server*/
-  _listen = &(request.get_listen());
-  _server_name = &(request.get_request_header().find("Host")->second);
+  _listen = &(request->get_listen());
+  _server_name = &(request->get_request_header().find("Host")->second);
   // _server_name = &(request.get_server_name());
   
   /*set location*/
-  const ws::Location* curr_location = curr_server->find_location(request.get_uri());
+  const ws::Location* curr_location = curr_server->find_location(request->get_uri());
 
   if (curr_location != NULL) {
     _limit_except_vec = &(curr_location->get_limit_except_vec());
