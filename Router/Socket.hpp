@@ -14,7 +14,7 @@
 #include "Kernel.hpp"
 #include "Request.hpp"
 #include "Repository.hpp"
-// #include "Validator.hpp"
+#include "Validator.hpp"
 
 namespace ws {
 
@@ -50,7 +50,7 @@ namespace ws {
 
     ws::Kernel _kernel;
 
-    // ws::Validator _validator;
+    ws::Validator _validator;
 
     /*
       first: server socket fd
@@ -82,7 +82,6 @@ namespace ws {
 
     static void connect_client(ws::Socket* self, struct kevent event);
     static void recv_request(ws::Socket* self, struct kevent event);
-    static void build_request(ws::Socket* self, struct kevent event);
     static void process_request(ws::Socket* self, struct kevent event);
     static void send_response(ws::Socket* self, struct kevent event);
 
@@ -92,7 +91,6 @@ namespace ws {
     /*                Structor                */
     /* ====================================== */
 
-    Socket(int port); // 지워야함
     Socket(const ws::Configure& cls);
     ~Socket();
 
