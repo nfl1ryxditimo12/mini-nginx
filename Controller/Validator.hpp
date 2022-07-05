@@ -1,8 +1,7 @@
-#include "Request.hpp"
-#include "Repository.hpp"
-#include "Configure.hpp"
-#include "Util.hpp"
+#pragma once
+
 #include "Socket.hpp"
+#include "Util.hpp"
 
 namespace ws {
   class Validator {
@@ -17,8 +16,8 @@ namespace ws {
     typedef ws::Request::header_type  header_type;
 
   private:
-    const ws::Request _request;
-    const ws::Repository _repository;
+    // const ws::Request _request;
+    // const ws::Repository _repository;
 
     validate_func _validate_func;
 
@@ -33,13 +32,13 @@ namespace ws {
     Validator();
     ~Validator();
 
-    void operator()(client_value_type& client_value);
+    void operator()(const client_value_type* client_data);
 
-    void ws::Validator::check_content_length(const std::string&);
-    void ws::Validator::check_connection(const std::string&);
-    void ws::Validator::check_content_type(const std::string&);
-    void ws::Validator::check_transger_encoding(const std::string&);
-    void ws::Validator::check_host(const std::string&);
+    void check_content_length(const std::string&);
+    void check_connection(const std::string&);
+    void check_content_type(const std::string&);
+    void check_transger_encoding(const std::string&);
+    void check_host(const std::string&);
     void check_request_header();
 
   };
