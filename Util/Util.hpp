@@ -14,5 +14,11 @@ namespace ws {
     unsigned long min = 0
   ) throw();
 
+  unsigned long hextoul(
+    const std::string& str,
+    unsigned long max = std::numeric_limits<unsigned long>::max() - 1,
+    unsigned long min = 0
+  ) throw();
+
   bool is_valid_server_name(const std::string& str);
 }
