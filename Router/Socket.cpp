@@ -1,4 +1,7 @@
 #include "Socket.hpp"
+#include "Validator.hpp"
+
+static ws::Validator validator;
 
 /*
   메모리를 많이 사용하고 CPU를 적게 사용할 지
@@ -15,7 +18,7 @@
 #define CYN "\e[0;36m"
 /* console test code */
 
-ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel(), _validator() {
+ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel() {
 
   ws::Configure::listen_vec_type host = cls.get_host_list();
 
@@ -48,13 +51,14 @@ ws::Socket::~Socket() {
 }
 
 void ws::Socket::connection() {
-  struct kevent event_list[_server.size() * 8];
-  int event_size;
+  size_t event_size = _server.size() * 8;
+  struct kevent event_list[event_size];
+  int new_event;
 
   while (1) {
-    event_size = _kernel.kevent_wait(event_list);
+    new_event = _kernel.kevent_wait(event_list, event_size);
 
-    for (int i = 0; i < event_size; i++) {
+    for (int i = 0; i < new_event; i++) {
       kevent_func func = reinterpret_cast<kevent_func>(event_list[i].udata);
       (*func)(this, event_list[i]);
     }
@@ -145,7 +149,7 @@ void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   client_value_type* client_data = self->_client.find(event.ident)->second;
 
   if (!client_data->status)
-    self->_validator(client_data);
+    validator(client_data);
   
   /*
     business logic
@@ -156,7 +160,6 @@ void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
     EVFILT_USER를 사용하는 경우 EV_ONESHOT flag 사용으로
     한번만 kevent의 change_list에 넣는 방식도 생각해 볼만 하다.
   */
-  self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
   self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
 }
 

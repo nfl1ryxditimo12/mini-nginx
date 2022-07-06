@@ -7,13 +7,15 @@
 #include <arpa/inet.h>
 
 #include "Configure.hpp"
-#include "Repository.hpp"
 #include "Token.hpp"
 #include "Configure.hpp"
 #include "Define.hpp"
 #include "Util.hpp"
 
 namespace ws {
+
+  class Repository;
+
   class Request {
   public:
     typedef void (Request::*header_parse_func) (const std::string&);

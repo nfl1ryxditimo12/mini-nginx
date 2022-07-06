@@ -24,11 +24,11 @@ void  ws::Kernel::kevent_ctl(uintptr_t ident, int16_t filter,
   커널에서 발생한 이벤트 리턴해주는 함수
 */
 #include <stdlib.h>
-int ws::Kernel::kevent_wait(struct kevent* event_list) {
-  int event_size;
+int ws::Kernel::kevent_wait(struct kevent* event_list, size_t event_size) {
+  int new_event;
 
-  memset(event_list, 0, sizeof(event_list));
-  if ((event_size = kevent(_kq, NULL, 0, event_list, 80, NULL)) == -1)
+  memset(event_list, 0, sizeof(struct kevent) * event_size);
+  if ((new_event = kevent(_kq, NULL, 0, event_list, event_size, NULL)) == -1)
     throw; // require custom exception
-  return event_size;
+  return new_event;
 }

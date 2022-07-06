@@ -1,21 +1,18 @@
 #include "Validator.hpp"
+#include "Socket.hpp"
 
 ws::Validator::Validator() {
-  _validate_func.insert(validate_func::value_type("Content-Length", &Validator::check_content_length));
-  _validate_func.insert(validate_func::value_type("Connection", &Validator::check_connection));
-  _validate_func.insert(validate_func::value_type("Content_type", &Validator::check_content_type));
-  _validate_func.insert(validate_func::value_type("Transfer-Encoding", &Validator::check_transger_encoding));
-  _validate_func.insert(validate_func::value_type("Host", &Validator::check_host));
+  // _validate_func.insert(validate_func::value_type("Content-Length", &Validator::check_content_length));
+  // _validate_func.insert(validate_func::value_type("Connection", &Validator::check_connection));
+  // _validate_func.insert(validate_func::value_type("Content_type", &Validator::check_content_type));
+  // _validate_func.insert(validate_func::value_type("Transfer-Encoding", &Validator::check_transger_encoding));
+  // _validate_func.insert(validate_func::value_type("Host", &Validator::check_host));
 }
 
 ws::Validator::~Validator() {}
 
 void ws::Validator::operator()(const client_value_type* client_data) {
-  _validate_func.insert(validate_func::value_type("Content-Length", &Validator::check_content_length));
-  _validate_func.insert(validate_func::value_type("Connection", &Validator::check_connection));
-  _validate_func.insert(validate_func::value_type("Content_type", &Validator::check_content_type));
-  _validate_func.insert(validate_func::value_type("Transfer-Encoding", &Validator::check_transger_encoding));
-  _validate_func.insert(validate_func::value_type("Host", &Validator::check_host));
+  (void)client_data;
 }
 
 // void ws::Validator::check_method() {
