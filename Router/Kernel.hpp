@@ -27,7 +27,7 @@ namespace ws {
     /*
       On call pending state until kernel fetches new events
     */
-    void            kevent_ctl(uintptr_t ident, int16_t filter, uint16_t flags, uint32_t fflags, intptr_t data, void *udata);
-    struct kevent*  kevent_wait();
+    void  kevent_ctl(uintptr_t ident, int16_t filter, uint16_t flags, uint32_t fflags, intptr_t data, void *udata);
+    int   kevent_wait(struct kevent* event_list);
   };
 }
