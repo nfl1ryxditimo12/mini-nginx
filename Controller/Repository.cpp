@@ -1,7 +1,7 @@
 #include "Repository.hpp"
 #include "Request.hpp"
 
-ws::Repository::Repository() {}
+ws::Repository::Repository(): _empty(false) {}
 
 void ws::Repository::operator()(const ws::Server* curr_server, const ws::Request* request) {
   /*set server*/
@@ -18,8 +18,10 @@ void ws::Repository::operator()(const ws::Server* curr_server, const ws::Request
     _cgi = &(curr_location->get_cgi());
   /*set option*/
     ws::Repository::set_option(curr_location->get_option());
+  } else {
+    ws::Repository::set_option(curr_server->get_option());
+    _empty = true;
   }
-  ws::Repository::set_option(curr_server->get_option());
 }
 
 void ws::Repository::set_option(const ws::InnerOption& option) {
@@ -33,6 +35,10 @@ void ws::Repository::set_option(const ws::InnerOption& option) {
 ws::Repository::~Repository() {}
 
 /*getter*/
+bool  ws::Repository::empty() const throw() {
+  return _empty;
+}
+
 const ws::Repository::listen_type& ws::Repository::get_listen() const throw() {
   return *_listen;
 }

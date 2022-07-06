@@ -35,6 +35,8 @@ namespace ws {
       const client_max_body_size_type* _client_max_body_size;
       const error_page_map_type* _error_page_map;
 
+      bool _empty;
+
     public:
       Repository();
       Repository(const Repository& cls);
@@ -43,6 +45,7 @@ namespace ws {
       void operator()(const ws::Server* curr_server, const ws::Request* request);
 
     /*getter*/
+      bool  empty() const throw();
       const listen_type& get_listen() const throw();
       const server_name_type& get_server_name() const throw();
       const location_dir_type& get_dir() const throw();
