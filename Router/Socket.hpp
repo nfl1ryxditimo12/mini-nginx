@@ -14,7 +14,7 @@
 #include "Kernel.hpp"
 #include "Request.hpp"
 #include "Repository.hpp"
-#include "Validator.hpp"
+// #include "Validator.hpp"
 
 namespace ws {
 
@@ -50,7 +50,6 @@ namespace ws {
 
     ws::Kernel _kernel;
 
-    ws::Validator _validator;
 
     /*
       first: server socket fd
