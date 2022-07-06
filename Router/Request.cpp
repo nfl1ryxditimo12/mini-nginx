@@ -203,12 +203,12 @@ const std::string& ws::Request::get_uri() const throw() {
 	return _request_uri;
 }
 
-const std::string& ws::Request::get_version() const throw() {
-	return _http_version;
+const query_type& ws::Request::get_uri_query() const throw() {
+	return _request_uri_query;
 }
 
-const std::string& ws::Request::get_server_name() const throw() {
-  return _server_name;
+const std::string& ws::Request::get_version() const throw() {
+	return _http_version;
 }
 
 const ws::Request::header_type& ws::Request::get_request_header() const throw() {
@@ -221,6 +221,22 @@ const std::string& ws::Request::get_request_body() const throw() {
 
 const ws::Request::listen_type& ws::Request::get_listen() const throw() {
   return _listen;
+}
+
+const std::string::size_type& ws::Request::get_content_length() const throw() {
+  return _content_length;
+}
+
+const std::string& ws::Request::get_server_name() const throw() {
+  return _server_name;
+}
+
+const std::string& ws::Request::get_connection() const throw() {
+  return _connection;
+}
+
+const std::string& ws::Request::get_transfer_encoding() const throw() {
+  return _transfer_encoding;
 }
 
 /* parser function */

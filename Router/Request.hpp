@@ -140,10 +140,16 @@ namespace ws {
     bool eof() const throw();
     const std::string& get_method() const throw();
     const std::string& get_uri() const throw();
+    const query_type& get_uri_query() const throw();
     const std::string& get_version() const throw();
-    const std::string& get_server_name() const throw();
+
     const header_type& get_request_header() const throw();
     const std::string& get_request_body() const throw();
     const listen_type& get_listen() const throw();
+
+    const std::string::size_type& get_content_length() const throw();
+    const std::string& get_server_name() const throw();
+    const std::string& get_connection() const throw();
+    const std::string& get_transfer_encoding() const throw();
   };
 }
