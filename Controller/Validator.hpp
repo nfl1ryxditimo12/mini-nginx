@@ -21,9 +21,6 @@ namespace ws {
 
     validate_func _validate_func;
 
-    void check_method();
-    void check_uri();
-    void check_version();
 
     Validator(const Validator& cls);
     Validator& operator=(const Validator& cls);
@@ -32,13 +29,17 @@ namespace ws {
     Validator();
     ~Validator();
 
-    void operator()(const client_value_type* client_data);
+    void operator()(client_value_type* client_data);
 
-    void check_content_length(const std::string&);
-    void check_connection(const std::string&);
-    void check_content_type(const std::string&);
-    void check_transger_encoding(const std::string&);
-    void check_host(const std::string&);
+    void check_method(client_value_type* client_data);
+    void check_uri(client_value_type* client_data);
+    void check_version(client_value_type* client_data);
+
+    void check_content_length(const std::string&, client_value_type& client_data);
+    void check_connection(const std::string&, client_value_type& client_data);
+    void check_content_type(const std::string&, client_value_type& client_data);
+    void check_transfer_encoding(const std::string&, client_value_type& client_data);
+    void check_host(const std::string&, client_value_type& client_data);
     void check_request_header();
 
   };
