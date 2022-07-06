@@ -1,9 +1,5 @@
 #include "Request.hpp"
-#include "Token.hpp"
-
-#include <map>
-#include <iostream> // todo
-#include <stdexcept>
+#include "Repository.hpp"
 
 ws::Request::Request(const ws::Configure::listen_type& listen): _listen(listen) {
   insert_require_header_field();
@@ -242,7 +238,7 @@ const std::string& ws::Request::get_transfer_encoding() const throw() {
 /* parser function */
 
 void  ws::Request::parse_host(const std::string& value) {
-  std::string server_name = value.substr(0, server_name.find_first_of(":"));
+  std::string server_name = value.substr(0, value.find_first_of(":"));
 
   if (inet_addr(server_name.c_str()) == static_cast<in_addr_t>(-1))
     _server_name = "_";

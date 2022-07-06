@@ -1,10 +1,11 @@
 #include "Validator.hpp"
+#include "Socket.hpp"
 
 ws::Validator::Validator() {
-  _validate_func.insert(validate_func::value_type("Content-Length", &Validator::check_content_length));
-  _validate_func.insert(validate_func::value_type("Connection", &Validator::check_connection));
-  _validate_func.insert(validate_func::value_type("Transfer-Encoding", &Validator::check_transfer_encoding));
-  _validate_func.insert(validate_func::value_type("Host", &Validator::check_host));
+  // _validate_func.insert(validate_func::value_type("Content-Length", &Validator::check_content_length));
+  // _validate_func.insert(validate_func::value_type("Connection", &Validator::check_connection));
+  // _validate_func.insert(validate_func::value_type("Transfer-Encoding", &Validator::check_transfer_encoding));
+  // _validate_func.insert(validate_func::value_type("Host", &Validator::check_host));
 }
 
 ws::Validator::~Validator() {}
@@ -52,7 +53,7 @@ void check_content_length(const std::string&, ws::Validator::client_value_type& 
     client_data.status = 400;
     //GET 메소드를 사용한 경우 응답의 페이로드 본문에 전송 된 10진수와 Content-Length의 field-value가 같지 않는 한, 서버는 응답으로 Content-Length를 보내서는 안 된다
   if (client_data.status == 204 || (client_data.status / 100 <= 1 && client_data.status != 0))
-    client_data.status = 1;
+    client_data.status = 400;
     //*상태 코드가 1xx (Informational) 또는 204 (No Content)인 응답에서 Content-Length헤더 필드를 보내면 안 된다.(MUST NOT) 
   return;
 }
