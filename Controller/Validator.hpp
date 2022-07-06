@@ -13,13 +13,16 @@ namespace ws {
     typedef void (Validator::*func)(const std::string&);
     typedef std::map<std::string, func> validate_func;
 
-    typedef ws::Request::header_type  header_type;
+    typedef void (Validator::*check_func)(client_value_type&);
 
+    typedef ws::Request::header_type  header_type;
+    
   private:
     // const ws::Request _request;
     // const ws::Repository _repository;
 
     validate_func _validate_func;
+    std::vector<check_func> _check_func;
 
 
     Validator(const Validator& cls);
@@ -29,17 +32,16 @@ namespace ws {
     Validator();
     ~Validator();
 
-    void operator()(client_value_type* client_data);
+    void operator()(client_value_type& client_data);
 
-    void check_method(client_value_type* client_data);
-    void check_uri(client_value_type* client_data);
-    void check_version(client_value_type* client_data);
+    void check_method(client_value_type& client_data);
+    void check_uri(client_value_type& client_data);
+    void check_version(client_value_type& client_data);
 
-    void check_content_length(const std::string&, client_value_type& client_data);
-    void check_connection(const std::string&, client_value_type& client_data);
-    void check_content_type(const std::string&, client_value_type& client_data);
-    void check_transfer_encoding(const std::string&, client_value_type& client_data);
-    void check_host(const std::string&, client_value_type& client_data);
+    void check_content_length(client_value_type& client_data);
+    void check_connection(client_value_type& client_data);
+    void check_transfer_encoding(client_value_type& client_data);
+    void check_host(client_value_type& client_data);
     void check_request_header();
 
   };
