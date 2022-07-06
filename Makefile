@@ -16,9 +16,9 @@ CONFIGURE_INCLUDES  :=  Configure.hpp ConfParser.hpp Server.hpp Location.hpp Inn
 CONFIGURE_INCLUDES  :=  $(addprefix $(CONFIGURE_DIR)/, $(CONFIGURE_INCLUDES))
 
 CONTROLLER_DIR      :=  Controller
-CONTROLLER_SRCS     :=  Repository.cpp Validator.cpp
+CONTROLLER_SRCS     :=  Repository.cpp Validator.cpp Controller.cpp
 CONTROLLER_SRCS     :=  $(addprefix $(CONTROLLER_DIR)/, $(CONTROLLER_SRCS))
-CONTROLLER_INCLUDES :=  Repository.hpp Validator.hpp
+CONTROLLER_INCLUDES :=  Repository.hpp Validator.hpp Controller.hpp
 CONTROLLER_INCLUDES :=  $(addprefix $(CONTROLLER_DIR)/, $(CONTROLLER_INCLUDES))
 
 ROUTER_DIR          :=  Router
