@@ -25,7 +25,7 @@ namespace ws {
       ws::Request*      request;
       ws::Repository*   repository;
       std::string       response_message;
-      int               status;
+      unsigned int      status;
     };
 
   public:
