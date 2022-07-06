@@ -28,25 +28,25 @@ void ws::Validator::check_method(client_value_type* client_data) {
     if (*it == method)
       return;
   }
-  client_data->status = 403; //403 error : 금지된 메소드 사용
+  client_data->status = 403;
   //?? 405 error : 메소드는 허용되었지만 실패
 }
 
 void ws::Validator::check_uri(client_value_type* client_data) {
   if (client_data->request->get_uri() != client_data->repository->get_dir())
-    client_data->status = 403; //403 error : 콘텐츠 접근 미승인
+    client_data->status = 403;
   return;
 }
 
 void ws::Validator::check_version(client_value_type* client_data) {
   if (client_data->request->get_version() != "HTTP/1.1")
-    client_data->status = 505; // 505 error : 지원되지 않은 HTTP버전 요청받음
+    client_data->status = 505;
   return;
 }
 
 void check_content_length(const std::string&, ws::Validator::client_value_type& client_data) {
   if (client_data.request->get_content_length() != std::numeric_limits<unsigned long>::max() \
-  || !(client_data.request->get_transfer_encoding() == "")) //유효하지 않은 값은 파싱단계에서 빈 문자열로 바꾸기
+  || !(client_data.request->get_transfer_encoding() != "chunked"))
     client_data.status = 400;
   if (client_data.request->get_method() == "GET" \
   && (client_data.repository->get_client_max_body_size() != client_data.response_message.length()))

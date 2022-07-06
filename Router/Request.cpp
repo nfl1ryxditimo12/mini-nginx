@@ -263,6 +263,9 @@ void  ws::Request::parse_content_length(const std::string& value) {
 
 void  ws::Request::parse_transfer_encoding(const std::string& value) {
   _transfer_encoding = value;
+  if (value == "chunked")
+    _chunked = true;
+  return;
 }
 
 /* Else private function */
