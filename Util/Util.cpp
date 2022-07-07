@@ -145,7 +145,7 @@ unsigned long stoul(const std::string& str, unsigned long limit = ULONG_MAX) {
   return ret;
 }
 
-std::string ultoa(unsigned long n) throw() {
+std::string ws::ultoa(unsigned long n) throw() {
   std::stringstream buffer;
 
   buffer << n;

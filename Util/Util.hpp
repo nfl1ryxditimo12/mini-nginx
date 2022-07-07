@@ -19,7 +19,7 @@ namespace ws {
     unsigned long min = 0
   ) throw();
 
-  std::string ultoa(unsigned long n);
+  std::string ultoa(unsigned long n) throw();
 
   bool is_valid_server_name(const std::string& str);
 
