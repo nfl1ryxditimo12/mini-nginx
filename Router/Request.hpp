@@ -60,7 +60,7 @@ namespace ws {
       Transfer-Encoding: chunked 인 경우와 Content-Length 항목이 없는 경우 0
       그 외 Content-Length의 value가 들어감
     */
-    std::string::size_type _content_length;
+    size_t      _content_length;
     std::string _server_name;
     std::string _connection;
     std::string _transfer_encoding;
@@ -85,9 +85,9 @@ namespace ws {
     int                     _chunked_line_type;
 
     /* Number of bytes being read */
-    std::string::size_type  _chunked_byte;
+    size_t                  _chunked_byte;
 
-    std::string::size_type  _client_max_body_size;
+    size_t                  _client_max_body_size;
 
     /* =================================== */
     /*                 OCCF                */
@@ -103,7 +103,7 @@ namespace ws {
 
     void  parse_request_uri(ws::Token& token, std::string uri);
     void  parse_request_header(ws::Token& token, std::stringstream& buffer);
-    void  parse_request_body(ws::Token& token, std::stringstream& buffer);
+    void  parse_request_body(std::stringstream& buffer);
     void  parse_request_chunked_body(ws::Token& token, std::stringstream& buffer);
 
     /* =================================== */
@@ -132,7 +132,9 @@ namespace ws {
     Request(const ws::Configure::listen_type& listen);
     ~Request();
 
-    int   parse_request_message(const ws::Configure* conf, ws::Repository* repository, const char* message);
+    int   parse_request_message(const ws::Configure* conf, ws::Repository* repository, const std::string message);
+    void  clear();
+    void  test();
 
     /* =================================== */
     /*                Getter               */
