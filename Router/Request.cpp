@@ -1,4 +1,13 @@
 #include "Request.hpp"
+
+/* 지울거임 */
+#include <iostream>
+#define NC "\e[0m"
+#define RED "\e[0;31m"
+#define GRN "\e[0;32m"
+#define YLW "\e[0;33m"
+#define CYN "\e[0;36m"
+
 #include "Repository.hpp"
 
 ws::Request::Request(const ws::Configure::listen_type& listen): _listen(listen) {
@@ -6,12 +15,12 @@ ws::Request::Request(const ws::Configure::listen_type& listen): _listen(listen) 
 
   _eof = false;
 
-  _content_length = 0;
+  _content_length = std::numeric_limits<size_t>::max();
 
   _status = 0;
-  _chunked_byte = 0;
-  _chunked_line_type = 0;
   _chunked = false;
+  _chunked_line_type = 0;
+  _chunked_byte = 0;
   _client_max_body_size = 0;
 }
 
@@ -60,12 +69,12 @@ void	ws::Request::parse_request_chunked_body(ws::Token& token, std::stringstream
   Content-Length 보다 buffer size가 넘어간다면 넘어간 값부터는 쓰레기 값이라고 판단 할 수 있다.
   client_max_body_size 는 validator에서 판단해야 하나?
 */
-void	ws::Request::parse_request_body(ws::Token& token, std::stringstream& buffer) {
+void	ws::Request::parse_request_body(std::stringstream& buffer) {
 
   /* token 대입 시간 테스트 해야함 */
   std::string::size_type i = _request_body.length();
 
-  _request_body = token.rdall(buffer);
+  // _request_body = token.rdall(buffer);
 
   for (char c = buffer.get(); i <= _content_length && i <= _client_max_body_size; c = buffer.get(), ++i) {
     if (buffer.eof())
@@ -133,14 +142,14 @@ void	ws::Request::parse_request_header(ws::Token& token, std::stringstream& buff
 
   if (token != "\r\n")
     _status = BAD_REQUEST;
-  if (!_content_length && !_chunked)
+  if (_content_length == std::numeric_limits<size_t>::max() && !_chunked)
     _eof = true;
 }
 
 /*
   repository를 header파싱 후 해줘서 client_max_body_size까지만 받아올 지 생각 해 봐야함
 */
-int ws::Request::parse_request_message(const ws::Configure* conf, ws::Repository* repository, const char* message) {
+int ws::Request::parse_request_message(const ws::Configure* conf, ws::Repository* repository, const std::string message) {
 
   ws::Token token;
   std::stringstream buffer;
@@ -169,7 +178,7 @@ int ws::Request::parse_request_message(const ws::Configure* conf, ws::Repository
     return _status;
 
   if (!_chunked)
-    parse_request_body(token, buffer);
+    parse_request_body(buffer);
   else
     parse_request_chunked_body(token, buffer);
 
@@ -178,6 +187,30 @@ int ws::Request::parse_request_message(const ws::Configure* conf, ws::Repository
     HTTP message에 오류가 있는 경우 양수 반환
   */
   return _status;
+}
+
+void  ws::Request::clear() {
+  _eof = false;
+
+  _method.clear();
+  _request_uri.clear();
+  _request_uri_query.clear();
+  _http_version.clear();
+
+  _request_header.clear();
+  _request_body.clear();
+
+  _content_length = std::numeric_limits<size_t>::max();
+  _server_name.clear();
+  _connection.clear();
+  _transfer_encoding.clear();
+
+  _header_parser.clear();
+  _status = 0;
+  _chunked = false;
+  _chunked_line_type = 0;
+  _chunked_byte = 0;
+  _client_max_body_size = 0;
 }
 
 /* getter */
@@ -256,4 +289,33 @@ void  ws::Request::insert_require_header_field() {
   _header_parser.insert(header_parse_map_type::value_type("Connection:", &Request::parse_connection));
   _header_parser.insert(header_parse_map_type::value_type("Content-Length:", &Request::parse_content_length));
   _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding:", &Request::parse_transfer_encoding));
+}
+
+void ws::Request::test() {
+  std::cout << "host: _: " << _listen.first << ", port: " << _listen.second << std::endl;
+  std::cout << "eof: " << _eof << std::endl;
+  std::cout << "method: " << _method << std::endl;
+  std::cout << "request_uri: " << _request_uri << std::endl;
+  std::cout << "request_uri_query:" << std::endl;
+  for (query_type::iterator it = _request_uri_query.begin(); it != _request_uri_query.end(); ++it) {
+    std::cout << "  Key: " << it->first << ", Value: " << it->second << std::endl;
+  }
+  std::cout << "http version: " << _http_version << std::endl;
+  std::cout << "content length: " << _content_length << std::endl;
+  std::cout << "server name: " << _server_name << std::endl;
+  std::cout << "connection: " << _connection << std::endl;
+  std::cout << "transfer encoding: " << _transfer_encoding << std::endl;
+
+  
+  std::cout << "_status: " << _status << std::endl;
+  std::cout << "_chunked: " << (_chunked ? "true" : "false") << std::endl;
+  std::cout << "_chunked_line_type: " << _chunked_line_type << std::endl;
+  std::cout << "_chunked_byte: " << _chunked_byte << std::endl;
+  std::cout << "_client_max_body_size: " << _client_max_body_size << std::endl;
+  
+  std::cout << "\nHeader:" << std::endl;
+  for (header_type::iterator it = _request_header.begin(); it != _request_header.end(); ++it)
+    std::cout << RED << "> " << NC << it->first << " " << it->second << std::endl;
+  std::cout << "\nBody:" << std::endl;
+  std::cout << _request_body << std::endl;
 }
