@@ -31,6 +31,9 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel() {
     if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
       exit_socket();
 
+    int k = true;
+    setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &k, sizeof(k));
+
     memset(&addr_info, 0, sizeof(addr_info));
     addr_info.sin_family = AF_INET;
     addr_info.sin_addr.s_addr = host[i].first;
@@ -141,7 +144,7 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   if (client_data->request->eof()) {
     /* EV_DELETE flags는 필요 없을듯 keep-alive 생각 */
     // self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ONESHOT, 0, 0, reinterpret_cast<void*>(&Socket::process_request));
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD | EV_ONESHOT, 0, 0, reinterpret_cast<void*>(&Socket::process_request));
   }
 }
 
@@ -166,9 +169,10 @@ void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
 
 void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
   int n;
-  std::string body = "hello world " + std::to_string(event.ident);
-  std::string response = std::string("HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nConnection: keep-alive\r\nContent-Length: ") + std::to_string(body.length()) + std::string("\r\nContent-Type: text\r\nDate: Mon, 20 Jun 2022 02:59:03 GMT\r\nETag: \"62afd0a1-267\"\r\nLast-Modified: Mon, 20 Jun 2022 01:42:57 GMT\r\nServer: webserv\r\n\r\n") + body;
+//  std::string body = "hello world " + std::to_string(event.ident);
+//  std::string response = std::string("HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nConnection: keep-alive\r\nContent-Length: ") + std::to_string(body.length()) + std::string("\r\nContent-Type: text\r\nDate: Mon, 20 Jun 2022 02:59:03 GMT\r\nETag: \"62afd0a1-267\"\r\nLast-Modified: Mon, 20 Jun 2022 01:42:57 GMT\r\nServer: webserv\r\n\r\n") + body;
 
+  std::string response = self->_client.find(event.ident)->second->response->get_data();
   if ((n = write(event.ident, response.c_str(), response.size())) == -1)
     self->exit_socket();
 
