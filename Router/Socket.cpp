@@ -29,10 +29,14 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel() {
     if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
       exit_socket();
 
+    int k = true;
+    setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &k, sizeof(k));
+
     memset(&addr_info, 0, sizeof(addr_info));
     addr_info.sin_family = AF_INET;
     addr_info.sin_addr.s_addr = host[i].first;
     addr_info.sin_port = host[i].second;
+
 
     if (bind(socket_fd, (struct sockaddr*)&addr_info, sizeof(addr_info)) == -1) {
       std::cout << strerror(errno) << std::endl;
@@ -46,9 +50,23 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel() {
   }
 }
 
-ws::Socket::~Socket() {
+/* 시그널 처리 알아보고 적용해야함 */
+// sig_atomic_t received_sig;
 
-}
+// void handler(int sig) {
+//   received_sig = sig;
+// }
+
+// int main() {
+//   while (true) {
+//     process_event();
+//     if (received_sig) {
+//       return;
+//     }
+//   }
+// }
+
+ws::Socket::~Socket() {}
 
 void ws::Socket::connection() {
   size_t event_size = _server.size() * 8;
@@ -67,9 +85,12 @@ void ws::Socket::connection() {
 
 /* Private function */
 
-void ws::Socket::init_client(int fd, listen_type listen, client_value_type* client_data) {
-  client_data->request = new ws::Request(listen);
+void ws::Socket::init_client(int fd, listen_type listen) {
+  client_value_type* client_data = new client_value_type;
+
   client_data->repository = new ws::Repository();
+  client_data->request = new ws::Request(listen);
+  // client_data->response = NULL;
   client_data->response_message = "";
   client_data->status = 0;
   _client.insert(client_map_type::value_type(fd, client_data));
@@ -109,7 +130,7 @@ void ws::Socket::connect_client(ws::Socket* self, struct kevent event) {
   if ((client_socket_fd = accept(event.ident, NULL, NULL)) == -1)
     self->exit_socket();
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
-  self->init_client(client_socket_fd, listen, new client_value_type);
+  self->init_client(client_socket_fd, listen);
   self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::recv_request));
 }
 
@@ -118,32 +139,51 @@ void ws::Socket::connect_client(ws::Socket* self, struct kevent event) {
 */
 void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   client_value_type* client_data = self->_client.find(event.ident)->second;
-  char buffer[1024 * 1024];
-  int  n;
+  std::string str_buffer;
+  char buffer[1024 * 1024 + 1];
+  int  n = 0;
 
-  if ((n = read(event.ident, buffer, sizeof(buffer))) == -1)
-    self->exit_socket();
+  ssize_t read_size;
+  while (n < event.data) {
+    if ((read_size = read(event.ident, buffer, std::min(static_cast<int>(event.data), 1024 * 1024 - n))) == -1)
+      self->exit_socket();
+    buffer[read_size] = 0;
+    str_buffer += buffer;
+    n += read_size;
+  }
+
+  // if ((n = read(event.ident, buffer, std::min(sizeof(buffer), static_cast<size_t>(event.data) - 1))) == -1)
+  //   self->exit_socket();
+
+  if (client_data->request->eof() && n > 0)
+    client_data->request->clear();
 
   /*
     과연 if (n > 0) 이라는 조건이 필요할까?
     Request 클래스 내부적으로 판단할 지 생각해 보자.
   */
-  if (n > 0)
+  if (!client_data->request->eof() && n > 0) {
+    std::cout << YLW << "\n== Request ======================================\n" << NC << std::endl;
+    std::cout << buffer << std::endl;
+    std::cout << RED << "\n== Parsing ======================================\n" << NC << std::endl;
     client_data->status = client_data->request->parse_request_message(self->_conf,client_data->repository, buffer);
+  }
 
   /*
     Request 클래스에서 모든 데이터를 다 읽었다면 eof == true로 설정된다.
     이 후 오류가 있다면 바로 process_request 함수로 가게 설정해준다.
     Repository 클래스를 Request 클래스에서 request header 파싱 후 초기화 해줄 지 고민해봐야 함
   */
-  if (client_data->request->eof()) {
+  if (client_data->request->eof() || !n) {
     /* EV_DELETE flags는 필요 없을듯 keep-alive 생각 */
-    // self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ONESHOT, 0, 0, reinterpret_cast<void*>(&Socket::process_request));
+
+    client_data->request->test();
+    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request));
+    self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+
   }
 }
-
-
 
 void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   client_value_type* client_data = self->_client.find(event.ident)->second;
@@ -161,6 +201,7 @@ void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
     한번만 kevent의 change_list에 넣는 방식도 생각해 볼만 하다.
   */
   self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
+  // self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
 }
 
 void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
@@ -176,7 +217,12 @@ void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
     세션같은 경우 keep-alive가 좋을 수도 있다.
 
     EVFILT_WRITE인 경우 event.data의 값이 커널에 할당 가능한 buffer size 일텐데 이게 정확한 방법인지 생각해봐야 한다.
+
+    keep-alive인 경우 client_data 구조체 초기화 후, EVFILT_WRITE - EV_DELETE 해주면 끗
   */
-  if (n <= event.data)
+  std::cout << n << ", " << event.data << std::endl;
+  if (n <= event.data) {
+    self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
     self->disconnect_client(event.ident);
+  }
 }

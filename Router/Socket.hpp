@@ -14,7 +14,6 @@
 #include "Kernel.hpp"
 #include "Request.hpp"
 #include "Repository.hpp"
-// #include "Validator.hpp"
 
 namespace ws {
 
@@ -22,8 +21,9 @@ namespace ws {
 
   private:
     struct client_data {
-      ws::Request*      request;
       ws::Repository*   repository;
+      ws::Request*      request;
+      // ws::Response*     response;
       std::string       response_message;
       unsigned int      status;
     };
@@ -75,7 +75,7 @@ namespace ws {
     /*            Private Function            */
     /* ====================================== */
 
-    void init_client(int fd, listen_type listen, client_value_type* client_data);
+    void init_client(int fd, listen_type listen);
     void disconnect_client(int fd);
     void exit_socket();
 
