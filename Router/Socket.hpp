@@ -24,8 +24,8 @@ namespace ws {
 
   private:
     struct client_data {
-      ws::Request*      request;
       ws::Repository*   repository;
+      ws::Request*      request;
       ws::Response*     response;
       unsigned int      status;
     };
@@ -77,7 +77,7 @@ namespace ws {
     /*            Private Function            */
     /* ====================================== */
 
-    void init_client(int fd, listen_type listen, client_value_type* client_data);
+    void init_client(int fd, listen_type listen);
     void disconnect_client(int fd);
     void exit_socket();
 
