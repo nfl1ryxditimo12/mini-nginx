@@ -17,14 +17,15 @@
 
 namespace ws {
 
+  class Response;
+
   class Socket {
 
   private:
     struct client_data {
       ws::Repository*   repository;
       ws::Request*      request;
-      // ws::Response*     response;
-      std::string       response_message;
+      ws::Response*     response;
       unsigned int      status;
     };
 
@@ -59,7 +60,7 @@ namespace ws {
 
     /*
       first: client socket fd
-      second: server socket fd
+      second: client data pointer
     */
     client_map_type _client;
 

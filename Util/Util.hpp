@@ -2,7 +2,6 @@
 
 #include <limits>
 #include <string>
-#include <limits.h>
 
 namespace ws {
   std::string get_curr_dir() throw();
@@ -20,5 +19,9 @@ namespace ws {
     unsigned long min = 0
   ) throw();
 
+  std::string ultoa(unsigned long n) throw();
+
   bool is_valid_server_name(const std::string& str);
+
+  class Convertor;
 }
