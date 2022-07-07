@@ -14,18 +14,19 @@
 #include "Kernel.hpp"
 #include "Request.hpp"
 #include "Repository.hpp"
-// #include "Validator.hpp"
 
 namespace ws {
+
+  class Response;
 
   class Socket {
 
   private:
     struct client_data {
-      ws::Request*      request;
       ws::Repository*   repository;
-      std::string       response_message;
-      int               status;
+      ws::Request*      request;
+      ws::Response*     response;
+      unsigned int      status;
     };
 
   public:
@@ -59,7 +60,7 @@ namespace ws {
 
     /*
       first: client socket fd
-      second: server socket fd
+      second: client data pointer
     */
     client_map_type _client;
 
@@ -75,7 +76,7 @@ namespace ws {
     /*            Private Function            */
     /* ====================================== */
 
-    void init_client(int fd, listen_type listen, client_value_type* client_data);
+    void init_client(int fd, listen_type listen);
     void disconnect_client(int fd);
     void exit_socket();
 
