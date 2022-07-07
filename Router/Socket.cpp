@@ -1,8 +1,8 @@
 #include "Response.hpp"
 #include "Validator.hpp"
 
-static ws::Validator validator;
-static ws::Response  response;
+ws::Validator ws::Socket::_validator;
+ws::Response ws::Socket::_response;
 
 /*
   메모리를 많이 사용하고 CPU를 적게 사용할 지
@@ -20,7 +20,7 @@ static ws::Response  response;
 /* console test code */
 
 ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel() {
-  // response.set_kernel(&_kernel);
+  _response.set_kernel(&_kernel);
   ws::Configure::listen_vec_type host = cls.get_host_list();
 
   for (size_t i = 0; i < host.size(); i++) {
@@ -188,10 +188,9 @@ void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   ws::Repository& repository = *client_data->repository;
 
   if (!client_data->status)
-    validator(client_data);
+    _validator(client_data);
 
-
-  // _response.asdf(client_data);
+  _response.generate_response(self, *client_data, event.ident);
 
   /*
     EVFILT_USER를 사용하는 경우 EV_ONESHOT flag 사용으로
