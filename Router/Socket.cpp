@@ -1,4 +1,6 @@
 #include "Socket.hpp"
+
+#include "Response.hpp"
 #include "Validator.hpp"
 
 static ws::Validator validator;
@@ -70,7 +72,7 @@ void ws::Socket::connection() {
 void ws::Socket::init_client(int fd, listen_type listen, client_value_type* client_data) {
   client_data->request = new ws::Request(listen);
   client_data->repository = new ws::Repository();
-  client_data->response_message = "";
+  client_data->response = NULL;
   client_data->status = 0;
   _client.insert(client_map_type::value_type(fd, client_data));
 }
@@ -151,10 +153,9 @@ void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   if (!client_data->status)
     validator(client_data);
   
-  /*
-    business logic
-    비즈니스 로직 처리 후 어떤 식으로 response data 저장할 지 생각해 봐야 함
-  */
+  client_data->response = new Response(client_data);
+
+  client_data->response->generate_response();
 
   /*
     EVFILT_USER를 사용하는 경우 EV_ONESHOT flag 사용으로
