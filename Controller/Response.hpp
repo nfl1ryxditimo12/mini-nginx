@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Socket.hpp"
+#include "ResponseHeader.hpp"
 
 namespace ws {
   class Response {
@@ -14,7 +15,8 @@ namespace ws {
     const ws::Repository& _repo;
     unsigned int _status;
     ws::Kernel _kernel;
-    std::string _response;
+    ResponseHeader _header;
+    std::string _data;
 
     bool is_error_status(unsigned int stat) const throw();
     void get_error_response();
@@ -23,7 +25,7 @@ namespace ws {
     std::string process_post(client_value_type& client);
     std::string process_delete(client_value_type& client);
 
-    void generate_response_header();
+    void generate_response_header(std::string::size_type content_length);
     std::string generate_general_header();
     std::string generate_date();
 
@@ -38,5 +40,7 @@ namespace ws {
     ~Response();
 
     void generate_response();
+
+    const std::string& get_data() const throw();
   };
 }
