@@ -4,6 +4,7 @@
 #include "Validator.hpp"
 
 static ws::Validator validator;
+// static ws::Response  response;
 
 /*
   메모리를 많이 사용하고 CPU를 적게 사용할 지
@@ -21,7 +22,7 @@ static ws::Validator validator;
 /* console test code */
 
 ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel() {
-
+  // response.set_kernel(&_kernel);
   ws::Configure::listen_vec_type host = cls.get_host_list();
 
   for (size_t i = 0; i < host.size(); i++) {
@@ -90,10 +91,9 @@ void ws::Socket::connection() {
 void ws::Socket::init_client(int fd, listen_type listen) {
   client_value_type* client_data = new client_value_type;
 
+  client_data->status = 0;
   client_data->repository = new ws::Repository();
   client_data->request = new ws::Request(listen);
-  client_data->response = NULL;
-  client_data->status = 0;
   _client.insert(client_map_type::value_type(fd, client_data));
 }
 
@@ -167,7 +167,7 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
     std::cout << YLW << "\n== Request ======================================\n" << NC << std::endl;
     std::cout << buffer << std::endl;
     std::cout << RED << "\n== Parsing ======================================\n" << NC << std::endl;
-    client_data->status = client_data->request->parse_request_message(self->_conf,client_data->repository, buffer);
+    client_data->status = client_data->request->parse_request_message(self->_conf, buffer);
   }
 
   /*
@@ -175,7 +175,7 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
     이 후 오류가 있다면 바로 process_request 함수로 가게 설정해준다.
     Repository 클래스를 Request 클래스에서 request header 파싱 후 초기화 해줄 지 고민해봐야 함
   */
-  if (client_data->request->eof() || !n) {
+  if (client_data->request->eof() || client_data->status || !n) {
     /* EV_DELETE flags는 필요 없을듯 keep-alive 생각 */
 
     client_data->request->test();
@@ -188,28 +188,27 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
 
 void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   client_value_type* client_data = self->_client.find(event.ident)->second;
+  ws::Repository& repository = *client_data->repository;
 
   if (!client_data->status)
     validator(client_data);
-  
-  client_data->response = new Response(client_data);
 
-  client_data->response->generate_response();
+
+  // _response.asdf(client_data);
 
   /*
     EVFILT_USER를 사용하는 경우 EV_ONESHOT flag 사용으로
     한번만 kevent의 change_list에 넣는 방식도 생각해 볼만 하다.
   */
   self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
-  // self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
 }
 
 void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
+  // client_value_type* client_data = self->_client.find(event.ident)->second;
   int n;
-//  std::string body = "hello world " + std::to_string(event.ident);
-//  std::string response = std::string("HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nConnection: keep-alive\r\nContent-Length: ") + std::to_string(body.length()) + std::string("\r\nContent-Type: text\r\nDate: Mon, 20 Jun 2022 02:59:03 GMT\r\nETag: \"62afd0a1-267\"\r\nLast-Modified: Mon, 20 Jun 2022 01:42:57 GMT\r\nServer: webserv\r\n\r\n") + body;
+  std::string body = "<html>\n<head>\n</head>\n<body>\n<h1>hello world</h1>\n</body>\n</html>";
+  std::string response = std::string("HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nConnection: keep-alive\r\nContent-Length: ") + std::to_string(body.length()) + std::string("\r\nContent-Type: application/json\r\nDate: Mon, 20 Jun 2022 02:59:03 GMT\r\nETag: \"62afd0a1-267\"\r\nLast-Modified: Mon, 20 Jun 2022 01:42:57 GMT\r\nServer: webserv\r\n\r\n") + body;
 
-  std::string response = self->_client.find(event.ident)->second->response->get_data();
   if ((n = write(event.ident, response.c_str(), response.size())) == -1)
     self->exit_socket();
 
@@ -227,3 +226,15 @@ void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
     self->disconnect_client(event.ident);
   }
 }
+
+// void ws::Socket::read_data(ws::Socket* self, struct kevent event) {
+//   client_value_type* client_data = self->_client.find(event.ident)->second;
+
+//   _response.get_body(client_data);
+// }
+
+// void ws::Socket::write_data(ws::Socket* self, struct kevent event) {
+//   client_value_type* client_data = self->_client.find(event.ident)->second;
+  
+//   _response.get_body(client_data);
+// }
