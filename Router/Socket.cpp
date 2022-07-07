@@ -2,7 +2,7 @@
 #include "Validator.hpp"
 
 static ws::Validator validator;
-// static ws::Response  response;
+static ws::Response  response;
 
 /*
   메모리를 많이 사용하고 CPU를 적게 사용할 지
