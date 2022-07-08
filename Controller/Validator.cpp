@@ -17,7 +17,7 @@ ws::Validator::~Validator() {}
 void ws::Validator::operator()(client_value_type& client_data) {
   for (check_func_vec::iterator it = _check_func_vec.begin(); it != _check_func_vec.end(); ++it) {
     (this->**it)(client_data);
-    if (client_data.repository->set_status(0))
+    if (client_data.status = 0)
       break;
   }
 }
@@ -30,31 +30,31 @@ void ws::Validator::check_method(client_value_type& client_data) {
     if (*it == method)
       return;
   }
-  client_data.repository->set_status(FORBIDDEN);
+  client_data.status = FORBIDDEN;
   // 405 error : 메소드는 허용되었지만 실패
 }
 
 void ws::Validator::check_uri(client_value_type& client_data) {
   
   if (client_data.repository->get_location() == NULL) {
-    client_data.repository->set_status(NOT_FOUND);
+    client_data.status = NOT_FOUND;
     return;
   }
 
   struct stat buf;
   if (lstat(client_data.request->get_uri().c_str(), &buf) > 0) {
-    client_data.repository->set_status(NOT_FOUND);
+    client_data.status = NOT_FOUND;
     return;
   }
   if (S_ISDIR(buf.st_mode) && client_data.repository->get_server()->get_autoindex() == false) {
-    client_data.repository->set_status(NOT_FOUND);
+    client_data.status = NOT_FOUND;
     return;
   }
 }
 
 void ws::Validator::check_version(client_value_type& client_data) {
   if (client_data.request->get_version() != "HTTP/1.1")
-    client_data.repository->set_status(HTTP_VERSION_NOT_SUPPORTED);
+    client_data.status = HTTP_VERSION_NOT_SUPPORTED;
   return;
 }
 
@@ -69,10 +69,10 @@ void ws::Validator::check_content_length(ws::Validator::client_value_type& clien
       && !(client_data.request->get_transfer_encoding().empty())
     )
   )
-    client_data.repository->set_status(BAD_REQUEST);
+    client_data.status = BAD_REQUEST;
 
   if (client_data.request->get_content_length() != client_data.request->get_request_body().length())
-    client_data.repository->set_status(BAD_REQUEST);
+    client_data.status = BAD_REQUEST;
 
   return;
 }
@@ -81,7 +81,7 @@ void ws::Validator::check_connection(ws::Validator::client_value_type& client_da
   const std::string connection = client_data.request->get_connection();
 
   if (!(connection == "close" || connection == "keep-alive"))
-    client_data.repository->set_status(BAD_REQUEST);
+    client_data.status = BAD_REQUEST;
 }
 
 void ws::Validator::check_transfer_encoding(ws::Validator::client_value_type& client_data) {
@@ -91,7 +91,7 @@ void ws::Validator::check_transfer_encoding(ws::Validator::client_value_type& cl
 void ws::Validator::check_host(ws::Validator::client_value_type& client_data) {
   std::string host = client_data.request->get_server_name();
   if (host == "")
-    client_data.repository->set_status(BAD_REQUEST);
+    client_data.status = BAD_REQUEST;
 }
 
 // if (repository->empty())
