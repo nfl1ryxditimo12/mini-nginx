@@ -229,7 +229,7 @@ const std::string& ws::Request::get_uri() const throw() {
 	return _request_uri;
 }
 
-const query_type& ws::Request::get_uri_query() const throw() {
+const ws::Request::query_type& ws::Request::get_uri_query() const throw() {
 	return _request_uri_query;
 }
 
