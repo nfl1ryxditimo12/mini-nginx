@@ -11,14 +11,11 @@ ws::HeaderGenerator::HeaderGenerator() {}
 
 ws::HeaderGenerator::~HeaderGenerator() {}
 
-const std::string &ws::HeaderGenerator::get_data() const throw() {
-  return _data;
-}
-
-void ws::HeaderGenerator::generate_data(unsigned int stat, std::string::size_type content_length) {
+const std::string& ws::HeaderGenerator::generate(unsigned int stat, std::string::size_type content_length) {
   this->generate_start_line(stat);
   this->generate_representation_header(stat, content_length);
   this->generate_response_header();
+  return _data;
 }
 
 // start field

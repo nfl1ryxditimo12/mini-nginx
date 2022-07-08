@@ -23,11 +23,13 @@ namespace ws {
     Response();
     ~Response();
 
-    void init_response(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd);
+    void set_data(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd);
     void set_kernel(Kernel* kernel);
 
-    void generate_response(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd);
+    void process(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd);
+    void generate(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd);
 
-    std::string generate_directory_list() const throw();
+    std::string generate_directory_list() const;
+    std::string generate_directory_list_body() const;
   };
 }

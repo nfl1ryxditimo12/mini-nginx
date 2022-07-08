@@ -24,10 +24,10 @@ namespace ws {
 
   private:
     struct client_data {
-      unsigned int      status;
-      ws::Repository*   repository;
-      ws::Request*      request;
-      std::string       response;
+      unsigned int                                    status;
+      ws::Repository*                                 repository;
+      ws::Request*                                    request;
+      std::pair<std::string, std::string::size_type>  response;
     };
 
   public:
@@ -106,6 +106,8 @@ namespace ws {
     /* control data to kenel event */
     static void read_data(ws::Socket* self, struct kevent event);
     static void write_data(ws::Socket* self, struct kevent event);
+
+    static void generate_response(ws::Socket* self, struct kevent event);
 
     void connection();
   };

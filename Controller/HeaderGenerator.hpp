@@ -23,9 +23,7 @@ namespace ws {
     HeaderGenerator();
     ~HeaderGenerator();
 
-    const std::string& get_data() const throw();
-
-    void generate_data(unsigned int stat, std::string::size_type content_length);
+    const std::string& generate(unsigned int stat, std::string::size_type content_length);
 
     // test function
     void print_data() const;
