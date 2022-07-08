@@ -21,7 +21,8 @@ namespace ws {
     NOT_FOUND             = 404,
 
     /* 500 Status Code */
-    INTERNAL_SERVER_ERROR = 500
+    INTERNAL_SERVER_ERROR = 500,
+    HTTP_VERSION_NOT_SUPPORTED = 505
   };
   
 }
