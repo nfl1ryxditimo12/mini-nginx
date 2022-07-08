@@ -191,7 +191,7 @@ void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   ws::Repository& repository = *client_data->repository;
 
   if (!client_data->status)
-    validator(client_data);
+    validator(*client_data);
 
 
   // _response.asdf(client_data);

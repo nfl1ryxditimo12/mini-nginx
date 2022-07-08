@@ -30,8 +30,7 @@ void ws::Repository::operator()(const ws::Server* server, const ws::Request* req
     _config.cgi = &(_location->get_cgi());
   /*set option*/
     ws::Repository::set_option(_location->get_option());
-  }
-  else
+  } else
     ws::Repository::set_option(_server->get_option());
 }
 
@@ -46,7 +45,6 @@ void ws::Repository::set_option(const ws::InnerOption& option) {
 void ws::Repository::set_repository(int status)  {
   const std::string& server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
   struct stat file_stat;
-
   this->set_status(status);
   this->set_status(_config.redirect->first);
 
