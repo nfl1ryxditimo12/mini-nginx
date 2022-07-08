@@ -1,7 +1,8 @@
 NAME        :=  webserv
 
 CXX         :=  clang++
-CXXFLAGS    :=  -std=c++98 -Wall -Wextra -Werror -g  -fsanitize=undefined -fsanitize=address
+CXXFLAGS    :=  -std=c++98 -Wall -Wextra -Werror -g -fsanitize=undefined -fsanitize=address
+LDFLAGS		:=	-g -fsanitize=undefined -fsanitize=address
 
 UTIL_DIR            :=  Util
 UTIL_SRCS           :=  Util.cpp Token.cpp
@@ -34,16 +35,12 @@ INCLUDES    :=  $(UTIL_INCLUDES) $(CONFIGURE_INCLUDES) $(CONTROLLER_INCLUDES) $(
 
 RM          :=  rm -f
 
-ifeq ($(DEBUG), 1)
-  CXX := $(CXXDEBUG)
-  CXXFLAGS := $(CXXDEBUGFLAGS)
-endif
-
 .PHONY      :    all
-all         :    $(NAME)
+all         :
+	$(MAKE) -j $(NAME)
 
 $(NAME)     :    $(OBJS) $(INCLUDES)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $@
+	$(CXX) $(LDFLAGS) $(OBJS) -o $@
 
 %.o         :    %.cpp
 	$(CXX) $(CXXFLAGS) -c $^ -I$(UTIL_DIR) -I$(CONFIGURE_DIR) -I$(CONTROLLER_DIR) -I$(ROUTER_DIR) -o $@
@@ -58,9 +55,5 @@ fclean      :    clean
 
 .PHONY      :    re
 re          :
-	make fclean
-	make all
-
-.PHONY      :   debug
-debug       :
-make DEBUG=1 re
+	$(MAKE) -j fclean
+	$(MAKE) -j all
