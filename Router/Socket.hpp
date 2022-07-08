@@ -24,6 +24,7 @@ namespace ws {
 
   private:
     struct client_data {
+      bool                                            fatal;
       unsigned int                                    status;
       ws::Repository*                                 repository;
       ws::Request*                                    request;

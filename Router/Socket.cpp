@@ -90,8 +90,9 @@ void ws::Socket::connection() {
 void ws::Socket::init_client(int fd, listen_type listen) {
   client_value_type* client_data = new client_value_type;
 
+  client_data->fatal = false;
   client_data->status = 0;
-  client_data->repository = new ws::Repository();
+  client_data->repository = new ws::Repository(client_data->fatal, client_data->status);
   client_data->request = new ws::Request(listen);
   _client.insert(client_map_type::value_type(fd, client_data));
 }
