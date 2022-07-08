@@ -26,6 +26,8 @@ namespace ws {
       ws::Repository*   repository;
       ws::Request*      request;
       ws::Response*     response;
+      // const ws::Server*       curr_server;
+      // const ws::Location*     curr_location;
       unsigned int      status;
     };
 

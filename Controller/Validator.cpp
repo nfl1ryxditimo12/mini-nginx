@@ -24,7 +24,7 @@ void ws::Validator::operator()(client_value_type& client_data) {
 
 void ws::Validator::check_method(client_value_type& client_data) {
   std::string method = client_data.request->get_method();  
-  ws::Location::limit_except_vec_type limit_except_vec = client_data.curr_location->get_limit_except_vec();
+  ws::Location::limit_except_vec_type limit_except_vec = client_data.repository->get_curr_location()->get_limit_except_vec();
 
   for (ws::Location::limit_except_vec_type::iterator it = limit_except_vec.begin(); it != limit_except_vec.end(); ++it) {
     if (*it == method)
@@ -34,9 +34,9 @@ void ws::Validator::check_method(client_value_type& client_data) {
   // 405 error : 메소드는 허용되었지만 실패
 }
 
-
 void ws::Validator::check_uri(client_value_type& client_data) {
-  if (client_data.curr_location == NULL) {
+  
+  if (client_data.repository->get_curr_location() == NULL) {
     client_data.status = NOT_FOUND;
     return;
   }
@@ -46,7 +46,7 @@ void ws::Validator::check_uri(client_value_type& client_data) {
     client_data.status = NOT_FOUND;
     return;
   }
-  if (S_ISDIR(buf.st_mode) && client_data.curr_server->get_autoindex() == false) {
+  if (S_ISDIR(buf.st_mode) && client_data.repository->get_curr_server()->get_autoindex() == false) {
     client_data.status = NOT_FOUND;
     return;
   }
@@ -92,4 +92,9 @@ void ws::Validator::check_host(ws::Validator::client_value_type& client_data) {
   std::string host = client_data.request->get_server_name();
   if (host == "")
     client_data.status = BAD_REQUEST;
+}
+
+#include <iostream>
+void ws::Validator::print_status(ws::Validator::client_value_type& client_data) {
+  std::cout << client_data.status << std::endl;
 }
