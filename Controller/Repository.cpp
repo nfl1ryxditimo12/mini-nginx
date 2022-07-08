@@ -103,7 +103,7 @@ void ws::Repository::set_content_type() {
   if (!_autoindex.empty() || _status >= BAD_REQUEST) {
     _content_type = "text/html";
   }
-  else if (_config.redirect->first == _status) {
+  else if (_config.redirect->first == static_cast<const unsigned int>(_status)) {
     if (_status < 300)
       _content_type = "application/octet-stream";
   }
