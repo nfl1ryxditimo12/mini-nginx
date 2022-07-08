@@ -304,15 +304,3 @@ void ws::Socket::generate_response(ws::Socket *self, struct kevent event) {
 //    self->disconnect_client(event.ident);
 //  }
 //}
-
-// void ws::Socket::read_data(ws::Socket* self, struct kevent event) {
-//   client_value_type* client_data = self->_client.find(event.ident)->second;
-
-//   _response.get_body(client_data);
-// }
-
-// void ws::Socket::write_data(ws::Socket* self, struct kevent event) {
-//   client_value_type* client_data = self->_client.find(event.ident)->second;
-  
-//   _response.get_body(client_data);
-// }

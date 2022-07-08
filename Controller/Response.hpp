@@ -10,7 +10,7 @@ namespace ws {
 
   private:
     ws::Socket* _socket;
-    ws::Repository _repo;
+    ws::Repository* _repo;
     uintptr_t _client_fd;
     ws::Kernel* _kernel;
 

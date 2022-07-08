@@ -12,7 +12,7 @@ ws::Response::~Response() {}
 
 void ws::Response::set_data(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd) {
   _socket = socket;
-  _repo = *(client_data.repository);
+  _repo = client_data.repository;
   _client_fd = client_fd;
 }
 
