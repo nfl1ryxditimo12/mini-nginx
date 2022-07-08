@@ -2,16 +2,17 @@
 #include "Request.hpp"
 
 /*
-  vector<string> dir; //
-  int file_fd;
-  pair<string, char**> cgi: default = ""
+  todo
 
-  string content-type;
+  fatal 인 경우 전체적인 흐름 유지하는 처리
 
-  그외 필요한 데이터 만들어야함
+  테스트 하며 멤버 콘솔 출력 // seonkim
+  _root + _uri 중간에 슬래시 붙는지 확인해야함
+  파일 오픈 분기 delete 처리 해줘야함
+  권한 없을 때 파일 열기 어떻게 처리할지
 */
 
-ws::Repository::Repository(): _fd(FD_DEFAULT), _status(0) {}
+ws::Repository::Repository(bool& fatal, unsigned int& status): _fatal(fatal), _status(status), _fd(FD_DEFAULT) {}
 
 ws::Repository::~Repository() {}
 
@@ -59,7 +60,7 @@ void ws::Repository::set_repository(int status)  {
   }
 
   if (_config.redirect->first > 400 || _fd == FD_DEFAULT || _autoindex.empty())
-    open_file(*_config.root);
+    open_file(*_config.root + _uri);
 
   set_content_type();
 }
@@ -115,6 +116,7 @@ void ws::Repository::set_content_type() {
 
 void ws::Repository::open_file(std::string filename) {
   error_page_map_type::const_iterator error_iter = _config.error_page_map->find(_status);
+  int open_flag = _method == "GET" ? O_RDONLY : O_WRONLY | O_TRUNC | O_CREAT;
 
   // 기본 에러 페이지 또는 제공된 에러 페이지
   if (_status >= BAD_REQUEST) {
@@ -124,7 +126,7 @@ void ws::Repository::open_file(std::string filename) {
       filename = ""; // _defualt_root_path + status.html
   }
 
-  if ((_fd = open(filename.c_str(), O_RDWR, 644)) == -1)
+  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
     throw; // 프로세스 종료해야함
 }
 
@@ -140,27 +142,43 @@ const ws::Location* ws::Repository::get_location() const throw() {
 bool  ws::Repository::get_fatal() const throw() {
   return _fatal;
 }
+
 const int&  ws::Repository::get_fd() const throw() {
   return _fd;
 }
+
 const int&  ws::Repository::get_status() const throw() {
   return _status;
 }
+
 const std::string&  ws::Repository::get_host() const throw() {
   return _host;
 }
+
 const std::string&  ws::Repository::get_method() const throw() {
   return _method;
 }
+
+const std::string&  ws::Repository::get_root() const throw() {
+  return *_config.root;
+}
+
+const std::string&  ws::Repository::get_uri() const throw() {
+  return _uri;
+}
+
 const std::string&  ws::Repository::get_request_body() const throw() {
   return _request_body;
 }
+
 const ws::Repository::autoindex_type&  ws::Repository::get_autoindex() const throw() {
   return _autoindex;
 }
+
 const ws::Repository::cgi_type&  ws::Repository::get_cgi() const throw() {
   return _cgi;
 }
+
 const std::string&  ws::Repository::get_content_type() const throw() {
   return _content_type;
 }
