@@ -42,7 +42,7 @@ namespace ws {
       Repository(const Repository& cls);
       ~Repository();
 
-      void operator()(const ws::Server* curr_server, const ws::Request* request);
+      void operator()(const ws::Server& curr_server, const ws::Request& request);
 
     /*getter*/
       bool  empty() const throw();

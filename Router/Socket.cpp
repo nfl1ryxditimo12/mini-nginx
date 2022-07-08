@@ -190,7 +190,7 @@ void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   client_value_type* client_data = self->_client.find(event.ident)->second;
 
   if (!client_data->status)
-    validator(client_data);
+    validator(*client_data);
   
   client_data->response = new Response(client_data);
 
