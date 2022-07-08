@@ -36,8 +36,8 @@ namespace ws {
     typedef ws::Server::location_map_type location_map_type;
     typedef ws::Location::limit_except_vec_type limit_except_vec_type;
     typedef ws::Location::return_type return_type;
-    typedef ws::Location::cgi_type cgi_type;
-    typedef ws::InnerOption::autoindex_type autoindex_type;
+    typedef ws::Location::cgi_type cgi_string_type;
+    typedef ws::InnerOption::autoindex_type autoindex_bool_type;
     typedef ws::InnerOption::root_type root_type;
     typedef ws::InnerOption::index_vec_type index_vec_type;
     typedef ws::InnerOption::client_max_body_size_type client_max_body_size_type;
@@ -51,9 +51,9 @@ namespace ws {
     /*location*/
       const limit_except_vec_type* limit_except_vec;
       const return_type* redirect;
-      const cgi_type* cgi;
+      const cgi_string_type* cgi;
     /*option*/
-      const autoindex_type* autoindex;
+      const autoindex_bool_type* autoindex;
       const root_type* root;
       const index_vec_type* index;
       const client_max_body_size_type* client_max_body_size;
@@ -63,6 +63,9 @@ namespace ws {
   public:
 
     typedef struct ws::Repository::config_data      config_type;
+
+    typedef std::vector<std::string>                autoindex_type;
+    typedef std::pair<std::string, char**>          cgi_type;
   
   private:
 
@@ -91,9 +94,9 @@ namespace ws {
 
     std::string _request_body;
 
-    std::vector<std::string> _autoindex; // get_autoindex();
+    autoindex_type _autoindex; // get_autoindex();
 
-    std::pair<std::string, char**> _cgi; // get_cgi();
+    cgi_type _cgi; // get_cgi();
 
     std::string _content_type; // get_conent_type();
 
@@ -119,7 +122,6 @@ namespace ws {
     Repository& operator=(const Repository& cls);
 
     void set_option(const ws::InnerOption& option);
-    void set_status(const int& status);
     void set_autoindex();
     void set_content_type();
 
@@ -131,6 +133,7 @@ namespace ws {
 
     void operator()(const ws::Server* server, const ws::Request* request);
 
+    void set_status(const int& status);
     void set_repository(int status);
 
     /* =================================== */
@@ -139,5 +142,15 @@ namespace ws {
 
     const ws::Server* get_server() const throw();
     const ws::Location* get_location() const throw();
+
+    bool                  get_fatal() const throw();
+    const int&            get_fd() const throw();
+    const int&            get_status() const throw();
+    const std::string&    get_host() const throw();
+    const std::string&    get_method() const throw();
+    const std::string&    get_request_body() const throw();
+    const autoindex_type& get_autoindex() const throw();
+    const cgi_type&       get_cgi() const throw();
+    const std::string&    get_content_type() const throw();
   };
 }

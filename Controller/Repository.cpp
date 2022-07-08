@@ -55,9 +55,8 @@ void ws::Repository::set_repository(int status)  {
     if (*_config.autoindex || _config.index->size())
       this->set_autoindex();
   }
-  
-  /* _return < 400 이고 몰라 */
-  if (_config.redirect->first != 0 && (_status >= BAD_REQUEST || _fd == FD_DEFAULT || _autoindex.empty()))
+
+  if (_config.redirect->first > 400 || _fd == FD_DEFAULT || _autoindex.empty())
     open_file(*_config.root);
 
   set_content_type();
@@ -134,4 +133,32 @@ const ws::Server* ws::Repository::get_server() const throw() {
 
 const ws::Location* ws::Repository::get_location() const throw() {
   return _location;
+}
+
+bool  ws::Repository::get_fatal() const throw() {
+  return _fatal;
+}
+const int&  ws::Repository::get_fd() const throw() {
+  return _fd;
+}
+const int&  ws::Repository::get_status() const throw() {
+  return _status;
+}
+const std::string&  ws::Repository::get_host() const throw() {
+  return _host;
+}
+const std::string&  ws::Repository::get_method() const throw() {
+  return _method;
+}
+const std::string&  ws::Repository::get_request_body() const throw() {
+  return _request_body;
+}
+const ws::Repository::autoindex_type&  ws::Repository::get_autoindex() const throw() {
+  return _autoindex;
+}
+const ws::Repository::cgi_type&  ws::Repository::get_cgi() const throw() {
+  return _cgi;
+}
+const std::string&  ws::Repository::get_content_type() const throw() {
+  return _content_type;
 }
