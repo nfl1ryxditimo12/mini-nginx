@@ -1,10 +1,11 @@
-#include "Socket.hpp"
-
 #include "Response.hpp"
 #include "Validator.hpp"
+#include "Socket.hpp"
 
-static ws::Validator validator;
-static ws::Response  response;
+
+ws::Validator ws::Socket::_validator;
+ws::Response ws::Socket::_response;
+const std::size_t ws::Socket::kBUFFER_SIZE = 1024 * 1024;
 
 /*
   메모리를 많이 사용하고 CPU를 적게 사용할 지
@@ -22,7 +23,7 @@ static ws::Response  response;
 /* console test code */
 
 ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel() {
-  // response.set_kernel(&_kernel);
+  _response.set_kernel(&_kernel);
   ws::Configure::listen_vec_type host = cls.get_host_list();
 
   for (size_t i = 0; i < host.size(); i++) {
@@ -39,7 +40,6 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel() {
     addr_info.sin_family = AF_INET;
     addr_info.sin_addr.s_addr = host[i].first;
     addr_info.sin_port = host[i].second;
-
 
     if (bind(socket_fd, (struct sockaddr*)&addr_info, sizeof(addr_info)) == -1) {
       std::cout << strerror(errno) << std::endl;
@@ -91,9 +91,12 @@ void ws::Socket::connection() {
 void ws::Socket::init_client(int fd, listen_type listen) {
   client_value_type* client_data = new client_value_type;
 
+  client_data->fatal = false;
   client_data->status = 0;
-  client_data->repository = new ws::Repository();
+  client_data->repository = new ws::Repository(client_data->fatal, client_data->status);
   client_data->request = new ws::Request(listen);
+  client_data->response = "";
+  client_data->write_offset = 0;
   _client.insert(client_map_type::value_type(fd, client_data));
 }
 
@@ -132,7 +135,7 @@ void ws::Socket::connect_client(ws::Socket* self, struct kevent event) {
     self->exit_socket();
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
   self->init_client(client_socket_fd, listen);
-  self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::recv_request));
+  self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::recv_request));
 }
 
 /*
@@ -140,30 +143,20 @@ void ws::Socket::connect_client(ws::Socket* self, struct kevent event) {
 */
 void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   client_value_type* client_data = self->_client.find(event.ident)->second;
-  std::string str_buffer;
-  char buffer[1024 * 1024 + 1];
-  int  n = 0;
+  char buffer[kBUFFER_SIZE + 1];
 
   ssize_t read_size;
-  while (n < event.data) {
-    if ((read_size = read(event.ident, buffer, std::min(static_cast<int>(event.data), 1024 * 1024 - n))) == -1)
-      self->exit_socket();
-    buffer[read_size] = 0;
-    str_buffer += buffer;
-    n += read_size;
-  }
+  read_size = read(event.ident, buffer, kBUFFER_SIZE);
 
-  // if ((n = read(event.ident, buffer, std::min(sizeof(buffer), static_cast<size_t>(event.data) - 1))) == -1)
-  //   self->exit_socket();
+  if (read_size == -1)
+    self->exit_socket();
 
-  if (client_data->request->eof() && n > 0)
+  buffer[read_size] = 0;
+
+  if (client_data->request->eof() && read_size > 0) // todo session
     client_data->request->clear();
 
-  /*
-    과연 if (n > 0) 이라는 조건이 필요할까?
-    Request 클래스 내부적으로 판단할 지 생각해 보자.
-  */
-  if (!client_data->request->eof() && n > 0) {
+  if (read_size > 0) {
     std::cout << YLW << "\n== Request ======================================\n" << NC << std::endl;
     std::cout << buffer << std::endl;
     std::cout << RED << "\n== Parsing ======================================\n" << NC << std::endl;
@@ -175,66 +168,134 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
     이 후 오류가 있다면 바로 process_request 함수로 가게 설정해준다.
     Repository 클래스를 Request 클래스에서 request header 파싱 후 초기화 해줄 지 고민해봐야 함
   */
-  if (client_data->request->eof() || client_data->status || !n) {
+  if (client_data->request->eof() || client_data->status || !read_size) {
     /* EV_DELETE flags는 필요 없을듯 keep-alive 생각 */
 
     client_data->request->test();
     std::cout << YLW << "\n=================================================\n" << NC << std::endl;
     self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request));
     self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-
   }
 }
 
 void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   client_value_type* client_data = self->_client.find(event.ident)->second;
   ws::Repository& repository = *client_data->repository;
-
+  (void) repository; // todo
   if (!client_data->status)
-    validator(*client_data);
+    _validator(*client_data);
 
-
-  // _response.asdf(client_data);
+  _response.process(self, *client_data, event.ident);
 
   /*
     EVFILT_USER를 사용하는 경우 EV_ONESHOT flag 사용으로
     한번만 kevent의 change_list에 넣는 방식도 생각해 볼만 하다.
   */
-  self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
+//  self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
 }
 
-void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
-  // client_value_type* client_data = self->_client.find(event.ident)->second;
-  int n;
-  std::string body = "<html>\n<head>\n</head>\n<body>\n<h1>hello world</h1>\n</body>\n</html>";
-  std::string response = std::string("HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nConnection: keep-alive\r\nContent-Length: ") + std::to_string(body.length()) + std::string("\r\nContent-Type: application/json\r\nDate: Mon, 20 Jun 2022 02:59:03 GMT\r\nETag: \"62afd0a1-267\"\r\nLast-Modified: Mon, 20 Jun 2022 01:42:57 GMT\r\nServer: webserv\r\n\r\n") + body;
+void ws::Socket::send_response(ws::Socket *self, struct kevent event) {
+  client_value_type& client_data = *(self->_client.find(event.ident)->second);
+  const std::string& response_data = client_data.response;
+  std::string::size_type& offset = client_data.write_offset;
 
-  if ((n = write(event.ident, response.c_str(), response.size())) == -1)
+  ssize_t n;
+  if ((n = write(event.ident, response_data.c_str() + offset, response_data.length() - offset)) == -1)
     self->exit_socket();
 
-  /*
-    keep-alive 방식으로 납둘지 close 해버릴지 고민해봐야함
-    세션같은 경우 keep-alive가 좋을 수도 있다.
+  offset += n;
 
-    EVFILT_WRITE인 경우 event.data의 값이 커널에 할당 가능한 buffer size 일텐데 이게 정확한 방법인지 생각해봐야 한다.
-
-    keep-alive인 경우 client_data 구조체 초기화 후, EVFILT_WRITE - EV_DELETE 해주면 끗
-  */
-  std::cout << n << ", " << event.data << std::endl;
-  if (n <= event.data) {
+  if (offset == response_data.length()) {
     self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
     self->disconnect_client(event.ident);
   }
 }
+//  int fd = open("/goinfre/jaham/webserv/test_create.html", O_WRONLY | O_TRUNC | O_CREAT, 0666);
+  int fd = open("/goinfre/jaham/webserv/test.html", O_RDONLY);
 
-// void ws::Socket::read_data(ws::Socket* self, struct kevent event) {
-//   client_value_type* client_data = self->_client.find(event.ident)->second;
+void ws::Socket::read_data(ws::Socket* self, struct kevent event) {
+  char buffer[kBUFFER_SIZE + 1];
+  ssize_t read_size = 0;
 
-//   _response.get_body(client_data);
-// }
+  read_size = read(fd, buffer, kBUFFER_SIZE);
 
-// void ws::Socket::write_data(ws::Socket* self, struct kevent event) {
-//   client_value_type* client_data = self->_client.find(event.ident)->second;
-  
-//   _response.get_body(client_data);
-// }
+  if (read_size < 0)
+    self->exit_socket();
+
+  if (read_size == 0) {
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
+    self->_kernel.kevent_ctl(
+      event.ident,
+      EVFILT_USER,
+      EV_ADD | EV_ONESHOT,
+      NOTE_TRIGGER,
+      0,
+      reinterpret_cast<void *>(ws::Socket::generate_response)
+    );
+  } else {
+    buffer[read_size] = 0;
+    self->_client.find(event.ident)->second->response += buffer;
+  }
+}
+
+void ws::Socket::write_data(ws::Socket *self, struct kevent event) {
+  client_value_type& client = *(self->_client.find(event.ident)->second);
+  const std::string& request_body = client.request->get_request_body();
+  std::size_t& offset = client.write_offset;
+  ssize_t write_size = 0;
+
+  write_size = write(fd, request_body.c_str() + offset, request_body.length() - offset);
+
+  if (write_size == -1)
+    self->exit_socket();
+
+  offset += write_size;
+
+  if (offset == request_body.length()) {
+    offset = 0;
+    self->_kernel.kevent_ctl(
+      event.ident,
+      EVFILT_USER,
+      EV_ADD | EV_ONESHOT,
+      NOTE_TRIGGER,
+      0,
+      reinterpret_cast<void*>(ws::Socket::generate_response)
+    );
+  }
+}
+
+void ws::Socket::generate_response(ws::Socket *self, struct kevent event) {
+  _response.generate(self, *(self->_client.find(event.ident)->second), event.ident);
+  self->_kernel.kevent_ctl(
+    event.ident,
+    EVFILT_WRITE,
+    EV_ADD,
+    0,
+    0,
+    reinterpret_cast<void*>(ws::Socket::send_response)
+  );
+}
+
+// todo: original send response
+//void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
+//  // client_value_type* client_data = self->_client.find(event.ident)->second;
+//  int n;
+//  const std::string& response = self->_client.find(event.ident)->second->response;
+//
+//  if ((n = write(event.ident, response.c_str(), response.size())) == -1)
+//    self->exit_socket();
+//
+//  /*
+//    keep-alive 방식으로 납둘지 close 해버릴지 고민해봐야함
+//    세션같은 경우 keep-alive가 좋을 수도 있다.
+//
+//    EVFILT_WRITE인 경우 event.data의 값이 커널에 할당 가능한 buffer size 일텐데 이게 정확한 방법인지 생각해봐야 한다.
+//
+//    keep-alive인 경우 client_data 구조체 초기화 후, EVFILT_WRITE - EV_DELETE 해주면 끗
+//  */
+//  std::cout << n << ", " << event.data << std::endl;
+//  if (n <= event.data) {
+//    self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+//    self->disconnect_client(event.ident);
+//  }
+//}

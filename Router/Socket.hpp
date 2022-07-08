@@ -14,17 +14,22 @@
 #include "Kernel.hpp"
 #include "Request.hpp"
 #include "Repository.hpp"
+//#include "Validator.hpp"
 
 namespace ws {
+  class Validator;
+  class Response;
 
   class Socket {
 
   private:
     struct client_data {
-      unsigned int      status;
-      ws::Repository*   repository;
-      ws::Request*      request;
-      std::string       response;
+      bool                    fatal;
+      unsigned int            status;
+      ws::Repository*         repository;
+      ws::Request*            request;
+      std::string             response;
+      std::string::size_type  write_offset;
     };
 
   public:
@@ -61,6 +66,10 @@ namespace ws {
     */
     client_map_type _client;
 
+    static ws::Validator _validator;
+    static ws::Response  _response;
+    const static std::size_t kBUFFER_SIZE;
+
     /* ====================================== */
     /*                  OCCF                  */
     /* ====================================== */
@@ -81,11 +90,7 @@ namespace ws {
     static void connect_client(ws::Socket* self, struct kevent event);
     static void recv_request(ws::Socket* self, struct kevent event);
     static void process_request(ws::Socket* self, struct kevent event);
-    static void send_response(ws::Socket* self, struct kevent event);
 
-    /* control data to kenel event */
-    static void read_data(ws::Socket* self, struct kevent event);
-    static void write_data(ws::Socket* self, struct kevent event);
 
   public:
 
@@ -99,6 +104,13 @@ namespace ws {
     /* ====================================== */
     /*            Public Function             */
     /* ====================================== */
+
+    static void send_response(ws::Socket* self, struct kevent event);
+    /* control data to kenel event */
+    static void read_data(ws::Socket* self, struct kevent event);
+    static void write_data(ws::Socket* self, struct kevent event);
+
+    static void generate_response(ws::Socket* self, struct kevent event);
 
     void connection();
   };

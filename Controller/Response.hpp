@@ -1,46 +1,35 @@
 #pragma once
 
 #include "Socket.hpp"
-#include "ResponseHeader.hpp"
+#include "HeaderGenerator.hpp"
 
 namespace ws {
   class Response {
   public:
     typedef ws::Socket::client_value_type client_value_type;
 
-    typedef ws::Server::error_page_map_type error_page_map_type;
-
   private:
-    const ws::Request& _request;
-    const ws::Repository& _repo;
-    unsigned int _status;
-    ws::Kernel _kernel;
-    ResponseHeader _header;
-    std::string _data;
+    ws::Socket* _socket;
+    ws::Repository* _repo;
+    uintptr_t _client_fd;
+    ws::Kernel* _kernel;
 
-    bool is_error_status(unsigned int stat) const throw();
-    void get_error_response();
+    static ws::HeaderGenerator _header_generator;
 
-    std::string process_get(client_value_type& client);
-    std::string process_post(client_value_type& client);
-    std::string process_delete(client_value_type& client);
-
-    void generate_response_header(std::string::size_type content_length);
-    std::string generate_general_header();
-    std::string generate_date();
-
-    void read_file(const char* file);
-
-    Response();
     Response(const Response& other);
     Response& operator=(const Response& other);
 
   public:
-    explicit Response(const client_value_type* const client_data);
+    Response();
     ~Response();
 
-    void generate_response();
+    void set_data(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd);
+    void set_kernel(Kernel* kernel);
 
-    const std::string& get_data() const throw();
+    void process(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd);
+    void generate(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd);
+
+    std::string generate_directory_list() const;
+    std::string generate_directory_list_body() const;
   };
 }
