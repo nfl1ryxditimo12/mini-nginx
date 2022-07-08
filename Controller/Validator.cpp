@@ -24,7 +24,7 @@ void ws::Validator::operator()(client_value_type& client_data) {
 
 void ws::Validator::check_method(client_value_type& client_data) {
   std::string method = client_data.request->get_method();  
-  ws::Location::limit_except_vec_type limit_except_vec = client_data.repository->get_curr_location()->get_limit_except_vec();
+  ws::Location::limit_except_vec_type limit_except_vec = client_data.repository->get_location()->get_limit_except_vec();
 
   for (ws::Location::limit_except_vec_type::iterator it = limit_except_vec.begin(); it != limit_except_vec.end(); ++it) {
     if (*it == method)
@@ -36,7 +36,7 @@ void ws::Validator::check_method(client_value_type& client_data) {
 
 void ws::Validator::check_uri(client_value_type& client_data) {
   
-  if (client_data.repository->get_curr_location() == NULL) {
+  if (client_data.repository->get_location() == NULL) {
     client_data.repository->set_status(NOT_FOUND);
     return;
   }
@@ -46,7 +46,7 @@ void ws::Validator::check_uri(client_value_type& client_data) {
     client_data.repository->set_status(NOT_FOUND);
     return;
   }
-  if (S_ISDIR(buf.st_mode) && client_data.repository->get_curr_server()->get_autoindex() == false) {
+  if (S_ISDIR(buf.st_mode) && client_data.repository->get_server()->get_autoindex() == false) {
     client_data.repository->set_status(NOT_FOUND);
     return;
   }
