@@ -7,57 +7,54 @@
 #include "Define.hpp"
 #include "Util.hpp"
 
-ws::HeaderGenerator::HeaderGenerator() {}
+std::string ws::HeaderGenerator::generate(unsigned int stat, std::string::size_type content_length) {
+  std::string data;
 
-ws::HeaderGenerator::~HeaderGenerator() {}
+  generate_start_line(data, stat);
+  generate_representation_header(data, stat, content_length);
+  generate_response_header(data);
 
-const std::string& ws::HeaderGenerator::generate(unsigned int stat, std::string::size_type content_length) {
-  this->generate_start_line(stat);
-  this->generate_representation_header(stat, content_length);
-  this->generate_response_header();
-  return _data;
+  return data;
 }
 
 // start field
-void ws::HeaderGenerator::generate_start_line(unsigned int stat) {
-  _data += "HTTP/1.1 " + ws::ultoa(stat) + "\r\n";
+void ws::HeaderGenerator::generate_start_line(std::string& data, unsigned int stat) {
+  data += "HTTP/1.1 " + ws::ultoa(stat) + "\r\n";
 }
 
 // representation field
-void ws::HeaderGenerator::generate_representation_header(unsigned int stat, std::string::size_type content_length) {
-  this->generate_content_type_line();
+void ws::HeaderGenerator::generate_representation_header(
+  std::string& data, unsigned int stat, std::string::size_type content_length
+) {
+  generate_content_type_line(data);
 
   if (!((100 <= stat && stat < 200) || stat == NO_CONTENT))
-    this->generate_content_length(content_length);
+    generate_content_length(data, content_length);
 }
 
-void ws::HeaderGenerator::generate_content_type_line() {
-  _data += "Content-Type: text/html; charset=UTF-8\r\n";
+void ws::HeaderGenerator::generate_content_type_line(std::string& data) {
+  data += "Content-Type: text/html; charset=UTF-8\r\n";
 }
 
-void ws::HeaderGenerator::generate_content_length(std::string::size_type content_length) {
-  _data += "Content-Length: " + ws::ultoa(content_length) + " bytes\r\n";
+void ws::HeaderGenerator::generate_content_length(std::string& data, std::string::size_type content_length) {
+  data += "Content-Length: " + ws::ultoa(content_length) + " bytes\r\n";
 }
 
 
 // response field
-void ws::HeaderGenerator::generate_response_header() {
-  this->generate_date_line();
-  this->generate_server_line();
+void ws::HeaderGenerator::generate_response_header(std::string& data) {
+  generate_date_line(data);
+  generate_server_line(data);
 }
 
-void ws::HeaderGenerator::generate_date_line() {
+void ws::HeaderGenerator::generate_date_line(std::string& data) {
   std::time_t curr_time = std::time(NULL);
   std::string curr_time_str = std::asctime(std::gmtime(&curr_time));
   curr_time_str.erase(curr_time_str.end() - 1);
 
-  _data += "Date: " + curr_time_str + "\r\n";
+  data += "Date: " + curr_time_str + "\r\n";
 }
 
-void ws::HeaderGenerator::generate_server_line() {
-  _data += "Server: Webserv\r\n";
-}
-
-void ws::HeaderGenerator::print_data() const {
-  std::cout << _data << std::endl;
+void ws::HeaderGenerator::generate_server_line(std::string& data) {
+  data += "Server: Webserv\r\n";
 }

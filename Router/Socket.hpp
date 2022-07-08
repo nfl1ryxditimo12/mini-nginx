@@ -24,10 +24,11 @@ namespace ws {
 
   private:
     struct client_data {
-      unsigned int                                    status;
-      ws::Repository*                                 repository;
-      ws::Request*                                    request;
-      std::pair<std::string, std::string::size_type>  response;
+      unsigned int            status;
+      ws::Repository*         repository;
+      ws::Request*            request;
+      std::string             response;
+      std::string::size_type  write_offset;
     };
 
   public:
@@ -66,6 +67,7 @@ namespace ws {
 
     static ws::Validator _validator;
     static ws::Response  _response;
+    const static std::size_t kBUFFER_SIZE;
 
     /* ====================================== */
     /*                  OCCF                  */

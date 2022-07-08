@@ -5,27 +5,20 @@
 namespace ws {
   class HeaderGenerator {
   private:
-    std::string _data;
+    static void generate_start_line(std::string& data, unsigned int stat);
+    static void generate_representation_header(std::string& data, unsigned int stat, std::string::size_type content_length);
+    static void generate_response_header(std::string& data);
+    static void generate_content_type_line(std::string& data);
+    static void generate_content_length(std::string& data, std::string::size_type content_length);
+    static void generate_date_line(std::string& data);
+    static void generate_server_line(std::string& data);
 
-    // static functions
-    void generate_start_line(unsigned int stat);
-    void generate_representation_header(unsigned int stat, std::string::size_type content_length);
-    void generate_response_header();
-    void generate_content_type_line();
-    void generate_content_length(std::string::size_type content_length);
-    void generate_date_line();
-    void generate_server_line();
-
+    HeaderGenerator();
+    ~HeaderGenerator();
     HeaderGenerator(const HeaderGenerator& other);
     HeaderGenerator& operator=(const HeaderGenerator& other);
 
   public:
-    HeaderGenerator();
-    ~HeaderGenerator();
-
-    const std::string& generate(unsigned int stat, std::string::size_type content_length);
-
-    // test function
-    void print_data() const;
+    static std::string generate(unsigned int stat, std::string::size_type content_length);
   };
 }
