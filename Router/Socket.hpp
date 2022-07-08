@@ -17,18 +17,14 @@
 
 namespace ws {
 
-  class Response;
-
   class Socket {
 
   private:
     struct client_data {
+      unsigned int      status;
       ws::Repository*   repository;
       ws::Request*      request;
-      ws::Response*     response;
-      // const ws::Server*       curr_server;
-      // const ws::Location*     curr_location;
-      unsigned int      status;
+      std::string       response;
     };
 
   public:
@@ -52,7 +48,6 @@ namespace ws {
     const ws::Configure* _conf;
 
     ws::Kernel _kernel;
-
 
     /*
       first: server socket fd
@@ -82,10 +77,15 @@ namespace ws {
     void disconnect_client(int fd);
     void exit_socket();
 
+    /* control socket to kenel event */
     static void connect_client(ws::Socket* self, struct kevent event);
     static void recv_request(ws::Socket* self, struct kevent event);
     static void process_request(ws::Socket* self, struct kevent event);
     static void send_response(ws::Socket* self, struct kevent event);
+
+    /* control data to kenel event */
+    static void read_data(ws::Socket* self, struct kevent event);
+    static void write_data(ws::Socket* self, struct kevent event);
 
   public:
 
