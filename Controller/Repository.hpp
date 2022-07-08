@@ -82,11 +82,14 @@ namespace ws {
 
     /* 치명적인 오류 일 경우 콘솔 또는 throw 하는 방식 생각해 봐야함 */
 
-    bool _fatal;
+    bool& _fatal;
+
+    unsigned int& _status; // get_status();
 
     int _fd; // get_fd();
 
-    int _status; // get_status();
+    /* filename 필요함 절대경로로 */
+    std::string _uri;
 
     std::string _host; // get_host();
 
@@ -118,6 +121,7 @@ namespace ws {
     /*                 OCCF                */
     /* =================================== */
 
+    Repository();
     Repository(const Repository& cls);
     Repository& operator=(const Repository& cls);
 
@@ -128,7 +132,7 @@ namespace ws {
     void open_file(std::string filename);
 
   public:
-    Repository();
+    Repository(bool& fatal, unsigned int& status);
     ~Repository();
 
     void operator()(const ws::Server* server, const ws::Request* request);
@@ -148,6 +152,8 @@ namespace ws {
     const int&            get_status() const throw();
     const std::string&    get_host() const throw();
     const std::string&    get_method() const throw();
+    const std::string&    get_root() const throw();
+    const std::string&    get_uri() const throw();
     const std::string&    get_request_body() const throw();
     const autoindex_type& get_autoindex() const throw();
     const cgi_type&       get_cgi() const throw();

@@ -1,60 +1,56 @@
 #include "Response.hpp"
 
-ws::Response::Response(const client_value_type* const client_data)
-  : _request(*(client_data->request)),
-  _repo(*(client_data->repository)),
-  _status(client_data->status),
-  _kernel() {}
+#include <unistd.h>
+
+#include "Define.hpp"
+
+ws::HeaderGenerator ws::Response::_header_generator;
+
+ws::Response::Response() {}
 
 ws::Response::~Response() {}
 
-bool ws::Response::is_error_status(unsigned int stat) const throw() {
-  return stat != 0;
+void ws::Response::set_data(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd) {
+  _socket = socket;
+  _repo = client_data.repository;
+  _client_fd = client_fd;
 }
 
-//void ws::Response::get_error_response() {
-//  const error_page_map_type& error_page_map = _repo.get_error_page_map();
-//  error_page_map_type::const_iterator curr_error = error_page_map.find(_status);
-//
-//  std::stringstream buffer;
-//
-//  if (curr_error == error_page_map.end()) {
-//    this->generate_response_header();
-//    buffer << _status;
-//    _response += buffer.str() + " Error";
+void ws::Response::set_kernel(Kernel *kernel) {
+  _kernel = kernel;
+}
+
+// todo: can remove client_data arg
+void ws::Response::process(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd) {
+  set_data(socket, client_data, client_fd);
+
+  _kernel->kevent_ctl(
+    client_fd,
+    EVFILT_USER,
+    EV_ADD | EV_ONESHOT,
+    NOTE_TRIGGER,
+    0,
+    reinterpret_cast<void*>(ws::Socket::write_data)
+  );
+
+//  if (!_repo.get_autoindex().empty()) {
+//    client_data.response.first = this->generate_directory_list();
+//    _kernel->kevent_ctl(client_fd, EVFILT_WRITE, EV_ADD, 0, 0, reinterpret_cast<void*>(&ws::Socket::send_response));
 //  }
-//}
-
-//std::string ws::Response::process_get(ws::Response::client_value_type &client) {
-//  // todo
-//}
-//
-//std::string ws::Response::process_post(ws::Response::client_value_type &client) {
-//  // todo
-//}
-//
-//std::string ws::Response::process_delete(ws::Response::client_value_type &client) {
-//
-//}
-
-void  ws::Response::generate_response_header(std::string::size_type content_length) {
-  _header.generate_data(_status, content_length);
 }
 
-//void ws::Response::read_file(const char* file) {
-//
-//}
+void ws::Response::generate(ws::Socket *socket, ws::Response::client_value_type &client_data, uintptr_t client_fd) {
+  set_data(socket, client_data, client_fd);
+  std::string& response_data = client_data.response.first;
 
-void ws::Response::generate_response() {
-//  if ((100 <= _status && _status < 200) || _status == NO_CONTENT) {
-    this->generate_response_header(0);
-    _data += _header.get_data();
-    return;
-//  }
-//  if (_status != 0)
-//    this->get_error_response(0);
+  response_data = _header_generator.generate(CREATED, response_data.length()) + "\r\n" + response_data;
 }
 
-const std::string& ws::Response::get_data() const throw() {
-  return _data;
+std::string ws::Response::generate_directory_list() const {
+  std::string body = this->generate_directory_list_body();
+  return _header_generator.generate(301, body.length()) + "\r\n" + body; // todo status
+}
+
+std::string ws::Response::generate_directory_list_body() const {
+  return "https://www.naver.com"; // todo html directory list page
 }

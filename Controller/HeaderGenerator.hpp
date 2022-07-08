@@ -3,7 +3,7 @@
 #include <string>
 
 namespace ws {
-  class ResponseHeader {
+  class HeaderGenerator {
   private:
     std::string _data;
 
@@ -16,16 +16,14 @@ namespace ws {
     void generate_date_line();
     void generate_server_line();
 
-    ResponseHeader(const ResponseHeader& other);
-    ResponseHeader& operator=(const ResponseHeader& other);
+    HeaderGenerator(const HeaderGenerator& other);
+    HeaderGenerator& operator=(const HeaderGenerator& other);
 
   public:
-    ResponseHeader();
-    ~ResponseHeader();
+    HeaderGenerator();
+    ~HeaderGenerator();
 
-    const std::string& get_data() const throw();
-
-    void generate_data(unsigned int stat, std::string::size_type content_length);
+    const std::string& generate(unsigned int stat, std::string::size_type content_length);
 
     // test function
     void print_data() const;
