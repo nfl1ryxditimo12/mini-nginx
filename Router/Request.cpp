@@ -48,7 +48,7 @@ void	ws::Request::parse_request_chunked_body(ws::Token& token, std::stringstream
       }
       for (std::string::size_type i = 0; i < token.length(); ++i, --_chunked_byte) {
         if (_request_body.length() == _client_max_body_size) {
-          _eof = true;
+          _status = 413;
           break;
         }
         _request_body.push_back(token[i]);
@@ -76,12 +76,15 @@ void	ws::Request::parse_request_body(std::stringstream& buffer) {
 
   // _request_body = token.rdall(buffer);
 
-  for (char c = buffer.get(); i <= _content_length && i <= _client_max_body_size; c = buffer.get(), ++i) {
+  for (char c = buffer.get(); i <= _content_length || i <= _client_max_body_size; c = buffer.get(), ++i) {
     if (buffer.eof())
       break;
 
     _request_body.push_back(c);
   }
+
+  if (i == _client_max_body_size)
+    _status = 413;
 
   if (i == _content_length || i == _client_max_body_size)
     _eof = true;
@@ -149,7 +152,7 @@ void	ws::Request::parse_request_header(ws::Token& token, std::stringstream& buff
 /*
   repository를 header파싱 후 해줘서 client_max_body_size까지만 받아올 지 생각 해 봐야함
 */
-int ws::Request::parse_request_message(const ws::Configure* conf, ws::Repository* repository, const std::string message) {
+int ws::Request::parse_request_message(const ws::Configure* conf, const std::string message) {
 
   ws::Token token;
   std::stringstream buffer;
@@ -166,9 +169,7 @@ int ws::Request::parse_request_message(const ws::Configure* conf, ws::Repository
 
   if (!_request_header.size()) {
     parse_request_header(token, buffer);
-    const ws::Server* curr_server = conf->find_server(this->get_listen(), this->get_server_name());
-    (*repository)(curr_server, this);
-    _client_max_body_size = repository->get_client_max_body_size();
+    _client_max_body_size = conf->find_server(this->get_listen(), this->get_server_name())->get_client_max_body_size();
   }
 
   /* body가 없거나 _status가 양수일 경우 eof 설정 */
@@ -182,10 +183,6 @@ int ws::Request::parse_request_message(const ws::Configure* conf, ws::Repository
   else
     parse_request_chunked_body(token, buffer);
 
-  /*
-    default == 0
-    HTTP message에 오류가 있는 경우 양수 반환
-  */
   return _status;
 }
 
