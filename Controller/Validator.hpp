@@ -14,15 +14,16 @@ namespace ws {
     typedef std::map<std::string, func> validate_func;
 
     typedef void (Validator::*check_func)(client_value_type&);
+    typedef std::vector<check_func> check_func_vec;
 
-    typedef ws::Request::header_type  header_type;
+    typedef ws::Request::header_type header_type;
     
   private:
     // const ws::Request _request;
     // const ws::Repository _repository;
 
     validate_func _validate_func;
-    std::vector<check_func> _check_func;
+    check_func_vec _check_func_vec;
 
 
     Validator(const Validator& cls);
@@ -37,12 +38,10 @@ namespace ws {
     void check_method(client_value_type& client_data);
     void check_uri(client_value_type& client_data);
     void check_version(client_value_type& client_data);
-
     void check_content_length(client_value_type& client_data);
     void check_connection(client_value_type& client_data);
     void check_transfer_encoding(client_value_type& client_data);
     void check_host(client_value_type& client_data);
     void check_request_header();
-
   };
 }
