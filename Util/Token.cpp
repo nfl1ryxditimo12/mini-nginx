@@ -76,6 +76,13 @@ namespace ws {
   ws::Token& ws::Token::rd_http_line(std::istream& buffer) {
     this->clear();
 
+    while (true) {
+      if (buffer.peek() != ' ')
+        break;
+
+      buffer.get();
+    }
+
     for (char c = buffer.get(), prev = 0; ; prev = c, c = buffer.get()) {
       if (buffer.eof())
         return *this;

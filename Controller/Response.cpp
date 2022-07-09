@@ -29,7 +29,7 @@ void ws::Response::process(ws::Socket* socket, client_value_type& client_data, u
     EV_ADD,
     NOTE_TRIGGER,
     0,
-    reinterpret_cast<void*>(ws::Socket::read_data)
+    reinterpret_cast<void*>(client_data.request.get_method() == "POST" ? ws::Socket::write_data : ws::Socket::read_data)
   );
 
 //  if (!_repo.get_autoindex().empty()) {

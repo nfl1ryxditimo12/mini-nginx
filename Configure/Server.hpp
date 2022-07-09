@@ -54,6 +54,6 @@ namespace ws {
     void add_index(const index_type& value);
     void set_client_max_body_size(const client_max_body_size_type& value);
 
-    const Location* find_location(const location_pair_type::first_type& dir) const throw();
+    const Location& find_location(location_pair_type::first_type dir) const throw();
   };
 }

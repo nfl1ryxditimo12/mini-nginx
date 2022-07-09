@@ -357,9 +357,7 @@ void ws::ConfParser::parse_return(ws::Location& location) {
 
   this->rdword();
 
-  int code = 0;
-
-  ws::stoul(_token, 999);
+  unsigned int code = static_cast<unsigned int>(ws::stoul(_token, 999));
 
   this->rdword();
 
@@ -485,8 +483,7 @@ void ws::ConfParser::set_default_server(ws::Server& server) const {
 }
 
 void ws::ConfParser::set_default_location(ws::Server& server, location_map_type& location_map) const {
-  if (location_map.empty())
-    location_map.insert(location_map_type::value_type("/", Location()));
+  location_map.insert(location_map_type::value_type(ws::get_curr_dir(), Location()));
 
   for (location_map_type::iterator it = location_map.begin(); it != location_map.end(); ++it) {
     ws::Location& location = it->second;
@@ -526,7 +523,7 @@ ws::ConfParser::server_finder_type ws::ConfParser::init_server_finder(const serv
         ++serv_name_it
       ) {
         server_finder.insert(
-          server_finder_type::value_type(server_finder_type::key_type(*listen_it, *serv_name_it), &(*serv_it))
+          server_finder_type::value_type(server_finder_type::key_type(*listen_it, *serv_name_it), *serv_it)
         );
       }
     }

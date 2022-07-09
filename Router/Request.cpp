@@ -27,7 +27,7 @@ ws::Request::Request(const ws::Configure::listen_type& listen): _listen(listen) 
 ws::Request::Request(const Request& cls) {
   _listen = cls._listen;
   _eof = cls._eof;
-  
+
   _method = cls._method;
   _request_uri = cls._request_uri;
   _request_uri_query = cls._request_uri_query;
@@ -40,7 +40,7 @@ ws::Request::Request(const Request& cls) {
   _server_name = cls._server_name;
   _connection = cls._connection;
   _transfer_encoding = cls._transfer_encoding;
-  
+
   _header_parser = cls._header_parser;
   _status = cls._status;
   _chunked = cls._chunked;
@@ -154,7 +154,7 @@ void	ws::Request::parse_request_header(ws::Token& token, std::stringstream& buff
       return;
     }
     key = token;
-    value = token.rd_http_line(buffer).substr(1, token.length() - 1);
+    value = token.rd_http_line(buffer);
 
     header_parse_map_type::iterator header_iter;
 
@@ -194,9 +194,9 @@ int ws::Request::parse_request_message(const ws::Configure& conf, const std::str
 
   if (!_request_header.size()) {
     parse_request_header(token, buffer);
-    const ws::Server* curr_server = conf.find_server(this->get_listen(), this->get_server_name());
-    _client_max_body_size = curr_server->get_client_max_body_size();
-    repo(curr_server, this);
+    const ws::Server& curr_server = conf.find_server(this->get_listen(), this->get_server_name());
+    _client_max_body_size = curr_server.get_client_max_body_size();
+    repo(curr_server, *this);
   }
 
   /* body가 없거나 _status가 양수일 경우 eof 설정 */

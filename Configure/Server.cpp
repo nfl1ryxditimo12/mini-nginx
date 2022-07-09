@@ -3,6 +3,8 @@
 #include <arpa/inet.h>
 #include <stdexcept>
 
+#include "Util.hpp"
+
 ws::Server::Server() {
   // this->_server_names.push_back("_");
   // this->_location_map.insert(std::pair<std::string, ws::Location>("/", ws::Location()));
@@ -81,7 +83,9 @@ void ws::Server::set_location_map(const location_map_type& value) {
     std::string dir(it->second.get_root());
     if (it->first[0] != '/')
       dir += "/";
-    dir += it->first;
+
+    if (ws::get_curr_dir() != dir)
+      dir += it->first;
 
     _location_map.insert(location_pair_type(dir, it->second));
   }
@@ -107,17 +111,16 @@ void ws::Server::set_client_max_body_size(const client_max_body_size_type& value
   _option.set_client_max_body_size(value);
 }
 #include <iostream> // todo
-const ws::Location* ws::Server::find_location(const location_pair_type::first_type& dir) const throw() {
-  location_map_type::const_iterator result = _location_map.find(dir);
+const ws::Location& ws::Server::find_location(location_pair_type::first_type dir) const throw() {
+  location_map_type::const_iterator result;
 
-  if (result != _location_map.end())
-    return &(result->second);
+  while (dir.length()) {
+    std::cout << dir << std::endl; // todo
+    result = _location_map.find(dir);
+    if (result != _location_map.end())
+      return result->second;
+    dir.erase(dir.find_last_of('/'));
+  }
 
-  result = _location_map.find(dir.substr(0, dir.find_last_of('/')));
-  std::cout << dir.substr(0, dir.find_last_of('/')) << std::endl;
-
-  if (result != _location_map.end())
-    return &(result->second);
-
-  return NULL;
+  return _location_map.find(ws::get_curr_dir())->second;
 }

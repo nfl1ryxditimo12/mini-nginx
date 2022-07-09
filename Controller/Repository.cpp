@@ -12,7 +12,7 @@
   권한 없을 때 파일 열기 어떻게 처리할지
 */
 
-ws::Repository::Repository(bool& fatal, unsigned int& status): _fatal(fatal), _status(status), _fd(FD_DEFAULT) {}
+ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _status(status), _fd(FD_DEFAULT) {}
 
 ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(cls._status) {
   _fd = cls._fd;
@@ -34,13 +34,13 @@ ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(c
 
 ws::Repository::~Repository() {}
 
-void ws::Repository::operator()(const ws::Server* server, const ws::Request* request) {
-  _server = server;
-  _location = _server->find_location(request->get_uri());
-  _request = request;
+void ws::Repository::operator()(const ws::Server& server, const ws::Request& request) {
+  _server = &server;
+  _location = &(_server->find_location(request.get_uri()));
+  _request = &request;
   /*set server*/
-  _config.listen = request->get_listen();
-  _config.server_name = request->get_request_header().find("Host")->second;
+  _config.listen = request.get_listen();
+  _config.server_name = request.get_request_header().find("Host")->second;
   // _server_name = request.get_server_name();
 
   if (_location != NULL) {
@@ -83,7 +83,7 @@ void ws::Repository::set_repository(unsigned int status)  {
   set_content_type();
 }
 
-void ws::Repository::set_status(const unsigned int status) {
+void ws::Repository::set_status(unsigned int status) {
   if (_status >= BAD_REQUEST)
     return;
   _status = status;
@@ -121,7 +121,7 @@ void ws::Repository::set_content_type() {
   if (!_autoindex.empty() || _status >= BAD_REQUEST) {
     _content_type = "text/html";
   }
-  else if (_config.redirect.first == static_cast<const unsigned int>(_status)) {
+  else if (_config.redirect.first == static_cast<unsigned int>(_status)) {
     if (_status < 300)
       _content_type = "application/octet-stream";
   }
@@ -143,7 +143,8 @@ void ws::Repository::open_file(std::string filename) {
       filename = ""; // _defualt_root_path + status.html
   }
 
-  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
+//  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
+  if ((_fd = open("/goinfre/jaham/webserv/test_create.html", open_flag, 644)) == -1)
     throw; // 프로세스 종료해야함
 }
 

@@ -23,8 +23,8 @@ void ws::Validator::operator()(client_value_type& client_data) {
 }
 
 void ws::Validator::check_method(client_value_type& client_data) {
-  std::string method = client_data.request->get_method();  
-  ws::Location::limit_except_vec_type limit_except_vec = client_data.repository->get_location()->get_limit_except_vec();
+  std::string method = client_data.request.get_method();
+  ws::Location::limit_except_vec_type limit_except_vec = client_data.repository.get_location()->get_limit_except_vec();
 
   for (ws::Location::limit_except_vec_type::iterator it = limit_except_vec.begin(); it != limit_except_vec.end(); ++it) {
     if (*it == method)
@@ -36,49 +36,55 @@ void ws::Validator::check_method(client_value_type& client_data) {
 
 void ws::Validator::check_uri(client_value_type& client_data) {
   
-  if (client_data.repository->get_location() == NULL) {
+  if (client_data.repository.get_location() == NULL) {
     client_data.status = NOT_FOUND;
     return;
   }
 
   struct stat buf;
-  if (lstat(client_data.request->get_uri().c_str(), &buf) > 0) {
+  if (lstat(client_data.request.get_uri().c_str(), &buf) > 0) {
     client_data.status = NOT_FOUND;
     return;
   }
-  if (S_ISDIR(buf.st_mode) && client_data.repository->get_server()->get_autoindex() == false) {
+  if (S_ISDIR(buf.st_mode) && client_data.repository.get_server()->get_autoindex() == false) {
     client_data.status = NOT_FOUND;
     return;
   }
 }
 
 void ws::Validator::check_version(client_value_type& client_data) {
-  if (client_data.request->get_version() != "HTTP/1.1")
+  if (client_data.request.get_version() != "HTTP/1.1")
     client_data.status = HTTP_VERSION_NOT_SUPPORTED;
   return;
 }
 
 void ws::Validator::check_content_length(ws::Validator::client_value_type& client_data) {
+  const ws::Request* const request = &client_data.request;
+
   if (
     (
-      client_data.request->get_content_length() == std::numeric_limits<unsigned long>::max()
-      && (client_data.request->get_transfer_encoding().empty())
+      request->get_content_length() == std::numeric_limits<unsigned long>::max()
+      && (request->get_transfer_encoding().empty())
+      && (request->get_method() == "POST")
     )
     || (
-      client_data.request->get_content_length() != std::numeric_limits<unsigned long>::max()
-      && !(client_data.request->get_transfer_encoding().empty())
+      request->get_content_length() != std::numeric_limits<unsigned long>::max()
+      && !(request->get_transfer_encoding().empty())
     )
   )
     client_data.status = BAD_REQUEST;
 
-  if (client_data.request->get_content_length() != client_data.request->get_request_body().length())
+  if (
+    (request->get_content_length() != request->get_request_body().length())
+    && (request->get_method() == "POST")
+  )
     client_data.status = BAD_REQUEST;
 
   return;
 }
 
 void ws::Validator::check_connection(ws::Validator::client_value_type& client_data) {
-  const std::string connection = client_data.request->get_connection();
+  const std::string connection = client_data.request.get_connection();
 
   if (!(connection == "close" || connection == "keep-alive"))
     client_data.status = BAD_REQUEST;
@@ -89,7 +95,7 @@ void ws::Validator::check_transfer_encoding(ws::Validator::client_value_type& cl
 }
 
 void ws::Validator::check_host(ws::Validator::client_value_type& client_data) {
-  std::string host = client_data.request->get_server_name();
+  std::string host = client_data.request.get_server_name();
   if (host == "")
     client_data.status = BAD_REQUEST;
 }

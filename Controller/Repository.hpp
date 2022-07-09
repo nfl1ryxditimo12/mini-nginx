@@ -82,9 +82,9 @@ namespace ws {
 
     /* 치명적인 오류 일 경우 콘솔 또는 throw 하는 방식 생각해 봐야함 */
 
-    bool& _fatal;
+    bool _fatal;
 
-    unsigned int& _status; // get_status();
+    unsigned int _status; // get_status();
 
     int _fd; // get_fd();
 
@@ -129,11 +129,11 @@ namespace ws {
     void open_file(std::string filename);
 
   public:
-    Repository(bool& fatal, unsigned int& status);
+    Repository(bool fatal, unsigned int status);
     Repository(const Repository& cls);
     ~Repository();
 
-    void operator()(const ws::Server* server, const ws::Request* request);
+    void operator()(const ws::Server& server, const ws::Request& request);
 
     void set_status(const unsigned int status);
     void set_repository(unsigned int status);

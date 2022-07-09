@@ -195,10 +195,11 @@ void ws::Socket::send_response(ws::Socket *self, struct kevent event) {
   int fd = open("/goinfre/jaham/webserv/test.html", O_RDONLY);
 
 void ws::Socket::read_data(ws::Socket* self, struct kevent event) {
+  const client_value_type& client = self->_client.find(event.ident)->second;
   char buffer[kBUFFER_SIZE + 1];
   ssize_t read_size = 0;
 
-  read_size = read(fd, buffer, kBUFFER_SIZE);
+  read_size = read(client.repository.get_fd(), buffer, kBUFFER_SIZE);
 
   if (read_size < 0)
     self->exit_socket();
@@ -225,7 +226,7 @@ void ws::Socket::write_data(ws::Socket *self, struct kevent event) {
   std::size_t& offset = client.write_offset;
   ssize_t write_size = 0;
 
-  write_size = write(fd, request_body.c_str() + offset, request_body.length() - offset);
+  write_size = write(client.repository.get_fd(), request_body.c_str() + offset, request_body.length() - offset);
 
   if (write_size == -1)
     self->exit_socket();
@@ -234,6 +235,7 @@ void ws::Socket::write_data(ws::Socket *self, struct kevent event) {
 
   if (offset == request_body.length()) {
     offset = 0;
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
     self->_kernel.kevent_ctl(
       event.ident,
       EVFILT_USER,
