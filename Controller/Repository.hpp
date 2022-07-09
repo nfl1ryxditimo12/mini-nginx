@@ -114,6 +114,7 @@ namespace ws {
     config_type _config;
     std::string _project_root;
     return_type _return; // 어떻게 처리해야 하는지 내일 상의해야함
+    struct stat _file_stat;
 
     /* =================================== */
     /*                 OCCF                */

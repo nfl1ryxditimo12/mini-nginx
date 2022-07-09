@@ -12,7 +12,10 @@
   권한 없을 때 파일 열기 어떻게 처리할지
 */
 
-ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _status(status), _fd(FD_DEFAULT) {}
+ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _status(status), _fd(FD_DEFAULT) {
+  _project_root = ws::Util::get_root_dir();
+
+}
 
 ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(cls._status) {
   _fd = cls._fd;
@@ -35,9 +38,16 @@ ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(c
 ws::Repository::~Repository() {}
 
 void ws::Repository::operator()(const ws::Server& server, const ws::Request& request) {
+  _uri = request.get_uri();
+  std::string file = _project_root;
+  
   _server = &server;
-  _location = &(_server->find_location(request.get_uri()));
+  _location = &(_server->find_location(file));
   _request = &request;
+
+
+  lstat(file.c_str(), &_file_stat);
+
   /*set server*/
   _config.listen = request.get_listen();
   _config.server_name = request.get_request_header().find("Host")->second;
@@ -62,8 +72,7 @@ void ws::Repository::set_option(const ws::InnerOption& option) {
 }
 
 void ws::Repository::set_repository(unsigned int status)  {
-  const std::string& server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
-  struct stat file_stat;
+  std::string server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
 
   this->set_status(status);
   if (_config.redirect.first > 0)
@@ -72,7 +81,9 @@ void ws::Repository::set_repository(unsigned int status)  {
   _host = server_name + ":" + ws::Util::ultos(ntohs((_config.listen.second)));
   _method = _request->get_method();
 
-  if (S_ISDIR(file_stat.st_mode)) {
+  // file_stat 초기화 해줘야함
+
+  if (S_ISDIR(_file_stat.st_mode)) {
     if (_config.autoindex || _config.index.size())
       this->set_autoindex();
   }
@@ -90,7 +101,8 @@ void ws::Repository::set_status(unsigned int status) {
 }
 
 void ws::Repository::set_autoindex() {
-  DIR* dir = opendir(_config.root.c_str());
+  std::string path = _project_root + _uri;
+  DIR* dir = opendir(path.c_str());
   struct dirent *file    = NULL;
 
   if (dir == NULL)
@@ -144,7 +156,7 @@ void ws::Repository::open_file(std::string filename) {
   }
 
 //  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
-  if ((_fd = open("/goinfre/jaham/webserv/test_create.html", open_flag, 644)) == -1)
+  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
     throw; // 프로세스 종료해야함
 }
 
