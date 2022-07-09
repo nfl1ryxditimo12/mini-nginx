@@ -43,11 +43,11 @@ void ws::Repository::set_option(const ws::InnerOption& option) {
   _config.error_page_map = &(option.get_error_page_map());
 }
 
-void ws::Repository::set_repository(int status)  {
+void ws::Repository::set_repository(unsigned int& status)  {
   const std::string& server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
   struct stat file_stat;
   this->set_status(status);
-  this->set_status(_config.redirect->first);
+  this->set_status(_config.redirect->first); // todo
 
   _host = server_name + ":" + ws::ultoa(ntohs((_config.listen->second)));
   _method = _request->get_method();
@@ -145,7 +145,7 @@ const int&  ws::Repository::get_fd() const throw() {
   return _fd;
 }
 
-const int&  ws::Repository::get_status() const throw() {
+const unsigned int&  ws::Repository::get_status() const throw() {
   return _status;
 }
 

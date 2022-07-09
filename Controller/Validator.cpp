@@ -17,7 +17,7 @@ ws::Validator::~Validator() {}
 void ws::Validator::operator()(client_value_type& client_data) {
   for (check_func_vec::iterator it = _check_func_vec.begin(); it != _check_func_vec.end(); ++it) {
     (this->**it)(client_data);
-    if (client_data.status = 0)
+    if (client_data.status != 0)
       break;
   }
 }

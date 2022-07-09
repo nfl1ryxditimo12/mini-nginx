@@ -160,7 +160,7 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
     std::cout << YLW << "\n== Request ======================================\n" << NC << std::endl;
     std::cout << buffer << std::endl;
     std::cout << RED << "\n== Parsing ======================================\n" << NC << std::endl;
-    client_data->status = client_data->request->parse_request_message(self->_conf, buffer);
+    client_data->status = client_data->request->parse_request_message(self->_conf, buffer, client_data->repository);
   }
 
   /*
@@ -181,6 +181,7 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
 void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   client_value_type* client_data = self->_client.find(event.ident)->second;
   ws::Repository& repository = *client_data->repository;
+  repository.set_repository(client_data->status);
   (void) repository; // todo
   if (!client_data->status)
     _validator(*client_data);

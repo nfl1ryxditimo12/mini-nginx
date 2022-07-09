@@ -132,7 +132,7 @@ namespace ws {
     Request(const ws::Configure::listen_type& listen);
     ~Request();
 
-    int   parse_request_message(const ws::Configure* conf, const std::string message);
+    int   parse_request_message(const ws::Configure* conf, const std::string message, ws::Repository* repo);
     void  clear();
     void  test();
 

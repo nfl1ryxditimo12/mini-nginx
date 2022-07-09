@@ -138,7 +138,7 @@ namespace ws {
     void operator()(const ws::Server* server, const ws::Request* request);
 
     void set_status(const int& status);
-    void set_repository(int status);
+    void set_repository(unsigned int& status);
 
     /* =================================== */
     /*                Getter               */
@@ -149,7 +149,7 @@ namespace ws {
 
     bool                  get_fatal() const throw();
     const int&            get_fd() const throw();
-    const int&            get_status() const throw();
+    const unsigned int&   get_status() const throw();
     const std::string&    get_host() const throw();
     const std::string&    get_method() const throw();
     const std::string&    get_root() const throw();
