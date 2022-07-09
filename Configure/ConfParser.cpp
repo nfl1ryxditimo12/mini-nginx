@@ -485,6 +485,9 @@ void ws::ConfParser::set_default_server(ws::Server& server) const {
 }
 
 void ws::ConfParser::set_default_location(ws::Server& server, location_map_type& location_map) const {
+  if (location_map.empty())
+    location_map.insert(location_map_type::value_type("/", Location()));
+
   for (location_map_type::iterator it = location_map.begin(); it != location_map.end(); ++it) {
     ws::Location& location = it->second;
 
