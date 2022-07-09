@@ -523,7 +523,7 @@ ws::ConfParser::server_finder_type ws::ConfParser::init_server_finder(const serv
         ++serv_name_it
       ) {
         server_finder.insert(
-          server_finder_type::value_type(server_finder_type::key_type(*listen_it, *serv_name_it), &(*serv_it))
+          server_finder_type::value_type(server_finder_type::key_type(*listen_it, *serv_name_it), *serv_it)
         );
       }
     }

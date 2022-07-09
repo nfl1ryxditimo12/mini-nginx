@@ -18,7 +18,7 @@ ws::Repository::~Repository() {}
 
 void ws::Repository::operator()(const ws::Server* server, const ws::Request* request) {
   _server = server;
-  _location = _server->find_location(request->get_uri());
+  _location = &(_server->find_location(request->get_uri())); 
   _request = request;
   /*set server*/
   _config.listen = &(request->get_listen());
@@ -145,7 +145,7 @@ const int&  ws::Repository::get_fd() const throw() {
   return _fd;
 }
 
-const int&  ws::Repository::get_status() const throw() {
+const unsigned int&  ws::Repository::get_status() const throw() {
   return _status;
 }
 
