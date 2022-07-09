@@ -46,18 +46,18 @@ namespace ws {
   private:
     struct config_data {
       /*server*/
-      const listen_type* listen;
-      const server_name_type* server_name;
+      listen_type listen;
+      server_name_type server_name;
     /*location*/
-      const limit_except_vec_type* limit_except_vec;
-      const return_type* redirect;
-      const cgi_string_type* cgi;
+      limit_except_vec_type limit_except_vec;
+      return_type redirect;
+      cgi_string_type cgi;
     /*option*/
-      const autoindex_bool_type* autoindex;
-      const root_type* root;
-      const index_vec_type* index;
-      const client_max_body_size_type* client_max_body_size;
-      const error_page_map_type* error_page_map;
+      autoindex_bool_type autoindex;
+      root_type root;
+      index_vec_type index;
+      client_max_body_size_type client_max_body_size;
+      error_page_map_type error_page_map;
     };
 
   public:
@@ -112,9 +112,7 @@ namespace ws {
     /* =================================== */
 
     config_type _config;
-    // bool _dir;
-    // struct stat _file;
-    std::string _root;
+    std::string _proejct_root;
     return_type _return; // 어떻게 처리해야 하는지 내일 상의해야함
 
     /* =================================== */
@@ -122,7 +120,6 @@ namespace ws {
     /* =================================== */
 
     Repository();
-    Repository(const Repository& cls);
     Repository& operator=(const Repository& cls);
 
     void set_option(const ws::InnerOption& option);
@@ -133,12 +130,13 @@ namespace ws {
 
   public:
     Repository(bool& fatal, unsigned int& status);
+    Repository(const Repository& cls);
     ~Repository();
 
     void operator()(const ws::Server* server, const ws::Request* request);
 
-    void set_status(const int& status);
-    void set_repository(int status);
+    void set_status(const unsigned int status);
+    void set_repository(unsigned int status);
 
     /* =================================== */
     /*                Getter               */
