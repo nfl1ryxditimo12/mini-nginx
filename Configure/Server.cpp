@@ -107,17 +107,14 @@ void ws::Server::set_client_max_body_size(const client_max_body_size_type& value
   _option.set_client_max_body_size(value);
 }
 #include <iostream> // todo
-const ws::Location* ws::Server::find_location(const location_pair_type::first_type& dir) const throw() {
-  location_map_type::const_iterator result = _location_map.find(dir);
+const ws::Location& ws::Server::find_location(location_pair_type::first_type dir) const throw() {
+  location_map_type::const_iterator result;
 
-  if (result != _location_map.end())
-    return &(result->second);
-
-  result = _location_map.find(dir.substr(0, dir.find_last_of('/')));
-  std::cout << dir.substr(0, dir.find_last_of('/')) << std::endl;
-
-  if (result != _location_map.end())
-    return &(result->second);
-
-  return NULL;
+  while (true) {
+    std::cout << dir << std::endl; // todo
+    result = _location_map.find(dir);
+    if (result != _location_map.end())
+      return result->second;
+    dir.erase(dir.find_last_of('/'));
+  }
 }

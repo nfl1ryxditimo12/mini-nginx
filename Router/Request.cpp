@@ -169,7 +169,7 @@ int ws::Request::parse_request_message(const ws::Configure* conf, const std::str
 
   if (!_request_header.size()) {
     parse_request_header(token, buffer);
-    _client_max_body_size = conf->find_server(this->get_listen(), this->get_server_name())->get_client_max_body_size();
+    _client_max_body_size = conf->find_server(this->get_listen(), this->get_server_name()).get_client_max_body_size();
   }
 
   /* body가 없거나 _status가 양수일 경우 eof 설정 */
