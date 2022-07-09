@@ -357,9 +357,7 @@ void ws::ConfParser::parse_return(ws::Location& location) {
 
   this->rdword();
 
-  int code = 0;
-
-  ws::stoul(_token, 999);
+  unsigned int code = static_cast<unsigned int>(ws::stoul(_token, 999));
 
   this->rdword();
 
