@@ -94,7 +94,6 @@ namespace ws {
     /* =================================== */
 
     Request();
-    Request(const Request& cls);
     Request& operator=(const Request& cls);
 
     /* =================================== */
@@ -130,6 +129,7 @@ namespace ws {
 
   public:
     Request(const ws::Configure::listen_type& listen);
+    Request(const Request& cls);
     ~Request();
 
     int   parse_request_message(const ws::Configure* conf, const std::string message, ws::Repository* repo);
