@@ -88,7 +88,7 @@ void ws::Socket::connection() {
 
 /* Private function */
 
-void ws::Socket::init_client(int fd, listen_type listen) {
+void ws::Socket::init_client(unsigned int fd, listen_type listen) {
   _client.insert(client_map_type::value_type(fd, client_value_type(listen)));
 }
 
@@ -192,7 +192,7 @@ void ws::Socket::send_response(ws::Socket *self, struct kevent event) {
   }
 }
 //  int fd = open("/goinfre/jaham/webserv/test_create.html", O_WRONLY | O_TRUNC | O_CREAT, 0666);
-  int fd = open("/goinfre/jaham/webserv/test.html", O_RDONLY);
+  // int fd = open("/goinfre/jaham/webserv/test.html", O_RDONLY);
 
 void ws::Socket::read_data(ws::Socket* self, struct kevent event) {
   const client_value_type& client = self->_client.find(event.ident)->second;
