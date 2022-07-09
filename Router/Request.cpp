@@ -24,6 +24,31 @@ ws::Request::Request(const ws::Configure::listen_type& listen): _listen(listen) 
   _client_max_body_size = 0;
 }
 
+ws::Request::Request(const Request& cls) {
+  _listen = cls._listen;
+  _eof = cls._eof;
+  
+  _method = cls._method;
+  _request_uri = cls._request_uri;
+  _request_uri_query = cls._request_uri_query;
+  _http_version = cls._http_version;
+
+  _request_header = cls._request_header;
+  _request_body = cls._request_body;
+
+  _content_length = cls._content_length;
+  _server_name = cls._server_name;
+  _connection = cls._connection;
+  _transfer_encoding = cls._transfer_encoding;
+  
+  _header_parser = cls._header_parser;
+  _status = cls._status;
+  _chunked = cls._chunked;
+  _chunked_line_type = cls._chunked_line_type;
+  _chunked_byte = cls._chunked_byte;
+  _client_max_body_size = cls._client_max_body_size;
+}
+
 ws::Request::~Request() {}
 
 /*

@@ -24,10 +24,17 @@ namespace ws {
 
   private:
     struct client_data {
+
+      client_data(ws::Configure::listen_type listen)
+      : fatal(false), status(0), repository(ws::Repository(fatal, status)), request(ws::Request(listen)), response(""), write_offset(0) {};
+
+      client_data(const client_data& cls)
+      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request), response(cls.response), write_offset(cls.write_offset) {};
+
       bool                    fatal;
       unsigned int            status;
-      ws::Repository*         repository;
-      ws::Request*            request;
+      ws::Repository          repository;
+      ws::Request             request;
       std::string             response;
       std::string::size_type  write_offset;
     };
@@ -39,7 +46,7 @@ namespace ws {
     typedef std::map<server_type::first_type, server_type::second_type> server_map_type;
 
     typedef struct client_data                                          client_value_type;
-    typedef std::pair<int, client_value_type*>                          client_type;
+    typedef std::pair<int, client_value_type>                           client_type;
     typedef std::map<client_type::first_type, client_type::second_type> client_map_type;
 
     typedef void (*kevent_func)(ws::Socket* self, struct kevent event);
