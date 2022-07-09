@@ -177,7 +177,7 @@ void	ws::Request::parse_request_header(ws::Token& token, std::stringstream& buff
 /*
   repository를 header파싱 후 해줘서 client_max_body_size까지만 받아올 지 생각 해 봐야함
 */
-int ws::Request::parse_request_message(const ws::Configure* conf, const std::string message, ws::Repository* repo) {
+int ws::Request::parse_request_message(const ws::Configure& conf, const std::string& message, ws::Repository& repo) {
 
   ws::Token token;
   std::stringstream buffer;
@@ -194,9 +194,9 @@ int ws::Request::parse_request_message(const ws::Configure* conf, const std::str
 
   if (!_request_header.size()) {
     parse_request_header(token, buffer);
-    const ws::Server* curr_server = conf->find_server(this->get_listen(), this->get_server_name());
+    const ws::Server* curr_server = conf.find_server(this->get_listen(), this->get_server_name());
     _client_max_body_size = curr_server->get_client_max_body_size();
-    (*repo)(curr_server, this);
+    repo(curr_server, this);
   }
 
   /* body가 없거나 _status가 양수일 경우 eof 설정 */

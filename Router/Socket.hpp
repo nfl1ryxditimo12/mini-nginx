@@ -57,7 +57,7 @@ namespace ws {
     /*             Member Variable            */
     /* ====================================== */
 
-    const ws::Configure* _conf;
+    const ws::Configure& _conf;
 
     ws::Kernel _kernel;
 

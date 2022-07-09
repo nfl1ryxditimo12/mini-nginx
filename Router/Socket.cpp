@@ -22,7 +22,7 @@ const std::size_t ws::Socket::kBUFFER_SIZE = 1024 * 1024;
 #define CYN "\e[0;36m"
 /* console test code */
 
-ws::Socket::Socket(const ws::Configure& cls): _conf(&cls), _kernel() {
+ws::Socket::Socket(const ws::Configure& cls): _conf(cls), _kernel() {
   _response.set_kernel(&_kernel);
   ws::Configure::listen_vec_type host = cls.get_host_list();
 
@@ -140,7 +140,7 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
     std::cout << YLW << "\n== Request ======================================\n" << NC << std::endl;
     std::cout << buffer << std::endl;
     std::cout << RED << "\n== Parsing ======================================\n" << NC << std::endl;
-    client_data.status = client_data.request.parse_request_message(self->_conf, buffer);
+    client_data.status = client_data.request.parse_request_message(self->_conf, buffer, client_data.repository);
   }
 
   /*

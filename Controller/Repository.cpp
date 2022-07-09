@@ -28,7 +28,7 @@ ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(c
   _request = cls._request;
 
   _config = cls._config;
-  _proejct_root = cls._proejct_root;
+  _project_root = cls._project_root;
   _return = cls._return;
 }
 
