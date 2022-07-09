@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
   ws::Configure conf;
 
   {
-    ws::ConfParser config_parser(argv[1], ws::get_curr_dir());
+    ws::ConfParser config_parser(argv[1], ws::Util::get_root_dir());
     config_parser.parse(conf);
   }
 

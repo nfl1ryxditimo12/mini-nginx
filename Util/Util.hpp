@@ -4,24 +4,33 @@
 #include <string>
 
 namespace ws {
-  std::string get_curr_dir() throw();
-  void check_executed_dir();
+  class Util {
+  private:
+    static const std::string _hash;
+    static const std::string _root_dir;
 
-  unsigned long stoul(
-    const std::string& str,
-    unsigned long max = std::numeric_limits<unsigned long>::max() - 1,
-    unsigned long min = 0
-  ) throw();
+    static std::string set_curr_dir();
 
-  unsigned long hextoul(
-    const std::string& str,
-    unsigned long max = std::numeric_limits<unsigned long>::max() - 1,
-    unsigned long min = 0
-  ) throw();
+  public:
+    static const std::string& get_root_dir();
+    static void check_executed_dir();
 
-  std::string ultoa(unsigned long n) throw();
+    static unsigned long stoul(
+      const std::string& str,
+      unsigned long max = std::numeric_limits<unsigned long>::max() - 1,
+      unsigned long min = 0
+    ) throw();
 
-  bool is_valid_server_name(const std::string& str);
+    static unsigned long hextoul(
+      const std::string& str,
+      unsigned long max = std::numeric_limits<unsigned long>::max() - 1,
+      unsigned long min = 0
+    ) throw();
 
-  class Convertor;
+    static std::string ultos(unsigned long n) throw();
+
+    static bool is_valid_server_name(const std::string& str);
+
+    static std::string parse_relative_path(const std::string& str);
+  };
 }

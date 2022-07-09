@@ -19,7 +19,7 @@ std::string ws::HeaderGenerator::generate(unsigned int stat, std::string::size_t
 
 // start field
 void ws::HeaderGenerator::generate_start_line(std::string& data, unsigned int stat) {
-  data += "HTTP/1.1 " + ws::ultoa(stat) + "\r\n";
+  data += "HTTP/1.1 " + ws::Util::ultos(stat) + "\r\n";
 }
 
 // representation field
@@ -37,7 +37,7 @@ void ws::HeaderGenerator::generate_content_type_line(std::string& data) {
 }
 
 void ws::HeaderGenerator::generate_content_length(std::string& data, std::string::size_type content_length) {
-  data += "Content-Length: " + ws::ultoa(content_length) + " bytes\r\n";
+  data += "Content-Length: " + ws::Util::ultos(content_length) + " bytes\r\n";
 }
 
 

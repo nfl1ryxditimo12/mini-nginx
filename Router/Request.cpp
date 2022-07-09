@@ -61,7 +61,7 @@ void	ws::Request::parse_request_chunked_body(ws::Token& token, std::stringstream
   while (!buffer.eof() && !_status) {
     token.rd_http_line(buffer);
     if (!_chunked_line_type) {
-      _chunked_byte = ws::hextoul(token);
+      _chunked_byte = ws::Util::hextoul(token);
       _chunked_line_type = 1;
       if (_chunked_byte == std::string::npos)
         _status = BAD_REQUEST;
@@ -308,7 +308,7 @@ void  ws::Request::parse_connection(const std::string& value) {
 }
 
 void  ws::Request::parse_content_length(const std::string& value) {
-  std::string::size_type content_length = ws::stoul(value);
+  std::string::size_type content_length = ws::Util::stoul(value);
 
   if (content_length == value.npos) {
     _status = BAD_REQUEST;

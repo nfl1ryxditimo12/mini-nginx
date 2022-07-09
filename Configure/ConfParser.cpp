@@ -240,7 +240,7 @@ void ws::ConfParser::parse_listen_port(listen_type& listen) {
   else
     ++i;
 
-  listen_type::second_type port = ws::stoul(std::string(_token.c_str() + i), std::numeric_limits<uint16_t>::max());
+  listen_type::second_type port = ws::Util::stoul(std::string(_token.c_str() + i), std::numeric_limits<uint16_t>::max());
 
   listen.second = htons(port);
 }
@@ -261,7 +261,7 @@ void ws::ConfParser::parse_server_name(ws::Server& server) {
       if (pos == 0)
         throw std::invalid_argument("Configure: server_name: `;' should appear at eol");
       server_name = _token.substr(0, pos);
-      if (is_valid_server_name(server_name))
+      if (ws::Util::is_valid_server_name(server_name))
         server.add_server_name(_token.substr(0, pos));
       break;
     } else {
@@ -269,7 +269,7 @@ void ws::ConfParser::parse_server_name(ws::Server& server) {
         throw std::invalid_argument("Configure: server_name: invalid format");
       if (_token == "\n")
         throw std::invalid_argument("Configure: server_name: invalid format");
-      if (is_valid_server_name(server_name))
+      if (ws::Util::is_valid_server_name(server_name))
         server.add_server_name(_token);
     }
   }
@@ -357,7 +357,7 @@ void ws::ConfParser::parse_return(ws::Location& location) {
 
   this->rdword();
 
-  unsigned int code = static_cast<unsigned int>(ws::stoul(_token, 999));
+  unsigned int code = static_cast<unsigned int>(ws::Util::stoul(_token, 999));
 
   this->rdword();
 
@@ -461,7 +461,7 @@ void ws::ConfParser::parse_error_page(ws::InnerOption& option) {
 ws::ConfParser::error_page_type::first_type ws::ConfParser::parse_error_code() const {
   unsigned long ret;
 
-  ret = ws::stoul(_token, 599, 300);
+  ret = ws::Util::stoul(_token, 599, 300);
   if (ret == std::numeric_limits<unsigned long>::max())
     throw std::invalid_argument("Configure: error_page: invalid error_code");
 
@@ -483,7 +483,7 @@ void ws::ConfParser::set_default_server(ws::Server& server) const {
 }
 
 void ws::ConfParser::set_default_location(ws::Server& server, location_map_type& location_map) const {
-  location_map.insert(location_map_type::value_type(ws::get_curr_dir(), Location()));
+  location_map.insert(location_map_type::value_type(ws::Util::get_root_dir(), Location()));
 
   for (location_map_type::iterator it = location_map.begin(); it != location_map.end(); ++it) {
     ws::Location& location = it->second;

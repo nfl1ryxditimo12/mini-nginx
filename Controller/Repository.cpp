@@ -69,7 +69,7 @@ void ws::Repository::set_repository(unsigned int status)  {
   if (_config.redirect.first > 0)
     this->set_status(_config.redirect.first); // todo
 
-  _host = server_name + ":" + ws::ultoa(ntohs((_config.listen.second)));
+  _host = server_name + ":" + ws::Util::ultos(ntohs((_config.listen.second)));
   _method = _request->get_method();
 
   if (S_ISDIR(file_stat.st_mode)) {

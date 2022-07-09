@@ -84,7 +84,7 @@ void ws::Server::set_location_map(const location_map_type& value) {
     if (it->first[0] != '/')
       dir += "/";
 
-    if (ws::get_curr_dir() != dir)
+    if (ws::Util::get_root_dir() != dir)
       dir += it->first;
 
     _location_map.insert(location_pair_type(dir, it->second));
@@ -122,5 +122,5 @@ const ws::Location& ws::Server::find_location(location_pair_type::first_type dir
     dir.erase(dir.find_last_of('/'));
   }
 
-  return _location_map.find(ws::get_curr_dir())->second;
+  return _location_map.find(ws::Util::get_root_dir())->second;
 }
