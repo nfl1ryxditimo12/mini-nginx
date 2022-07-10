@@ -1,10 +1,8 @@
 #pragma once
 
-#include <set>
 #include <sstream>
 
 #include "Configure.hpp"
-#include "Server.hpp"
 #include "Token.hpp"
 
 namespace ws {
@@ -21,7 +19,7 @@ namespace ws {
     typedef ws::Location::limit_except_vec_type limit_except_vec_type;
 
     typedef ws::Server::index_type index_type;
-    typedef ws::Server::index_vec_type index_vec_type;
+    typedef ws::Server::index_set_type index_set_type;
     typedef ws::Server::error_page_type error_page_type;
 
     // types for parse function pointer map

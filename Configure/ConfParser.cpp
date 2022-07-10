@@ -101,6 +101,9 @@ void ws::ConfParser::check_location_header(std::string& dir, ws::Location& locat
   } else
     dir = temp;
 
+  if (dir[0] != '/')
+    throw std::invalid_argument("Configure: location header: location dir must start with `/'");
+
   location.set_cgi(cgi);
 
   if (_token != "{")
@@ -478,12 +481,12 @@ void ws::ConfParser::set_default_server(ws::Server& server) const {
       server.set_autoindex(false);
     if (server.get_root().empty())
       server.set_root(_root_dir);
-    if (server.get_index_vec().empty())
+    if (server.get_index_set().empty())
       server.add_index(index_type("index.html"));
 }
 
 void ws::ConfParser::set_default_location(ws::Server& server, location_map_type& location_map) const {
-  location_map.insert(location_map_type::value_type(ws::Util::get_root_dir(), Location()));
+  location_map.insert(location_map_type::value_type("/", Location()));
 
   for (location_map_type::iterator it = location_map.begin(); it != location_map.end(); ++it) {
     ws::Location& location = it->second;
@@ -501,12 +504,8 @@ void ws::ConfParser::set_default_location(ws::Server& server, location_map_type&
       location.set_autoindex(server.get_autoindex());
     if (location.get_root().empty())
       location.set_root(server.get_root());
-    if (location.get_index_vec().empty()) {
-      const index_vec_type& index_vec = server.get_index_vec();
-
-      for (index_vec_type::const_iterator it = index_vec.begin(); it != index_vec.end(); ++it)
-        location.add_index(*it);
-    }
+    if (location.get_index_set().empty())
+      location.set_index(server.get_index_set());
   }
 }
 

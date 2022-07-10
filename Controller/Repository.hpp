@@ -39,7 +39,7 @@ namespace ws {
     typedef ws::Location::cgi_type cgi_string_type;
     typedef ws::InnerOption::autoindex_type autoindex_bool_type;
     typedef ws::InnerOption::root_type root_type;
-    typedef ws::InnerOption::index_vec_type index_vec_type;
+    typedef ws::InnerOption::index_set_type index_set_type;
     typedef ws::InnerOption::client_max_body_size_type client_max_body_size_type;
     typedef ws::InnerOption::error_page_map_type error_page_map_type;
 
@@ -55,7 +55,7 @@ namespace ws {
     /*option*/
       autoindex_bool_type autoindex;
       root_type root;
-      index_vec_type index;
+      index_set_type index;
       client_max_body_size_type client_max_body_size;
       error_page_map_type error_page_map;
     };

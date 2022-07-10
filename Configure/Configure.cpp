@@ -1,7 +1,6 @@
 #include "Configure.hpp"
 
 #include <iostream>
-#include <set>
 
 ws::Configure::Configure() {}
 
@@ -107,9 +106,9 @@ void ws::Configure::print_option(const ws::InnerOption& option) const throw() {
   std::cout << "autoindex: " << option.get_autoindex() << "\n";
   std::cout << "root: " << option.get_root() << "\n";
 
-  const index_vec_type& index_vec = option.get_index_vec();
+  const index_set_type& index_set = option.get_index_set();
   std::cout << "index: ";
-  for (index_vec_type::const_iterator it = index_vec.begin(); it != index_vec.end(); ++it) {
+  for (index_set_type::const_iterator it = index_set.begin(); it != index_set.end(); ++it) {
     std::cout << *it << " ";
   }
   std::cout << "\n";
