@@ -122,17 +122,18 @@ bool ws::Util::is_valid_server_name(const std::string& str) {
 std::string ws::Util::parse_relative_path(const std::string &str) {
   std::string ret;
 
-  for (std::string::size_type pos1 = 0, pos2 = str.find('/', pos1 + 1); true; pos1 = pos2, pos2 = str.find('/', pos1 + 1)) {
+  for (
+    std::string::size_type pos1 = 0, pos2 = str.find('/', pos1 + 1);
+    pos1 != std::string::npos;
+    pos1 = pos2, pos2 = str.find('/', pos1 + 1)
+  ) {
     if (!(str.compare(pos1 + 1, 3, "../") && str.compare(pos1 + 1, str.length() - pos1 - 1, ".."))) {
       std::string::size_type erase_point = ret.find_last_of('/');
+
       if (erase_point != std::string::npos)
         ret.erase(erase_point);
-      continue;
-    }
 
-    if (pos1 == std::string::npos) {
-        // todo
-      break;
+      continue;
     }
 
     if (!(str.compare(pos1 + 1, 2, "./") && str.compare(pos1 + 1, str.length() - pos1 - 1, ".")) || str[pos1 + 1] == '/')
@@ -148,6 +149,9 @@ std::string ws::Util::parse_relative_path(const std::string &str) {
 
   if ((ret[ret.length() - 1] == '/') && (ret.length() != 1))
       ret.erase(ret.end() - 1);
+
+  if (ret[0] != '/')
+      ret = "/" + ret;
 
   return ret;
 }
