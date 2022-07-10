@@ -127,6 +127,7 @@ namespace ws {
     void set_content_type();
 
     void open_file(std::string filename);
+    void open_error_html();
 
   public:
     Repository(bool fatal, unsigned int status);

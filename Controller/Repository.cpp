@@ -83,16 +83,21 @@ void ws::Repository::set_repository(unsigned int status)  {
 
   // file_stat 초기화 해줘야함
 
-  if (S_ISDIR(_file_stat.st_mode) && !_config.redirect.first) {
-    if (_config.autoindex || _config.index.size())
-      this->set_autoindex();
-  }
 
-  if ((_fd == FD_DEFAULT || _autoindex.empty()) && (_config.redirect.first > 400 || _config.redirect.first == 0))
+  if (S_ISDIR(_file_stat.st_mode) && !_config.redirect.first)
+    this->set_autoindex();
+  else if (status == 0)
     open_file(_config.root + _uri);
 
-  set_content_type();
+  if (status >= BAD_REQUEST)
+    open_error_html();
 
+  if (!_status)
+    set_status(_method == "POST" ? 201 : 200);
+
+  set_content_type();
+  
+  // 지울거임
   test();
 }
 
@@ -117,6 +122,7 @@ void ws::Repository::set_autoindex() {
   while (dir && ((file = readdir(dir)) != NULL)) {
     std::string filename(file->d_name);
 
+    /* index.html은 기본값이고 index_vec_type -> index_set_type 으로 수정될 예정 */
     for (index_vec_type::const_iterator it = _config.index.begin(); it != _config.index.end(); ++it) {
       if (filename == *it) {
         open_file(_config.root + filename);
@@ -129,20 +135,21 @@ void ws::Repository::set_autoindex() {
       break;
     }
 
-    _autoindex.push_back(filename);
+    if (_config.autoindex)
+      _autoindex.push_back(filename);
   }
+
+  if (_fd == FD_DEFAULT && !_config.autoindex)
+    this->set_status(403);
 
   closedir(dir);
 }
 
 void ws::Repository::set_content_type() {
-  if (!_autoindex.empty() || _status >= BAD_REQUEST) {
+  if (!_autoindex.empty() || _status >= BAD_REQUEST)
     _content_type = "text/html";
-  }
-  else if (_config.redirect.first > 0 && _config.redirect.first == _status) {
-    if (_status < 300)
-      _content_type = "application/octet-stream";
-  }
+  else if (_config.redirect.first > 0 && _config.redirect.first < 300)
+    _content_type = "application/octet-stream";
   // nginx에서 바이너리 파일 어떤 content-type으로 주는지 확인해봐야함
   else {
     _content_type = "text";
@@ -150,20 +157,27 @@ void ws::Repository::set_content_type() {
 }
 
 void ws::Repository::open_file(std::string filename) {
-  error_page_map_type::const_iterator error_iter = _config.error_page_map.find(_status);
   int open_flag = _method == "GET" ? O_RDONLY : O_WRONLY | O_TRUNC | O_CREAT;
-
-  // 기본 에러 페이지 또는 제공된 에러 페이지
-  if (_status >= BAD_REQUEST) {
-    if (error_iter != _config.error_page_map.end())
-      filename = error_iter->second;
-    else
-      filename = ""; // _defualt_root_path + status.html
-  }
 
 //  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
   if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
+    this->set_status(INTERNAL_SERVER_ERROR);
+}
+
+void ws::Repository::open_error_html() {
+  error_page_map_type::const_iterator error_iter = _config.error_page_map.find(_status);
+  std::string filename;
+  int open_flag = O_WRONLY | O_TRUNC | O_CREAT;
+
+  // 기본 에러 페이지 또는 제공된 에러 페이지
+  if (error_iter != _config.error_page_map.end())
+    filename = error_iter->second;
+  else
+    filename = _project_root + "/" + ws::Util::ultos(_status) + ".html"; // _defualt_root_path + status.html
+
+  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
     this->set_fatal();
+  
 }
 
 /*getter*/
