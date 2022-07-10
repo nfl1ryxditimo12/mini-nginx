@@ -84,12 +84,18 @@ namespace ws {
 
     bool _fatal;
 
+    bool _dir;
+
     unsigned int _status; // get_status();
 
     int _fd; // get_fd();
 
+    std::string _project_root;
+
     /* filename 필요함 절대경로로 */
     std::string _uri;
+
+    std::string _file_path;
 
     std::string _host; // get_host();
 
@@ -112,8 +118,6 @@ namespace ws {
     /* =================================== */
 
     config_type _config;
-    std::string _project_root;
-    struct stat _file_stat;
 
     /* =================================== */
     /*                 OCCF                */
@@ -149,16 +153,20 @@ namespace ws {
     const ws::Server* get_server() const throw();
     const ws::Location* get_location() const throw();
 
-    bool                  get_fatal() const throw();
+    bool                  is_fatal() const throw();
+    bool                  is_dir() const throw();
     const int&            get_fd() const throw();
     const unsigned int&   get_status() const throw();
     const std::string&    get_host() const throw();
     const std::string&    get_method() const throw();
     const std::string&    get_root() const throw();
+    const std::string&    get_project_root() const throw();
     const std::string&    get_uri() const throw();
+    const std::string&    get_file_path() const throw();
     const std::string&    get_request_body() const throw();
     const autoindex_type& get_autoindex() const throw();
     const cgi_type&       get_cgi() const throw();
     const std::string&    get_content_type() const throw();
+    const redirect_type&  get_redirect() const throw();
   };
 }

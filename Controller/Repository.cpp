@@ -12,14 +12,15 @@
   권한 없을 때 파일 열기 어떻게 처리할지
 */
 
-ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _status(status), _fd(FD_DEFAULT) {
-  _project_root = ws::Util::get_root_dir();
+ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _dir(false), _status(status), _fd(FD_DEFAULT) {
+  _project_root = ws::Util::get_root_dir() + "/www";
 
 }
 
-ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(cls._status) {
+ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _dir(cls._dir), _status(cls._status) {
   _fd = cls._fd;
   _uri = cls._uri;
+  _file_path = cls._file_path;
   _host = cls._host;
   _method = cls._method;
   _request_body = cls._request_body;
@@ -38,15 +39,17 @@ ws::Repository::~Repository() {}
 
 void ws::Repository::operator()(const ws::Server& server, const ws::Request& request) {
   _uri = request.get_uri();
-  std::string file = _project_root + _uri;
+  _file_path = _project_root + _uri;
+   struct stat file_stat;
   
   _server = &server;
-  _location = &(_server->find_location(file + _uri));
+  _location = &(_server->find_location(_file_path + _uri));
   _request = &request;
   _request_body = _request->get_request_body();
 
 
-  lstat(file.c_str(), &_file_stat);
+  lstat(_file_path.c_str(), &file_stat);
+  _dir = S_ISDIR(file_stat.st_mode);
 
   /*set server*/
   _config.listen = request.get_listen();
@@ -71,10 +74,10 @@ void ws::Repository::set_option(const ws::InnerOption& option) {
   _config.error_page_map = option.get_error_page_map();
 }
 
-void ws::Repository::set_repository(unsigned int status)  {
+void ws::Repository::set_repository(unsigned int value)  {
   std::string server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
 
-  this->set_status(status);
+  this->set_status(value);
   if (_config.redirect.first > 0)
     this->set_status(_config.redirect.first); // todo
 
@@ -84,18 +87,18 @@ void ws::Repository::set_repository(unsigned int status)  {
   // file_stat 초기화 해줘야함
 
 
-  if (S_ISDIR(_file_stat.st_mode) && !_config.redirect.first)
+  if (_dir && !_config.redirect.first)
     this->set_autoindex();
-  else if (status == 0)
-    open_file(_config.root + _uri);
+  else if (_status == 0)
+    this->open_file(_file_path);
 
-  if (status >= BAD_REQUEST)
-    open_error_html();
+  if (_status >= BAD_REQUEST)
+    this->open_error_html();
 
   if (!_status)
-    set_status(_method == "POST" ? 201 : 200);
+    this->set_status(_method == "POST" ? 201 : 200);
 
-  set_content_type();
+  this->set_content_type();
   
   // 지울거임
   test();
@@ -112,8 +115,13 @@ void ws::Repository::set_fatal() {
 }
 
 void ws::Repository::set_autoindex() {
-  std::string path = _project_root + _uri;
-  DIR* dir = opendir(path.c_str());
+
+  if (_method != "GET") {
+    this->set_status(FORBIDDEN);
+    return;
+  }
+
+  DIR* dir = opendir(_file_path.c_str());
   struct dirent *file    = NULL;
 
   if (dir == NULL)
@@ -123,11 +131,7 @@ void ws::Repository::set_autoindex() {
     index_set_type::const_iterator filename = _config.index.find(file->d_name);
 
     if (filename != _config.index.end()) {
-      open_file(_config.root + *filename);
-      break;
-    }
-
-    if (_fd != FD_DEFAULT) {
+      open_file(_file_path + *filename);
       _autoindex.clear();
       break;
     }
@@ -154,23 +158,28 @@ void ws::Repository::set_content_type() {
 }
 
 void ws::Repository::open_file(std::string filename) {
+  if (_method == "DELETE")
+    return;
+
   int open_flag = _method == "GET" ? O_RDONLY : O_WRONLY | O_TRUNC | O_CREAT;
 
 //  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
   if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
     this->set_status(INTERNAL_SERVER_ERROR);
 }
-
+#include <iostream>
 void ws::Repository::open_error_html() {
   error_page_map_type::const_iterator error_iter = _config.error_page_map.find(_status);
   std::string filename;
-  int open_flag = O_WRONLY | O_TRUNC | O_CREAT;
+  int open_flag = O_RDONLY;
 
   // 기본 에러 페이지 또는 제공된 에러 페이지
   if (error_iter != _config.error_page_map.end())
     filename = error_iter->second;
   else
     filename = _project_root + "/" + ws::Util::ultos(_status) + ".html"; // _defualt_root_path + status.html
+
+  std::cout << filename << std::endl;
 
   if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
     this->set_fatal();
@@ -186,8 +195,12 @@ const ws::Location* ws::Repository::get_location() const throw() {
   return _location;
 }
 
-bool  ws::Repository::get_fatal() const throw() {
+bool  ws::Repository::is_fatal() const throw() {
   return _fatal;
+}
+
+bool  ws::Repository::is_dir() const throw() {
+  return _dir;
 }
 
 const int&  ws::Repository::get_fd() const throw() {
@@ -214,6 +227,14 @@ const std::string&  ws::Repository::get_uri() const throw() {
   return _uri;
 }
 
+const std::string&  ws::Repository::get_project_root() const throw() {
+  return _project_root;
+}
+
+const std::string&  ws::Repository::get_file_path() const throw() {
+  return _file_path;
+}
+
 const std::string&  ws::Repository::get_request_body() const throw() {
   return _request_body;
 }
@@ -228,6 +249,10 @@ const ws::Repository::cgi_type&  ws::Repository::get_cgi() const throw() {
 
 const std::string&  ws::Repository::get_content_type() const throw() {
   return _content_type;
+}
+
+const ws::Repository::redirect_type&  ws::Repository::get_redirect() const throw() {
+  return _config.redirect;
 }
 
 #include <iostream>
