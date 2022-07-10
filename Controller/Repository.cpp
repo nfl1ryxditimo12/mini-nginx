@@ -36,7 +36,7 @@ ws::Repository::~Repository() {}
 
 void ws::Repository::operator()(const ws::Server& server, const ws::Request& request) {
   _server = &server;
-  _location = &(_server->find_location(request.get_uri()));
+  _location = &(_server->find_location(Util::parse_relative_path(request.get_uri())));
   _request = &request;
   /*set server*/
   _config.listen = request.get_listen();
