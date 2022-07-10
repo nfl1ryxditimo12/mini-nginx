@@ -37,8 +37,8 @@ const ws::Location::root_type& ws::Location::get_root() const throw() {
   return _option.get_root();
 }
 
-const ws::Location::index_vec_type& ws::Location::get_index_vec() const throw() {
-  return _option.get_index_vec();
+const ws::Location::index_set_type& ws::Location::get_index_set() const throw() {
+  return _option.get_index_set();
 }
 
 const ws::Location::client_max_body_size_type& ws::Location::get_client_max_body_size() const throw() {
@@ -75,6 +75,10 @@ void ws::Location::set_root(const root_type& value) {
 
 void ws::Location::add_index(const index_type& value) {
   _option.add_index(value);
+}
+
+void ws::Location::set_index(const ws::Location::index_set_type &value) {
+  _option.set_index(value);
 }
 
 void ws::Location::set_client_max_body_size(const client_max_body_size_type& value) {

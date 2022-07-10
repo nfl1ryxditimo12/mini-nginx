@@ -49,8 +49,8 @@ const ws::Server::root_type& ws::Server::get_root() const throw() {
   return _option.get_root();
 }
 
-const ws::Server::index_vec_type& ws::Server::get_index_vec() const throw() {
-  return _option.get_index_vec();
+const ws::Server::index_set_type& ws::Server::get_index_set() const throw() {
+  return _option.get_index_set();
 }
 
 const ws::Server::client_max_body_size_type& ws::Server::get_client_max_body_size() const throw() {
@@ -79,16 +79,7 @@ void ws::Server::add_server_name(const server_name_type& value) {
 }
 
 void ws::Server::set_location_map(const location_map_type& value) {
-  for (location_map_type::const_iterator it = value.begin(); it != value.end(); ++it) {
-    std::string dir(it->second.get_root());
-    if (it->first[0] != '/')
-      dir += "/";
-
-    if (ws::Util::get_root_dir() != dir)
-      dir += it->first;
-
-    _location_map.insert(location_pair_type(dir, it->second));
-  }
+  _location_map = value;
 }
 
 void ws::Server::set_option(const ws::InnerOption& value) {
@@ -122,5 +113,5 @@ const ws::Location& ws::Server::find_location(location_pair_type::first_type dir
     dir.erase(dir.find_last_of('/'));
   }
 
-  return _location_map.find(ws::Util::get_root_dir())->second;
+  return _location_map.find("/")->second;
 }

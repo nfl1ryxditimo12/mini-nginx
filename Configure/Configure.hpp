@@ -23,7 +23,7 @@ namespace ws {
     typedef ws::InnerOption::autoindex_type autoindex_type;
     typedef ws::InnerOption::root_type root_type;
     typedef ws::InnerOption::index_type index_type;
-    typedef ws::InnerOption::index_vec_type index_vec_type;
+    typedef ws::InnerOption::index_set_type index_set_type;
     typedef ws::InnerOption::client_max_body_size_type client_max_body_size_type;
     typedef ws::InnerOption::error_page_type error_page_type;
     typedef ws::InnerOption::error_page_map_type error_page_map_type;

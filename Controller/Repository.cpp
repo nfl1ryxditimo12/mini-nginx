@@ -66,7 +66,7 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
 void ws::Repository::set_option(const ws::InnerOption& option) {
   _config.autoindex = option.get_autoindex();
   _config.root = option.get_root();
-  _config.index = option.get_index_vec();
+  _config.index = option.get_index_set();
   _config.client_max_body_size = option.get_client_max_body_size();
   _config.error_page_map = option.get_error_page_map();
 }
@@ -120,14 +120,11 @@ void ws::Repository::set_autoindex() {
     this->set_status(INTERNAL_SERVER_ERROR);
 
   while (dir && ((file = readdir(dir)) != NULL)) {
-    std::string filename(file->d_name);
+    index_set_type::const_iterator filename = _config.index.find(file->d_name);
 
-    /* index.html은 기본값이고 index_vec_type -> index_set_type 으로 수정될 예정 */
-    for (index_vec_type::const_iterator it = _config.index.begin(); it != _config.index.end(); ++it) {
-      if (filename == *it) {
-        open_file(_config.root + filename);
-        break;
-      }
+    if (filename != _config.index.end()) {
+      open_file(_config.root + *filename);
+      break;
     }
 
     if (_fd != FD_DEFAULT) {
@@ -136,7 +133,7 @@ void ws::Repository::set_autoindex() {
     }
 
     if (_config.autoindex)
-      _autoindex.push_back(filename);
+      _autoindex.push_back(file->d_name);
   }
 
   if (_fd == FD_DEFAULT && !_config.autoindex)
@@ -255,7 +252,7 @@ void ws::Repository::test() {
   std::cout << CYN << "[Type: bool]   " << NC << "- " << RED << "autoindex: " << NC << _config.autoindex << std::endl;
   std::cout << CYN << "[Type: string] " << NC << "- " << RED << "root: " << NC << _config.root << std::endl;
   std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "index:" << NC;
-  for (index_vec_type::iterator it = _config.index.begin(); it != _config.index.end(); ++it)
+  for (index_set_type::iterator it = _config.index.begin(); it != _config.index.end(); ++it)
     std::cout << " " << *it;
   std::cout << std::endl;
   std::cout << CYN << "[Type: ul]     " << NC << "- " << RED << "client_max_body_size: " << NC << _config.client_max_body_size << std::endl;
@@ -273,7 +270,7 @@ void ws::Repository::test() {
   std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_method: " << NC << _method << std::endl;
   std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_request_body: " << NC << _request_body << std::endl;
   std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "_autoindex:" << NC;
-  for (index_vec_type::iterator it = _autoindex.begin(); it != _autoindex.end(); ++it)
+  for (autoindex_type::iterator it = _autoindex.begin(); it != _autoindex.end(); ++it)
     std::cout << " " << *it;
   std::cout << std::endl;
   std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "_cgi: " << NC << _cgi.first << ", " << _cgi.second << std::endl;
