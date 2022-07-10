@@ -10,18 +10,21 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-
   ws::Configure conf;
 
-  {
+  try {
     ws::ConfParser config_parser(argv[1], ws::Util::get_root_dir());
     config_parser.parse(conf);
+  } catch (std::exception& e) {
+    std::cerr << e.what() << std::endl;
+    return 1;
+  } catch (...) {
+    std::cerr << "Configure: unknown error" << std::endl;
+    return 1;
   }
 
-  conf.print_configure();
+//  conf.print_configure(); // test configure
 
-  // ws::Socket socket(std::stoi(argv[1]));
   ws::Socket socket(conf);
-
   socket.connection();
 }
