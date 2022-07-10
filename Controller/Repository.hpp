@@ -35,7 +35,7 @@ namespace ws {
     typedef std::string location_dir_type;
     typedef ws::Server::location_map_type location_map_type;
     typedef ws::Location::limit_except_vec_type limit_except_vec_type;
-    typedef ws::Location::return_type return_type;
+    typedef ws::Location::return_type redirect_type;
     typedef ws::Location::cgi_type cgi_string_type;
     typedef ws::InnerOption::autoindex_type autoindex_bool_type;
     typedef ws::InnerOption::root_type root_type;
@@ -50,7 +50,7 @@ namespace ws {
       server_name_type server_name;
     /*location*/
       limit_except_vec_type limit_except_vec;
-      return_type redirect;
+      redirect_type redirect;
       cgi_string_type cgi;
     /*option*/
       autoindex_bool_type autoindex;
@@ -113,7 +113,6 @@ namespace ws {
 
     config_type _config;
     std::string _project_root;
-    return_type _return; // 어떻게 처리해야 하는지 내일 상의해야함
     struct stat _file_stat;
 
     /* =================================== */
@@ -136,8 +135,11 @@ namespace ws {
 
     void operator()(const ws::Server& server, const ws::Request& request);
 
-    void set_status(const unsigned int status);
     void set_repository(unsigned int status);
+    void set_status(const unsigned int status);
+    void set_fatal(); // always set true
+
+    void test();
 
     /* =================================== */
     /*                Getter               */

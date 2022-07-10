@@ -32,18 +32,18 @@ ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(c
 
   _config = cls._config;
   _project_root = cls._project_root;
-  _return = cls._return;
 }
 
 ws::Repository::~Repository() {}
 
 void ws::Repository::operator()(const ws::Server& server, const ws::Request& request) {
   _uri = request.get_uri();
-  std::string file = _project_root;
+  std::string file = _project_root + _uri;
   
   _server = &server;
-  _location = &(_server->find_location(file));
+  _location = &(_server->find_location(file + _uri));
   _request = &request;
+  _request_body = _request->get_request_body();
 
 
   lstat(file.c_str(), &_file_stat);
@@ -51,7 +51,7 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   /*set server*/
   _config.listen = request.get_listen();
   _config.server_name = request.get_request_header().find("Host")->second;
-  // _server_name = request.get_server_name();
+  _config.server_name = request.get_server_name();
 
   if (_location != NULL) {
     _config.limit_except_vec = _location->get_limit_except_vec();
@@ -83,21 +83,27 @@ void ws::Repository::set_repository(unsigned int status)  {
 
   // file_stat 초기화 해줘야함
 
-  if (S_ISDIR(_file_stat.st_mode)) {
+  if (S_ISDIR(_file_stat.st_mode) && !_config.redirect.first) {
     if (_config.autoindex || _config.index.size())
       this->set_autoindex();
   }
 
-  if (_config.redirect.first > 400 || _fd == FD_DEFAULT || _autoindex.empty())
+  if ((_fd == FD_DEFAULT || _autoindex.empty()) && (_config.redirect.first > 400 || _config.redirect.first == 0))
     open_file(_config.root + _uri);
 
   set_content_type();
+
+  test();
 }
 
 void ws::Repository::set_status(unsigned int status) {
   if (_status >= BAD_REQUEST)
     return;
   _status = status;
+}
+
+void ws::Repository::set_fatal() {
+  _fatal = true;
 }
 
 void ws::Repository::set_autoindex() {
@@ -133,7 +139,7 @@ void ws::Repository::set_content_type() {
   if (!_autoindex.empty() || _status >= BAD_REQUEST) {
     _content_type = "text/html";
   }
-  else if (_config.redirect.first == static_cast<unsigned int>(_status)) {
+  else if (_config.redirect.first > 0 && _config.redirect.first == _status) {
     if (_status < 300)
       _content_type = "application/octet-stream";
   }
@@ -157,7 +163,7 @@ void ws::Repository::open_file(std::string filename) {
 
 //  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
   if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
-    throw; // 프로세스 종료해야함
+    this->set_fatal();
 }
 
 /*getter*/
@@ -211,4 +217,54 @@ const ws::Repository::cgi_type&  ws::Repository::get_cgi() const throw() {
 
 const std::string&  ws::Repository::get_content_type() const throw() {
   return _content_type;
+}
+
+#include <iostream>
+#define NC "\e[0m"
+#define RED "\e[0;31m"
+#define GRN "\e[0;32m"
+#define YLW "\e[0;33m"
+#define CYN "\e[0;36m"
+
+void ws::Repository::test() {
+  std::cout << GRN << "\n== " << NC << "Repository" << GRN << " ==============================\n" << NC << std::endl;
+
+  std::cout << YLW << "** Config data **" << NC << std::endl;
+  std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "listen: " << NC << _config.listen.first << ", " << _config.listen.second << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "server_name: " << NC << _config.server_name << std::endl;
+  std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "limit_except_vec:" << NC;
+  for (limit_except_vec_type::iterator it = _config.limit_except_vec.begin(); it != _config.limit_except_vec.end(); ++it)
+    std::cout << " " << *it;
+  std::cout << std::endl;
+  std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "redirect: " << NC << _config.redirect.first << ", " << _config.redirect.second << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "cgi: " << NC << _config.cgi << std::endl;
+  std::cout << CYN << "[Type: bool]   " << NC << "- " << RED << "autoindex: " << NC << _config.autoindex << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "root: " << NC << _config.root << std::endl;
+  std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "index:" << NC;
+  for (index_vec_type::iterator it = _config.index.begin(); it != _config.index.end(); ++it)
+    std::cout << " " << *it;
+  std::cout << std::endl;
+  std::cout << CYN << "[Type: ul]     " << NC << "- " << RED << "client_max_body_size: " << NC << _config.client_max_body_size << std::endl;
+  std::cout << CYN << "[Type: map]    " << NC << "- " << RED << "error_page_map:" << NC;
+  for (error_page_map_type::iterator it = _config.error_page_map.begin(); it != _config.error_page_map.end(); ++it)
+    std::cout << " [" << it->first << ", " << it->second << "]";
+  std::cout << "\n" << std::endl;
+
+  std::cout << YLW << "** Repository member **" << NC << std::endl;
+  std::cout << CYN << "[Type: bool]   " << NC << "- " << RED << "_fatal: " << NC << _fatal << std::endl;
+  std::cout << CYN << "[Type: ul]     " << NC << "- " << RED << "_status: " << NC << _status << std::endl;
+  std::cout << CYN << "[Type: int]    " << NC << "- " << RED << "_fd: " << NC << _fd << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_uri: " << NC << _uri << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_host: " << NC << _host << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_method: " << NC << _method << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_request_body: " << NC << _request_body << std::endl;
+  std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "_autoindex:" << NC;
+  for (index_vec_type::iterator it = _autoindex.begin(); it != _autoindex.end(); ++it)
+    std::cout << " " << *it;
+  std::cout << std::endl;
+  std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "_cgi: " << NC << _cgi.first << ", " << _cgi.second << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_content_type: " << NC << _content_type << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_project_root: " << NC << _project_root << std::endl;
+
+  std::cout << GRN << "\n============================================\n" << NC << std::endl;
 }
