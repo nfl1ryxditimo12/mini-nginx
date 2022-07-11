@@ -26,10 +26,11 @@ void ws::HeaderGenerator::generate_start_line(std::string& data, unsigned int st
 void ws::HeaderGenerator::generate_representation_header(
   std::string& data, unsigned int stat, std::string::size_type content_length
 ) {
-  generate_content_type_line(data);
-
-  if (!((100 <= stat && stat < 200) || stat == NO_CONTENT))
-    generate_content_length(data, content_length);
+  generate_content_type_line(data); // todo
+  (void) content_length;
+  (void) stat;
+//  if (!((100 <= stat && stat < 200) || stat == NO_CONTENT))
+//    generate_content_length(data, content_length);
 }
 
 void ws::HeaderGenerator::generate_content_type_line(std::string& data) {

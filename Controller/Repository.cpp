@@ -100,8 +100,7 @@ void ws::Repository::set_repository(unsigned int value)  {
 
   this->set_content_type();
 
-  // 지울거임
-  test();
+//  test(); // todo
 }
 
 void ws::Repository::set_status(unsigned int status) {
@@ -141,7 +140,7 @@ void ws::Repository::set_autoindex() {
   }
 
   if (_fd == FD_DEFAULT && !_config.autoindex)
-    this->set_status(403);
+    this->set_status(FORBIDDEN);
 
   closedir(dir);
 }
@@ -156,7 +155,7 @@ void ws::Repository::set_content_type() {
     _content_type = "text";
   }
 }
-#include <iostream>
+
 void ws::Repository::open_file(std::string filename) {
   if (_method == "DELETE")
     return;
@@ -166,7 +165,7 @@ void ws::Repository::open_file(std::string filename) {
   if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1)
     this->set_status(INTERNAL_SERVER_ERROR);
 }
-#include <iostream>
+
 void ws::Repository::open_error_html() {
   error_page_map_type::const_iterator error_iter = _config.error_page_map.find(_status);
   std::string filename;
@@ -178,11 +177,8 @@ void ws::Repository::open_error_html() {
   else
     filename = _project_root + "/" + ws::Util::ultos(_status) + ".html"; // _defualt_root_path + status.html
 
-  std::cout << filename << std::endl;
-
-  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
+  if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1)
     this->set_fatal();
-
 }
 
 /*getter*/

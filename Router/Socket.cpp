@@ -49,7 +49,7 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(cls), _kernel() {
       exit_socket();
     fcntl(socket_fd, F_SETFL, O_NONBLOCK);
     _server.insert(server_map_type::value_type(socket_fd, host[i]));
-    _kernel.kevent_ctl(socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::connect_client));
+    _kernel.kevent_ctl(socket_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void*>(&Socket::connect_client), NULL);
   }
 }
 
@@ -76,7 +76,7 @@ void ws::Socket::connection() {
   struct kevent event_list[event_size];
   int new_event;
 
-  while (1) {
+  while (true) {
     new_event = _kernel.kevent_wait(event_list, event_size);
 
     for (int i = 0; i < new_event; i++) {
@@ -98,7 +98,7 @@ void ws::Socket::disconnect_client(int fd) {
   if (client_iter == _client.end())
     return;
 
-  close(client_iter->second.repository.get_fd());
+//  close(client_iter->second.repository.get_fd());// todo
   _client.erase(client_iter);
 
   close(fd);
@@ -112,13 +112,16 @@ void ws::Socket::connect_client(ws::Socket* self, struct kevent event) {
   listen_type& listen = self->_server.find(event.ident)->second;
   int client_socket_fd;
 
-  if ((client_socket_fd = accept(event.ident, NULL, NULL)) == -1) {
-
+  if ((client_socket_fd = accept(event.ident, NULL, NULL)) == -1)
     return;
-  }
+
+  struct timespec limit;
+  limit.tv_sec = 2;
+  limit.tv_nsec = 0;
+
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
   self->init_client(client_socket_fd, listen);
-  self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::recv_request));
+  self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::recv_request), &limit);
 }
 
 /*
@@ -132,7 +135,7 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   read_size = read(event.ident, buffer, kBUFFER_SIZE);
 
   if (read_size == -1) {
-    self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+    self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL, NULL);
     self->disconnect_client(event.ident);
     return;
   }
@@ -159,8 +162,8 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
 
     client_data.request.test();
     std::cout << YLW << "\n=================================================\n" << NC << std::endl;
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request));
-    self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request), NULL);
+    self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL, NULL);
   }
 }
 
@@ -195,7 +198,7 @@ void ws::Socket::send_response(ws::Socket *self, struct kevent event) {
 
   ssize_t n;
   if ((n = write(event.ident, response_data.c_str() + offset, response_data.length() - offset)) == -1) {
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL, NULL);
     self->disconnect_client(event.ident);
     return;
   }
@@ -203,7 +206,7 @@ void ws::Socket::send_response(ws::Socket *self, struct kevent event) {
   offset += n;
 
   if (offset == response_data.length()) {
-    self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+    self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL, NULL);
     self->disconnect_client(event.ident);
   }
 }
@@ -218,21 +221,22 @@ void ws::Socket::read_data(ws::Socket* self, struct kevent event) {
   read_size = read(client.repository.get_fd(), buffer, kBUFFER_SIZE);
 
   if (read_size < 0) {
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL, NULL);
     self->disconnect_client(event.ident);
     return;
   }
 
   if (read_size == 0) {
     close(client.repository.get_fd());
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL, NULL);
     self->_kernel.kevent_ctl(
       event.ident,
       EVFILT_USER,
       EV_ADD | EV_ONESHOT,
       NOTE_TRIGGER,
       0,
-      reinterpret_cast<void *>(ws::Socket::generate_response)
+      reinterpret_cast<void *>(ws::Socket::generate_response),
+      NULL
     );
   } else {
     buffer[read_size] = 0;
@@ -249,7 +253,7 @@ void ws::Socket::write_data(ws::Socket *self, struct kevent event) {
   write_size = write(client.repository.get_fd(), request_body.c_str() + offset, request_body.length() - offset);
 
   if (write_size == -1) {
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL, NULL);
     self->disconnect_client(event.ident);
     return;
   }
@@ -259,19 +263,24 @@ void ws::Socket::write_data(ws::Socket *self, struct kevent event) {
   if (offset == request_body.length()) {
     close(client.repository.get_fd());
     offset = 0;
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL, NULL);
     self->_kernel.kevent_ctl(
       event.ident,
       EVFILT_USER,
       EV_ADD | EV_ONESHOT,
       NOTE_TRIGGER,
       0,
-      reinterpret_cast<void*>(ws::Socket::generate_response)
+      reinterpret_cast<void*>(ws::Socket::generate_response),
+      NULL
     );
   }
 }
 
 void ws::Socket::generate_response(ws::Socket *self, struct kevent event) {
+  struct timespec limit;
+  limit.tv_sec = 2;
+  limit.tv_nsec = 0;
+
   _response.generate(self, self->_client.find(event.ident)->second, event.ident);
   self->_kernel.kevent_ctl(
     event.ident,
@@ -279,7 +288,8 @@ void ws::Socket::generate_response(ws::Socket *self, struct kevent event) {
     EV_ADD,
     0,
     0,
-    reinterpret_cast<void*>(ws::Socket::send_response)
+    reinterpret_cast<void*>(ws::Socket::send_response),
+    &limit
   );
 }
 
