@@ -156,15 +156,14 @@ void ws::Repository::set_content_type() {
     _content_type = "text";
   }
 }
-
+#include <iostream>
 void ws::Repository::open_file(std::string filename) {
   if (_method == "DELETE")
     return;
 
   int open_flag = _method == "GET" ? O_RDONLY : O_WRONLY | O_TRUNC | O_CREAT;
 
-//  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
-  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
+  if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1)
     this->set_status(INTERNAL_SERVER_ERROR);
 }
 #include <iostream>

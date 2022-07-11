@@ -25,8 +25,6 @@ void ws::Response::process(ws::Socket* socket, client_value_type& client_data, u
 
   ws::Repository::redirect_type redirect = client_data.repository.get_redirect();
 
-  /* fatal == true 인 경우 disconnect client 먼저 처리 해야함 */
-
   if (client_data.status >= BAD_REQUEST)
     _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD, NOTE_TRIGGER, 0, reinterpret_cast<void*>(ws::Socket::read_data));
   else if (redirect.first > 0) {

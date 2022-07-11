@@ -98,6 +98,7 @@ void ws::Socket::disconnect_client(int fd) {
   if (client_iter == _client.end())
     return;
 
+  close(client_iter->second.repository.get_fd());
   _client.erase(client_iter);
 
   close(fd);
@@ -111,8 +112,10 @@ void ws::Socket::connect_client(ws::Socket* self, struct kevent event) {
   listen_type& listen = self->_server.find(event.ident)->second;
   int client_socket_fd;
 
-  if ((client_socket_fd = accept(event.ident, NULL, NULL)) == -1)
-    self->exit_socket();
+  if ((client_socket_fd = accept(event.ident, NULL, NULL)) == -1) {
+
+    return;
+  }
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
   self->init_client(client_socket_fd, listen);
   self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::recv_request));
@@ -128,8 +131,11 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   ssize_t read_size;
   read_size = read(event.ident, buffer, kBUFFER_SIZE);
 
-  if (read_size == -1)
-    self->exit_socket();
+  if (read_size == -1) {
+    self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+    self->disconnect_client(event.ident);
+    return;
+  }
 
   buffer[read_size] = 0;
 
@@ -168,6 +174,11 @@ void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   client_data.status = client_data.repository.get_status();
   client_data.fatal = client_data.repository.is_fatal();
 
+  if (client_data.fatal) {
+    self->disconnect_client(event.ident);
+    return;
+  }
+
   _response.process(self, client_data, event.ident);
 
   /*
@@ -183,8 +194,11 @@ void ws::Socket::send_response(ws::Socket *self, struct kevent event) {
   std::string::size_type& offset = client_data.write_offset;
 
   ssize_t n;
-  if ((n = write(event.ident, response_data.c_str() + offset, response_data.length() - offset)) == -1)
-    self->exit_socket();
+  if ((n = write(event.ident, response_data.c_str() + offset, response_data.length() - offset)) == -1) {
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
+    self->disconnect_client(event.ident);
+    return;
+  }
 
   offset += n;
 
@@ -203,9 +217,11 @@ void ws::Socket::read_data(ws::Socket* self, struct kevent event) {
 
   read_size = read(client.repository.get_fd(), buffer, kBUFFER_SIZE);
 
-  // 이 경우 disconnect_client 호출 (프로세스 종료 아님)
-  if (read_size < 0)
-    self->exit_socket();
+  if (read_size < 0) {
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
+    self->disconnect_client(event.ident);
+    return;
+  }
 
   if (read_size == 0) {
     close(client.repository.get_fd());
@@ -232,8 +248,11 @@ void ws::Socket::write_data(ws::Socket *self, struct kevent event) {
 
   write_size = write(client.repository.get_fd(), request_body.c_str() + offset, request_body.length() - offset);
 
-  if (write_size == -1)
-    self->exit_socket();
+  if (write_size == -1) {
+    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
+    self->disconnect_client(event.ident);
+    return;
+  }
 
   offset += write_size;
 
