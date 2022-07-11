@@ -88,7 +88,7 @@ void ws::Socket::connection() {
 
 /* Private function */
 
-void ws::Socket::init_client(int fd, listen_type listen) {
+void ws::Socket::init_client(unsigned int fd, listen_type listen) {
   _client.insert(client_map_type::value_type(fd, client_value_type(listen)));
 }
 
@@ -165,6 +165,8 @@ void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
     _validator(client_data);
 
   client_data.repository.set_repository(client_data.status);
+  client_data.status = client_data.repository.get_status();
+  client_data.fatal = client_data.repository.is_fatal();
 
   _response.process(self, client_data, event.ident);
 
@@ -192,7 +194,7 @@ void ws::Socket::send_response(ws::Socket *self, struct kevent event) {
   }
 }
 //  int fd = open("/goinfre/jaham/webserv/test_create.html", O_WRONLY | O_TRUNC | O_CREAT, 0666);
-  int fd = open("/goinfre/jaham/webserv/test.html", O_RDONLY);
+  // int fd = open("/goinfre/jaham/webserv/test.html", O_RDONLY);
 
 void ws::Socket::read_data(ws::Socket* self, struct kevent event) {
   const client_value_type& client = self->_client.find(event.ident)->second;
@@ -201,10 +203,12 @@ void ws::Socket::read_data(ws::Socket* self, struct kevent event) {
 
   read_size = read(client.repository.get_fd(), buffer, kBUFFER_SIZE);
 
+  // 이 경우 disconnect_client 호출 (프로세스 종료 아님)
   if (read_size < 0)
     self->exit_socket();
 
   if (read_size == 0) {
+    close(client.repository.get_fd());
     self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
     self->_kernel.kevent_ctl(
       event.ident,
@@ -234,6 +238,7 @@ void ws::Socket::write_data(ws::Socket *self, struct kevent event) {
   offset += write_size;
 
   if (offset == request_body.length()) {
+    close(client.repository.get_fd());
     offset = 0;
     self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
     self->_kernel.kevent_ctl(

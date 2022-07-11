@@ -12,11 +12,15 @@
   권한 없을 때 파일 열기 어떻게 처리할지
 */
 
-ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _status(status), _fd(FD_DEFAULT) {}
+ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _dir(false), _status(status), _fd(FD_DEFAULT) {
+  _project_root = ws::Util::get_root_dir() + "/www";
 
-ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(cls._status) {
+}
+
+ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _dir(cls._dir), _status(cls._status) {
   _fd = cls._fd;
   _uri = cls._uri;
+  _file_path = cls._file_path;
   _host = cls._host;
   _method = cls._method;
   _request_body = cls._request_body;
@@ -29,19 +33,28 @@ ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(c
 
   _config = cls._config;
   _project_root = cls._project_root;
-  _return = cls._return;
 }
 
 ws::Repository::~Repository() {}
 
 void ws::Repository::operator()(const ws::Server& server, const ws::Request& request) {
+  _uri = request.get_uri();
+  _file_path = _project_root + _uri;
+   struct stat file_stat;
+
   _server = &server;
-  _location = &(_server->find_location(Util::parse_relative_path(request.get_uri())));
+  _location = &(_server->find_location(Util::parse_relative_path(_file_path + _uri)));
   _request = &request;
+  _request_body = _request->get_request_body();
+
+
+  lstat(_file_path.c_str(), &file_stat);
+  _dir = S_ISDIR(file_stat.st_mode);
+
   /*set server*/
   _config.listen = request.get_listen();
   _config.server_name = request.get_request_header().find("Host")->second;
-  // _server_name = request.get_server_name();
+  _config.server_name = request.get_server_name();
 
   if (_location != NULL) {
     _config.limit_except_vec = _location->get_limit_except_vec();
@@ -61,26 +74,34 @@ void ws::Repository::set_option(const ws::InnerOption& option) {
   _config.error_page_map = option.get_error_page_map();
 }
 
-void ws::Repository::set_repository(unsigned int status)  {
-  const std::string& server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
-  struct stat file_stat;
+void ws::Repository::set_repository(unsigned int value)  {
+  std::string server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
 
-  this->set_status(status);
+  this->set_status(value);
   if (_config.redirect.first > 0)
     this->set_status(_config.redirect.first); // todo
 
   _host = server_name + ":" + ws::Util::ultos(ntohs((_config.listen.second)));
   _method = _request->get_method();
 
-  if (S_ISDIR(file_stat.st_mode)) {
-    if (_config.autoindex || _config.index.size())
-      this->set_autoindex();
-  }
+  // file_stat 초기화 해줘야함
 
-  if (_config.redirect.first > 400 || _fd == FD_DEFAULT || _autoindex.empty())
-    open_file(_config.root + _uri);
 
-  set_content_type();
+  if (_dir && !_config.redirect.first)
+    this->set_autoindex();
+  else if (_status == 0)
+    this->open_file(_file_path);
+
+  if (_status >= BAD_REQUEST)
+    this->open_error_html();
+
+  if (!_status)
+    this->set_status(_method == "POST" ? 201 : 200);
+
+  this->set_content_type();
+
+  // 지울거임
+  test();
 }
 
 void ws::Repository::set_status(unsigned int status) {
@@ -89,8 +110,18 @@ void ws::Repository::set_status(unsigned int status) {
   _status = status;
 }
 
+void ws::Repository::set_fatal() {
+  _fatal = true;
+}
+
 void ws::Repository::set_autoindex() {
-  DIR* dir = opendir(_config.root.c_str());
+
+  if (_method != "GET") {
+    this->set_status(FORBIDDEN);
+    return;
+  }
+
+  DIR* dir = opendir(_file_path.c_str());
   struct dirent *file    = NULL;
 
   if (dir == NULL)
@@ -100,29 +131,26 @@ void ws::Repository::set_autoindex() {
     index_set_type::const_iterator filename = _config.index.find(file->d_name);
 
     if (filename != _config.index.end()) {
-      open_file(_config.root + *filename);
-      break;
-    }
-
-    if (_fd != FD_DEFAULT) {
+      open_file(_file_path + *filename);
       _autoindex.clear();
       break;
     }
 
-    _autoindex.push_back(file->d_name);
+    if (_config.autoindex)
+      _autoindex.push_back(file->d_name);
   }
+
+  if (_fd == FD_DEFAULT && !_config.autoindex)
+    this->set_status(403);
 
   closedir(dir);
 }
 
 void ws::Repository::set_content_type() {
-  if (!_autoindex.empty() || _status >= BAD_REQUEST) {
+  if (!_autoindex.empty() || _status >= BAD_REQUEST)
     _content_type = "text/html";
-  }
-  else if (_config.redirect.first == static_cast<unsigned int>(_status)) {
-    if (_status < 300)
-      _content_type = "application/octet-stream";
-  }
+  else if (_config.redirect.first > 0 && _config.redirect.first < 300)
+    _content_type = "application/octet-stream";
   // nginx에서 바이너리 파일 어떤 content-type으로 주는지 확인해봐야함
   else {
     _content_type = "text";
@@ -130,20 +158,32 @@ void ws::Repository::set_content_type() {
 }
 
 void ws::Repository::open_file(std::string filename) {
-  error_page_map_type::const_iterator error_iter = _config.error_page_map.find(_status);
+  if (_method == "DELETE")
+    return;
+
   int open_flag = _method == "GET" ? O_RDONLY : O_WRONLY | O_TRUNC | O_CREAT;
 
-  // 기본 에러 페이지 또는 제공된 에러 페이지
-  if (_status >= BAD_REQUEST) {
-    if (error_iter != _config.error_page_map.end())
-      filename = error_iter->second;
-    else
-      filename = ""; // _defualt_root_path + status.html
-  }
-
 //  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
-  if ((_fd = open("/goinfre/jaham/webserv/test_create.html", open_flag, 644)) == -1)
-    throw; // 프로세스 종료해야함
+  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
+    this->set_status(INTERNAL_SERVER_ERROR);
+}
+#include <iostream>
+void ws::Repository::open_error_html() {
+  error_page_map_type::const_iterator error_iter = _config.error_page_map.find(_status);
+  std::string filename;
+  int open_flag = O_RDONLY;
+
+  // 기본 에러 페이지 또는 제공된 에러 페이지
+  if (error_iter != _config.error_page_map.end())
+    filename = error_iter->second;
+  else
+    filename = _project_root + "/" + ws::Util::ultos(_status) + ".html"; // _defualt_root_path + status.html
+
+  std::cout << filename << std::endl;
+
+  if ((_fd = open(filename.c_str(), open_flag, 644)) == -1)
+    this->set_fatal();
+
 }
 
 /*getter*/
@@ -155,8 +195,12 @@ const ws::Location* ws::Repository::get_location() const throw() {
   return _location;
 }
 
-bool  ws::Repository::get_fatal() const throw() {
+bool  ws::Repository::is_fatal() const throw() {
   return _fatal;
+}
+
+bool  ws::Repository::is_dir() const throw() {
+  return _dir;
 }
 
 const int&  ws::Repository::get_fd() const throw() {
@@ -183,6 +227,14 @@ const std::string&  ws::Repository::get_uri() const throw() {
   return _uri;
 }
 
+const std::string&  ws::Repository::get_project_root() const throw() {
+  return _project_root;
+}
+
+const std::string&  ws::Repository::get_file_path() const throw() {
+  return _file_path;
+}
+
 const std::string&  ws::Repository::get_request_body() const throw() {
   return _request_body;
 }
@@ -197,4 +249,58 @@ const ws::Repository::cgi_type&  ws::Repository::get_cgi() const throw() {
 
 const std::string&  ws::Repository::get_content_type() const throw() {
   return _content_type;
+}
+
+const ws::Repository::redirect_type&  ws::Repository::get_redirect() const throw() {
+  return _config.redirect;
+}
+
+#include <iostream>
+#define NC "\e[0m"
+#define RED "\e[0;31m"
+#define GRN "\e[0;32m"
+#define YLW "\e[0;33m"
+#define CYN "\e[0;36m"
+
+void ws::Repository::test() {
+  std::cout << GRN << "\n== " << NC << "Repository" << GRN << " ==============================\n" << NC << std::endl;
+
+  std::cout << YLW << "** Config data **" << NC << std::endl;
+  std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "listen: " << NC << _config.listen.first << ", " << _config.listen.second << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "server_name: " << NC << _config.server_name << std::endl;
+  std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "limit_except_vec:" << NC;
+  for (limit_except_vec_type::iterator it = _config.limit_except_vec.begin(); it != _config.limit_except_vec.end(); ++it)
+    std::cout << " " << *it;
+  std::cout << std::endl;
+  std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "redirect: " << NC << _config.redirect.first << ", " << _config.redirect.second << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "cgi: " << NC << _config.cgi << std::endl;
+  std::cout << CYN << "[Type: bool]   " << NC << "- " << RED << "autoindex: " << NC << _config.autoindex << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "root: " << NC << _config.root << std::endl;
+  std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "index:" << NC;
+  for (index_set_type::iterator it = _config.index.begin(); it != _config.index.end(); ++it)
+    std::cout << " " << *it;
+  std::cout << std::endl;
+  std::cout << CYN << "[Type: ul]     " << NC << "- " << RED << "client_max_body_size: " << NC << _config.client_max_body_size << std::endl;
+  std::cout << CYN << "[Type: map]    " << NC << "- " << RED << "error_page_map:" << NC;
+  for (error_page_map_type::iterator it = _config.error_page_map.begin(); it != _config.error_page_map.end(); ++it)
+    std::cout << " [" << it->first << ", " << it->second << "]";
+  std::cout << "\n" << std::endl;
+
+  std::cout << YLW << "** Repository member **" << NC << std::endl;
+  std::cout << CYN << "[Type: bool]   " << NC << "- " << RED << "_fatal: " << NC << _fatal << std::endl;
+  std::cout << CYN << "[Type: ul]     " << NC << "- " << RED << "_status: " << NC << _status << std::endl;
+  std::cout << CYN << "[Type: int]    " << NC << "- " << RED << "_fd: " << NC << _fd << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_uri: " << NC << _uri << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_host: " << NC << _host << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_method: " << NC << _method << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_request_body: " << NC << _request_body << std::endl;
+  std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "_autoindex:" << NC;
+  for (autoindex_type::iterator it = _autoindex.begin(); it != _autoindex.end(); ++it)
+    std::cout << " " << *it;
+  std::cout << std::endl;
+  std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "_cgi: " << NC << _cgi.first << ", " << _cgi.second << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_content_type: " << NC << _content_type << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_project_root: " << NC << _project_root << std::endl;
+
+  std::cout << GRN << "\n============================================\n" << NC << std::endl;
 }

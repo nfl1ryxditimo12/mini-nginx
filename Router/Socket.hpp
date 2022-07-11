@@ -46,7 +46,7 @@ namespace ws {
     typedef std::map<server_type::first_type, server_type::second_type> server_map_type;
 
     typedef struct client_data                                          client_value_type;
-    typedef std::pair<int, client_value_type>                           client_type;
+    typedef std::pair<unsigned int, client_value_type>                           client_type;
     typedef std::map<client_type::first_type, client_type::second_type> client_map_type;
 
     typedef void (*kevent_func)(ws::Socket* self, struct kevent event);
@@ -89,7 +89,7 @@ namespace ws {
     /*            Private Function            */
     /* ====================================== */
 
-    void init_client(int fd, listen_type listen);
+    void init_client(unsigned int fd, listen_type listen);
     void disconnect_client(int fd);
     void exit_socket();
 
