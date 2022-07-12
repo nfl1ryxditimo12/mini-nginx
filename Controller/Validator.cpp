@@ -30,26 +30,34 @@ void ws::Validator::check_method(client_value_type& client_data) {
     if (*it == method)
       return;
   }
-  client_data.status = FORBIDDEN;
+  client_data.status = METHOD_NOT_ALLOWED;
   // 405 error : 메소드는 허용되었지만 실패
 }
 
-void ws::Validator::check_uri(client_value_type& client_data) {
-  
-  if (client_data.repository.get_location() == NULL) {
-    client_data.status = NOT_FOUND;
-    return;
-  }
+void ws::Validator::check_uri(client_value_type& client_data) { // todo: duplicated check with repository..?
+//  const ws::Repository& repository = client_data.repository;
+//  const std::string& uri = client_data.request.get_uri();
+//  std::string searching = repository.get_root() + uri;
+//  struct stat status;
+//
+//  if (lstat(searching.c_str(), &status) == 0) {
+//    if (S_ISDIR(status.st_mode)) {
+//      if (lstat(searching + repository.get_location()))
+//
+//      if (//autoindex)
+//    }
+//  }
+  // file (remove /)
+//  if (// == 0)
+    //file
 
-  struct stat buf;
-  if (lstat(client_data.request.get_uri().c_str(), &buf) > 0) {
-    client_data.status = NOT_FOUND;
-    return;
-  }
-  if (S_ISDIR(buf.st_mode) && client_data.repository.get_server()->get_autoindex() == false) {
-    client_data.status = NOT_FOUND;
-    return;
-  }
+//  if (S_ISDIR(status.st_mode) && repository.get_server()->get_autoindex() == false) {
+//    client_data.status = NOT_FOUND;
+//    return;
+//  }
+//    client_data.status = NOT_FOUND;
+//    return;
+  (void) client_data;
 }
 
 void ws::Validator::check_version(client_value_type& client_data) {
@@ -86,7 +94,7 @@ void ws::Validator::check_content_length(ws::Validator::client_value_type& clien
 void ws::Validator::check_connection(ws::Validator::client_value_type& client_data) {
   const std::string connection = client_data.request.get_connection();
 
-  if (!(connection == "close" || connection == "keep-alive"))
+  if (!(connection == "close" || connection == "keep-alive" || "")) // todo
     client_data.status = BAD_REQUEST;
 }
 

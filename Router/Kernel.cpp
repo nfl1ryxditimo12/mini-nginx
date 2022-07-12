@@ -15,10 +15,10 @@ ws::Kernel::~Kernel() {
 */
 
 void  ws::Kernel::kevent_ctl(uintptr_t ident, int16_t filter,
-        uint16_t flags, uint32_t fflags, intptr_t data, void *udata) {
+        uint16_t flags, uint32_t fflags, intptr_t data, void *udata, struct timespec* limit) {
   struct kevent event;
   EV_SET(&event, ident, filter, flags, fflags, data, udata);
-  if (kevent(_kq, &event, 1, NULL, 0, NULL) == -1)
+  if (kevent(_kq, &event, 1, NULL, 0, limit) == -1)
     throw; // require custom exception
 }
 

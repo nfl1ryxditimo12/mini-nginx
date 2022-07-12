@@ -35,7 +35,7 @@ namespace ws {
     typedef std::string location_dir_type;
     typedef ws::Server::location_map_type location_map_type;
     typedef ws::Location::limit_except_vec_type limit_except_vec_type;
-    typedef ws::Location::return_type return_type;
+    typedef ws::Location::return_type redirect_type;
     typedef ws::Location::cgi_type cgi_string_type;
     typedef ws::InnerOption::autoindex_type autoindex_bool_type;
     typedef ws::InnerOption::root_type root_type;
@@ -50,7 +50,7 @@ namespace ws {
       server_name_type server_name;
     /*location*/
       limit_except_vec_type limit_except_vec;
-      return_type redirect;
+      redirect_type redirect;
       cgi_string_type cgi;
     /*option*/
       autoindex_bool_type autoindex;
@@ -84,12 +84,18 @@ namespace ws {
 
     bool _fatal;
 
+    bool _dir;
+
     unsigned int _status; // get_status();
 
     int _fd; // get_fd();
 
+    std::string _project_root;
+
     /* filename 필요함 절대경로로 */
     std::string _uri;
+
+    std::string _file_path;
 
     std::string _host; // get_host();
 
@@ -112,8 +118,6 @@ namespace ws {
     /* =================================== */
 
     config_type _config;
-    std::string _project_root;
-    return_type _return; // 어떻게 처리해야 하는지 내일 상의해야함
 
     /* =================================== */
     /*                 OCCF                */
@@ -127,6 +131,7 @@ namespace ws {
     void set_content_type();
 
     void open_file(std::string filename);
+    void open_error_html();
 
   public:
     Repository(bool fatal, unsigned int status);
@@ -135,8 +140,11 @@ namespace ws {
 
     void operator()(const ws::Server& server, const ws::Request& request);
 
-    void set_status(const unsigned int status);
     void set_repository(unsigned int status);
+    void set_status(const unsigned int status);
+    void set_fatal(); // always set true
+
+    void test();
 
     /* =================================== */
     /*                Getter               */
@@ -145,16 +153,20 @@ namespace ws {
     const ws::Server* get_server() const throw();
     const ws::Location* get_location() const throw();
 
-    bool                  get_fatal() const throw();
+    bool                  is_fatal() const throw();
+    bool                  is_dir() const throw();
     const int&            get_fd() const throw();
     const unsigned int&   get_status() const throw();
     const std::string&    get_host() const throw();
     const std::string&    get_method() const throw();
     const std::string&    get_root() const throw();
+    const std::string&    get_project_root() const throw();
     const std::string&    get_uri() const throw();
+    const std::string&    get_file_path() const throw();
     const std::string&    get_request_body() const throw();
     const autoindex_type& get_autoindex() const throw();
     const cgi_type&       get_cgi() const throw();
     const std::string&    get_content_type() const throw();
+    const redirect_type&  get_redirect() const throw();
   };
 }

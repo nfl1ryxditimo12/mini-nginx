@@ -202,7 +202,7 @@ int ws::Request::parse_request_message(const ws::Configure& conf, const std::str
   /* body가 없거나 _status가 양수일 경우 eof 설정 */
   if (_status)
     _eof = true;
-  if (_eof)
+  if (_eof == true)
     return _status;
 
   if (!_chunked)
