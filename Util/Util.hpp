@@ -18,13 +18,8 @@ namespace ws {
     static unsigned long stoul(
       const std::string& str,
       unsigned long max = std::numeric_limits<unsigned long>::max() - 1,
-      unsigned long min = 0
-    ) throw();
-
-    static unsigned long hextoul(
-      const std::string& str,
-      unsigned long max = std::numeric_limits<unsigned long>::max() - 1,
-      unsigned long min = 0
+      unsigned long min = 0,
+      const std::string& base_str = "0123456789"
     ) throw();
 
     static std::string ultos(unsigned long n) throw();

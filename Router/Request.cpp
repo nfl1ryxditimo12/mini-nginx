@@ -55,7 +55,7 @@ void	ws::Request::parse_request_chunked_body() {
   while (!_buffer.eof() && !_status) {
     rd_http_line(); // todo \r\n
     if (!_chunked_line_type) {
-      _chunked_byte = ws::Util::hextoul(_token);
+      _chunked_byte = ws::Util::stoul(_token, std::numeric_limits<unsigned long>::max(), 0, "0123456789ABCDE");
       _chunked_line_type = 1;
       if (_chunked_byte == std::string::npos)
         _status = BAD_REQUEST;
