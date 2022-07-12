@@ -60,7 +60,7 @@ namespace ws {
       Transfer-Encoding: chunked 인 경우와 Content-Length 항목이 없는 경우 0
       그 외 Content-Length의 value가 들어감
     */
-    size_t      _content_length;
+    std::size_t _content_length;
     std::string _server_name;
     std::string _connection;
     std::string _transfer_encoding;
@@ -89,6 +89,15 @@ namespace ws {
 
     size_t                  _client_max_body_size;
 
+    // Header end var for chunked header
+    bool                    _is_header;
+
+    // token for read buffer
+    ws::Token               _token;
+
+    // buffer to read
+    std::stringstream       _buffer;
+
     /* =================================== */
     /*                 OCCF                */
     /* =================================== */
@@ -100,10 +109,12 @@ namespace ws {
     /*            Request parser           */
     /* =================================== */
 
-    void  parse_request_uri(ws::Token& token, std::string uri);
-    void  parse_request_header(ws::Token& token, std::stringstream& buffer);
-    void  parse_request_body(std::stringstream& buffer);
-    void  parse_request_chunked_body(ws::Token& token, std::stringstream& buffer);
+    void  parse_request_uri(std::string uri);
+    bool  parse_request_start_line();
+
+    void  parse_request_header();
+    void  parse_request_body();
+    void  parse_request_chunked_body();
 
     /* =================================== */
     /*     Request header field parser     */
@@ -125,7 +136,11 @@ namespace ws {
     /*        Else private function        */
     /* =================================== */
 
-    void  insert_require_header_field();
+    void        insert_require_header_field();
+    ws::Token&  rdword();
+    ws::Token&  rdline(char delim = '\n');
+    ws::Token&  rd_http_line();
+    ws::Token&  rdall();
 
   public:
     Request(const ws::Configure::listen_type& listen);
