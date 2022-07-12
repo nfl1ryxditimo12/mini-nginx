@@ -1,6 +1,8 @@
 #include "Repository.hpp"
 #include "Request.hpp"
 
+
+#include <iostream> //todo
 /*
   todo
 
@@ -250,7 +252,6 @@ const ws::Repository::redirect_type&  ws::Repository::get_redirect() const throw
   return _config.redirect;
 }
 
-#include <iostream>
 #define NC "\e[0m"
 #define RED "\e[0;31m"
 #define GRN "\e[0;32m"

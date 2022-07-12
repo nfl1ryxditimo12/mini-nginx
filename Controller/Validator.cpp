@@ -23,41 +23,53 @@ void ws::Validator::operator()(client_value_type& client_data) {
 }
 
 void ws::Validator::check_method(client_value_type& client_data) {
-  std::string method = client_data.request.get_method();
-  ws::Location::limit_except_vec_type limit_except_vec = client_data.repository.get_location()->get_limit_except_vec();
+  std::string request_method = client_data.request.get_method();
+  limit_except_vec_type limit_except_vec = client_data.repository.get_location()->get_limit_except_vec();
 
-  for (ws::Location::limit_except_vec_type::iterator it = limit_except_vec.begin(); it != limit_except_vec.end(); ++it) {
-    if (*it == method)
+  for (
+    limit_except_vec_type::iterator limit_except = limit_except_vec.begin();
+    limit_except != limit_except_vec.end();
+    ++limit_except
+    ) {
+    if (request_method == *limit_except)
       return;
+    if (request_method == "HEAD")
+      if (*limit_except == "GET")
+        return;
   }
-  client_data.status = METHOD_NOT_ALLOWED;
-  // 405 error : 메소드는 허용되었지만 실패
+  client_data.status = FORBIDDEN;
+  // client_data.status = METHOD_NOT_ALLOWED; //todo
 }
 
-void ws::Validator::check_uri(client_value_type& client_data) { // todo: duplicated check with repository..?
-//  const ws::Repository& repository = client_data.repository;
-//  const std::string& uri = client_data.request.get_uri();
-//  std::string searching = repository.get_root() + uri;
-//  struct stat status;
-//
-//  if (lstat(searching.c_str(), &status) == 0) {
-//    if (S_ISDIR(status.st_mode)) {
-//      if (lstat(searching + repository.get_location()))
-//
-//      if (//autoindex)
-//    }
-//  }
-  // file (remove /)
-//  if (// == 0)
-    //file
+void ws::Validator::check_uri(client_value_type& client_data) {
+  const ws::Repository& repository = client_data.repository;
+  const std::string& uri = client_data.request.get_uri();
+  std::string url = repository.get_root() + uri;
+  struct stat file_status;
 
-//  if (S_ISDIR(status.st_mode) && repository.get_server()->get_autoindex() == false) {
-//    client_data.status = NOT_FOUND;
-//    return;
-//  }
-//    client_data.status = NOT_FOUND;
-//    return;
-  (void) client_data;
+  if (lstat(url.c_str(), &file_status) != 0) {
+    client_data.status = NOT_FOUND;
+  } else {
+    if (S_ISREG(file_status.st_mode)) {
+      // if (not html file) { //@
+      //   client_data.status = NOT_MODIFIED;
+      //   return;
+      // }
+      client_data.status = OK;
+      if (file_status.st_mode & S_IREAD) //@읽기권한 없으면 403
+        client_data.status = FORBIDDEN;
+    } else if (S_ISDIR(file_status.st_mode)) {
+      if (url[url.length() - 1] == '/')
+        url += '/';
+      client_data.status = OK; //default file 권한은 url넘겨준 후에 repository에서 검사
+    } else {
+      if (repository.get_server()->get_autoindex() == false) {
+        client_data.status = NOT_FOUND;
+        return;
+      }
+      // autoindex가 실행되는 경우는 repository에서 결정
+    }
+  }
 }
 
 void ws::Validator::check_version(client_value_type& client_data) {

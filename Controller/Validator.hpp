@@ -17,7 +17,9 @@ namespace ws {
     typedef std::vector<check_func> check_func_vec;
 
     typedef ws::Request::header_type header_type;
-    
+
+    typedef ws::Location::limit_except_vec_type limit_except_vec_type;
+
   private:
     // const ws::Request _request;
     // const ws::Repository _repository;

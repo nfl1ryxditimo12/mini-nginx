@@ -13,7 +13,8 @@ namespace ws {
     NO_CONTENT            = 204,
 
     /* 300 Status Code */
-
+    NOT_MODIFIED          = 304,
+    
     /* 400 Status Code */
     BAD_REQUEST           = 400,
     UNAUTHORIZED          = 401,
