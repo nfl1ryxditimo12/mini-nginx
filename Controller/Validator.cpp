@@ -10,6 +10,7 @@ ws::Validator::Validator() {
   _check_func_vec.push_back(&Validator::check_connection);
   _check_func_vec.push_back(&Validator::check_transfer_encoding);
   _check_func_vec.push_back(&Validator::check_host);
+  _check_func_vec.push_back(&Validator::check_content_type);
 }
 
 ws::Validator::~Validator() {}
@@ -78,7 +79,7 @@ void ws::Validator::check_version(client_value_type& client_data) {
 }
 
 void ws::Validator::check_content_length(ws::Validator::client_value_type& client_data) {
-  const ws::Request* const request = &client_data.request;
+  const ws::Request* const request = &client_data.request; //@
 
   if (request->get_content_length() == std::numeric_limits<unsigned long>::max())
     return;
@@ -122,4 +123,9 @@ void ws::Validator::check_host(ws::Validator::client_value_type& client_data) {
 
   //host가 2줄 이상 존재 -> 400
   //host가 잘못된 값 -> 400
+}
+
+void ws::Validator::check_content_type(ws::Validator::client_value_type& client_data) {
+  if (client_data.request.get_method() == "POST" && client_data.request.get_content_type().empty())
+    client_data.status = BAD_REQUEST; //400?
 }

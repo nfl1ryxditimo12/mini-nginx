@@ -44,6 +44,8 @@ namespace ws {
     void check_connection(client_value_type& client_data);
     void check_transfer_encoding(client_value_type& client_data);
     void check_host(client_value_type& client_data);
+    void check_content_type(client_value_type& client_data);
+
     void check_request_header();
   };
 }
