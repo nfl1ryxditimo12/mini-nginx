@@ -81,26 +81,25 @@ void ws::Validator::check_version(client_value_type& client_data) {
 void ws::Validator::check_content_length(ws::Validator::client_value_type& client_data) {
   const ws::Request* const request = &client_data.request;
 
-  if (
-    (
-      request->get_content_length() == std::numeric_limits<unsigned long>::max()
-      && (request->get_transfer_encoding().empty())
-      && (request->get_method() == "POST")
-    )
-    || (
-      request->get_content_length() != std::numeric_limits<unsigned long>::max()
-      && !(request->get_transfer_encoding().empty())
-    )
-  )
+  if (request->get_content_length() == std::numeric_limits<unsigned long>::max())
+    return;
+
+  client_data.status = OK;
+
+  if (!(request->get_transfer_encoding().empty()))
     client_data.status = BAD_REQUEST;
 
-  if (
-    (request->get_content_length() != request->get_request_body().length())
-    && (request->get_method() == "POST")
-  )
-    client_data.status = BAD_REQUEST;
-
-  return;
+  if (request->get_method() == "POST") {
+    if (request->get_content_length() != request->get_request_body().length())
+      client_data.status = BAD_REQUEST;
+  } else {
+    if (request->get_request_body().empty())
+      client_data.status = BAD_REQUEST;
+    else {
+      if (request->get_content_length() != request->get_request_body().length())
+        client_data.status = BAD_REQUEST;
+    }
+  }
 }
 
 void ws::Validator::check_connection(ws::Validator::client_value_type& client_data) {
