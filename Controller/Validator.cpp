@@ -103,10 +103,7 @@ void ws::Validator::check_content_length(ws::Validator::client_value_type& clien
 
 void ws::Validator::check_connection(ws::Validator::client_value_type& client_data) {
   const std::string connection = client_data.request.get_connection();
-
-  //close인데 close로 설정되어있지 않으면 error //todo
-
-  if (!(connection == "close" || connection == "keep-alive"))
+  if (!(connection == "close" || connection == "keep-alive" || connection == ""))
     client_data.status = BAD_REQUEST;
 }
 
@@ -123,3 +120,6 @@ void ws::Validator::check_host(ws::Validator::client_value_type& client_data) {
   //host가 2줄 이상 존재 -> 400
   //host가 잘못된 값 -> 400
 }
+
+
+//connection close인데 close로 설정되어있지 않으면 error <- response에서 status랑 비교해서 결정하기
