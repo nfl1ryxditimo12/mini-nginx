@@ -332,7 +332,6 @@ void  ws::Request::insert_require_header_field() {
   _header_parser.insert(header_parse_map_type::value_type("Connection:", &Request::parse_connection));
   _header_parser.insert(header_parse_map_type::value_type("Content-Length:", &Request::parse_content_length));
   _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding:", &Request::parse_transfer_encoding));
-  //todo: add content-type
 }
 
 void ws::Request::test() {
