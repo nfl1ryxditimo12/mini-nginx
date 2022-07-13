@@ -118,7 +118,7 @@ void ws::Repository::set_fatal() {
 void ws::Repository::set_autoindex() {
 
   if (_method != "GET") {
-    this->set_status(FORBIDDEN);
+    this->set_status(METHOD_NOT_ALLOWED);
     return;
   }
 

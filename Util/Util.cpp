@@ -64,40 +64,26 @@ void ws::Util::check_executed_dir() {
 // return: unsigned long value, ULONG_MAX if failed
 // exception none
 
-unsigned long ws::Util::stoul(const std::string& str, unsigned long max, unsigned long min) throw() {
+unsigned long ws::Util::stoul(
+  const std::string& str, unsigned long max, unsigned long min, const std::string& base_str
+) throw() {
   unsigned long ret = 0;
 
-  for (std::string::size_type i = 0; i < str.length(); i++) {
-    if (!std::isdigit(str[i]))
+  for (
+    std::string::size_type i = 0, pos = base_str.find(static_cast<char>(std::toupper(str[i])));
+    i < str.length();
+    i++, pos = base_str.find(static_cast<char>(std::toupper(str[i])))
+  ) {
+    if (pos == std::string::npos)
       return std::numeric_limits<unsigned long>::max();
-    if (ret > max / 10)
+
+    if (ret > max / base_str.length())
       return std::numeric_limits<unsigned long>::max();
-    ret *= 10;
+    ret *= base_str.length();
 
-    if (ret > max - (str[i] - '0'))
+    if (ret > max - pos)
       return std::numeric_limits<unsigned long>::max();
-    ret += str[i] - '0';
-  }
-
-  return ret - ((ret - std::numeric_limits<unsigned long>::max()) * (ret < min));
-}
-
-unsigned long ws::Util::hextoul(const std::string& str, unsigned long max, unsigned long min) throw() {
-  std::string hex = "0123456789ABCDEF";
-  unsigned long ret = 0;
-
-  for (std::string::size_type i = 0; i < str.length(); i++) {
-    int chartohex = hex.find(static_cast<char>(std::toupper(str[i]))) + 1;
-
-    if (!std::isxdigit(str[i]))
-      return std::numeric_limits<unsigned long>::max();
-    if (ret > max / 16)
-      return std::numeric_limits<unsigned long>::max();
-    ret *= 16;
-
-    if (ret > max - chartohex)
-      return std::numeric_limits<unsigned long>::max();
-    ret += chartohex;
+    ret += pos;
   }
 
   return ret - ((ret - std::numeric_limits<unsigned long>::max()) * (ret < min));

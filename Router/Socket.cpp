@@ -45,7 +45,7 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(cls), _kernel() {
       std::cout << strerror(errno) << std::endl;
         exit_socket();
     }
-    if (listen(socket_fd, 5) == -1)
+    if (listen(socket_fd, 5) == -1) // todo: backlog issue
       exit_socket();
     fcntl(socket_fd, F_SETFL, O_NONBLOCK);
     _server.insert(server_map_type::value_type(socket_fd, host[i]));
@@ -98,7 +98,7 @@ void ws::Socket::disconnect_client(int fd) {
   if (client_iter == _client.end())
     return;
 
-//  close(client_iter->second.repository.get_fd());// todo
+//  close(client_iter->second.repository.get_fd());// todo why..?
   _client.erase(client_iter);
 
   close(fd);
@@ -121,7 +121,7 @@ void ws::Socket::connect_client(ws::Socket* self, struct kevent event) {
 
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
   self->init_client(client_socket_fd, listen);
-  self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::recv_request), &limit);
+  self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::recv_request), NULL); // todo
 }
 
 /*
@@ -132,7 +132,7 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   char buffer[kBUFFER_SIZE + 1];
 
   ssize_t read_size;
-  read_size = read(event.ident, buffer, kBUFFER_SIZE);
+  read_size = read(event.ident, buffer, std::min(static_cast<long>(kBUFFER_SIZE), event.data));
 
   if (read_size == -1) {
     self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL, NULL);
@@ -141,16 +141,24 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   }
 
   buffer[read_size] = 0;
+  std::cout << "input" << std::endl;
+  std::cout << buffer << std::endl; // todo;
+  std::cout << "input end" << std::endl;
 
   if (client_data.request.eof() && read_size > 0) // todo session
     client_data.request.clear();
 
   if (read_size > 0) {
-    std::cout << YLW << "\n== Request ======================================\n" << NC << std::endl;
-    std::cout << buffer << std::endl;
-    std::cout << RED << "\n== Parsing ======================================\n" << NC << std::endl;
+//    std::cout << YLW << "\n== Request ======================================\n" << NC << std::endl;
+//    std::cout << buffer << std::endl;
+//    std::cout << RED << "\n== Parsing ======================================\n" << NC << std::endl;
     client_data.status = client_data.request.parse_request_message(self->_conf, buffer, client_data.repository);
   }
+
+//  todo
+//  if (read_size == 0) {
+    // operation timeout
+//  }
 
   /*
     Request 클래스에서 모든 데이터를 다 읽었다면 eof == true로 설정된다.
@@ -160,8 +168,8 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   if (client_data.request.eof() || client_data.status || !read_size) {
     /* EV_DELETE flags는 필요 없을듯 keep-alive 생각 */
 
-    client_data.request.test();
-    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
+//    client_data.request.test();
+//    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
     self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request), NULL);
     self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL, NULL);
   }
@@ -170,8 +178,8 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
 void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   client_value_type& client_data = self->_client.find(event.ident)->second;
 
-  if (!client_data.status)
-    _validator(client_data);
+//  if (!client_data.status)
+//    _validator(client_data);
 
   client_data.repository.set_repository(client_data.status);
   client_data.status = client_data.repository.get_status();

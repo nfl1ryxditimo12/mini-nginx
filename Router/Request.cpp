@@ -10,18 +10,11 @@
 
 #include "Repository.hpp"
 
-ws::Request::Request(const ws::Configure::listen_type& listen): _listen(listen) {
+ws::Request::Request(const ws::Configure::listen_type& listen)
+  : _listen(listen), _eof(false), _content_length(std::numeric_limits<std::size_t>::max()),
+    _status(0), _chunked(false), _chunked_line_type(0), _chunked_byte(0), _client_max_body_size(0), _is_header(true),
+    _token(), _buffer() {
   insert_require_header_field();
-
-  _eof = false;
-
-  _content_length = std::numeric_limits<size_t>::max();
-
-  _status = 0;
-  _chunked = false;
-  _chunked_line_type = 0;
-  _chunked_byte = 0;
-  _client_max_body_size = 0;
 }
 
 ws::Request::Request(const Request& cls) {
@@ -47,6 +40,7 @@ ws::Request::Request(const Request& cls) {
   _chunked_line_type = cls._chunked_line_type;
   _chunked_byte = cls._chunked_byte;
   _client_max_body_size = cls._client_max_body_size;
+  _is_header = cls._is_header;
 }
 
 ws::Request::~Request() {}
@@ -56,27 +50,27 @@ ws::Request::~Request() {}
   chunk-start-line 파싱 -> chunked-content push_back 형식?
   만약 chunked-content-length보다 chunked-content가 적게 들어오면?
 */
-void	ws::Request::parse_request_chunked_body(ws::Token& token, std::stringstream& buffer) {
+void	ws::Request::parse_request_chunked_body() {
 
-  while (!buffer.eof() && !_status) {
-    token.rd_http_line(buffer);
+  while (!_buffer.eof() && !_status) {
+    rd_http_line(); // todo \r\n
     if (!_chunked_line_type) {
-      _chunked_byte = ws::Util::hextoul(token);
+      _chunked_byte = ws::Util::stoul(_token, std::numeric_limits<unsigned long>::max(), 0, "0123456789ABCDE");
       _chunked_line_type = 1;
       if (_chunked_byte == std::string::npos)
         _status = BAD_REQUEST;
     }
     else {
-      if (_chunked_byte == 0 && token.length() == 0) {
+      if (_chunked_byte == 0 && _token.length() == 0) {
         _eof = true;
         break;
       }
-      for (std::string::size_type i = 0; i < token.length(); ++i, --_chunked_byte) {
+      for (std::string::size_type i = 0; i < _token.length(); ++i, --_chunked_byte) {
         if (_request_body.length() == _client_max_body_size) {
           _status = 413;
           break;
         }
-        _request_body.push_back(token[i]);
+        _request_body.push_back(_token[i]);
       }
       if (_chunked_byte < 0)
         _status = BAD_REQUEST;
@@ -94,15 +88,15 @@ void	ws::Request::parse_request_chunked_body(ws::Token& token, std::stringstream
   Content-Length 보다 buffer size가 넘어간다면 넘어간 값부터는 쓰레기 값이라고 판단 할 수 있다.
   client_max_body_size 는 validator에서 판단해야 하나?
 */
-void	ws::Request::parse_request_body(std::stringstream& buffer) {
+void	ws::Request::parse_request_body() {
 
   /* token 대입 시간 테스트 해야함 */
   std::string::size_type i = _request_body.length();
 
   // _request_body = token.rdall(buffer);
 
-  for (char c = buffer.get(); i <= _content_length || i <= _client_max_body_size; c = buffer.get(), ++i) {
-    if (buffer.eof())
+  for (char c = _buffer.get(); i <= _content_length || i <= _client_max_body_size; c = _buffer.get(), ++i) {
+    if (_buffer.eof())
       break;
 
     _request_body.push_back(c);
@@ -115,7 +109,7 @@ void	ws::Request::parse_request_body(std::stringstream& buffer) {
     _eof = true;
 }
 
-void  ws::Request::parse_request_uri(ws::Token& token, std::string uri) {
+void  ws::Request::parse_request_uri(std::string uri) {
   std::string::size_type mark_pos = uri.find("?");
 
   if (mark_pos == uri.npos)
@@ -129,60 +123,81 @@ void  ws::Request::parse_request_uri(ws::Token& token, std::string uri) {
     buffer << uri.substr(mark_pos + 1);
 
     while (!buffer.eof()) {
-      key = token.rdline(buffer, '=');
-      value = token.rdline(buffer, '&');
+      key = rdline('=');
+      value = rdline('&');
       _request_uri_query.insert(query_type::value_type(key, value));
     }
   }
 }
 
-void	ws::Request::parse_request_header(ws::Token& token, std::stringstream& buffer) {
+bool ws::Request::parse_request_start_line() {
+  std::string::size_type pos1 = _token.find(' ');
+
+  if (pos1 == std::string::npos)
+    return false;
+
+  std::string::size_type pos2 = _token.find(' ', pos1 + 1);
+
+  if (pos2 == std::string::npos)
+    return false;
+
+  _method = _token.substr(0, pos1);
+  parse_request_uri(_token.substr(pos1 + 1, pos2 - pos1 - 1));
+  _http_version = _token.substr(pos2 + 1);
+
+  return true;
+}
+
+void	ws::Request::parse_request_header() {
   std::string key;
   std::string value;
+  std::string::size_type pos;
 
-  /* request start line */
-	_method = token.rdword(buffer);
-	parse_request_uri(token, token.rdword(buffer));
-	_http_version = token.rd_http_line(buffer);
-  
-  /* request header */
-  for (token.rdword(buffer); !buffer.eof() && !_status; token.rdword(buffer)) {
-    if (token == "\r\n")
-      break;
-    if (token.find(":") == token.npos || token[token.length() - 1] != ':') {
-      _status = BAD_REQUEST;
+  while (!(_buffer.eof() || _status)) {
+    rd_http_line();
+
+    if (_token.length() < 2 || _token.compare(_token.length() - 2, 2, "\r\n")) {
+      _buffer.clear();
+      _buffer << _token;
       return;
     }
-    key = token;
-    value = token.rd_http_line(buffer);
 
-    header_parse_map_type::iterator header_iter;
+    if (_token == "\r\n")
+        break;
 
-    if ((header_iter = _header_parser.find(key)) != _header_parser.end())
+    _token.erase(_token.length() - 2, 2);
+
+    pos = _token.find(":");
+    if (pos == std::string::npos) {
+      if (!parse_request_start_line())
+        _status = BAD_REQUEST;
+      continue;
+    }
+
+    key = _token.substr(0, pos);
+    value = _token.substr(pos + 1, _token.length() - pos - 1);
+
+    header_parse_map_type::iterator header_iter = _header_parser.find(key);
+
+    if (header_iter != _header_parser.end())
       (this->*header_iter->second)(value);
     else
-      /*
-        위에서 변수로 담지만 모든 헤더 필드가 필요할까?
-        필요하다면 밑처럼 담아야할듯
-      */
       _request_header.insert(header_type::value_type(key, value));
   }
 
-  if (token != "\r\n")
+  if (_token != "\r\n")
     _status = BAD_REQUEST;
-  if (_content_length == std::numeric_limits<size_t>::max() && !_chunked)
+  if (_content_length == std::numeric_limits<std::size_t>::max() && !_chunked)
     _eof = true;
+
+  _is_header = false;
 }
 
 /*
   repository를 header파싱 후 해줘서 client_max_body_size까지만 받아올 지 생각 해 봐야함
 */
 int ws::Request::parse_request_message(const ws::Configure& conf, const std::string& message, ws::Repository& repo) {
-
-  ws::Token token;
-  std::stringstream buffer;
-
-  buffer << message;
+  _buffer << message;
 
   /*
     buffer size 가 0 인 경우 어떻게 처리해야 할까?
@@ -192,8 +207,12 @@ int ws::Request::parse_request_message(const ws::Configure& conf, const std::str
     아마 _eof 변수로 파싱을 관리해서 괜찮지 않을까 라는 뇌피셜
   */
 
-  if (!_request_header.size()) {
-    parse_request_header(token, buffer);
+  if (_is_header) {
+    parse_request_header();
+
+    if (_is_header) // chunked header
+      return _status;
+
     const ws::Server& curr_server = conf.find_server(this->get_listen(), this->get_server_name());
     _client_max_body_size = curr_server.get_client_max_body_size();
     repo(curr_server, *this);
@@ -202,13 +221,13 @@ int ws::Request::parse_request_message(const ws::Configure& conf, const std::str
   /* body가 없거나 _status가 양수일 경우 eof 설정 */
   if (_status)
     _eof = true;
-  if (_eof == true)
+  if (_eof)
     return _status;
 
   if (!_chunked)
-    parse_request_body(buffer);
+    parse_request_body();
   else
-    parse_request_chunked_body(token, buffer);
+    parse_request_chunked_body();
 
   return _status;
 }
@@ -235,6 +254,8 @@ void  ws::Request::clear() {
   _chunked_line_type = 0;
   _chunked_byte = 0;
   _client_max_body_size = 0;
+  _token.clear();
+  _buffer.rdbuf();
 }
 
 /* getter */
@@ -332,6 +353,26 @@ void  ws::Request::insert_require_header_field() {
   _header_parser.insert(header_parse_map_type::value_type("Connection:", &Request::parse_connection));
   _header_parser.insert(header_parse_map_type::value_type("Content-Length:", &Request::parse_content_length));
   _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding:", &Request::parse_transfer_encoding));
+}
+
+ws::Token&  ws::Request::rdword() {
+  _token.rdword(_buffer);
+  return _token;
+}
+
+ws::Token& ws::Request::rdline(char delim) {
+  _token.rdline(_buffer, delim);
+  return _token;
+}
+
+ws::Token& ws::Request::rd_http_line() {
+  _token.rd_http_line(_buffer);
+  return _token;
+}
+
+ws::Token& ws::Request::rdall() {
+  _token.rdall(_buffer);
+  return _token;
 }
 
 void ws::Request::test() {

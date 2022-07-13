@@ -84,15 +84,14 @@ namespace ws {
     }
 
     for (char c = buffer.get(), prev = 0; ; prev = c, c = buffer.get()) {
-      if (buffer.eof())
+      if (buffer.eof()) {
         return *this;
+      }
 
       this->push_back(c);
 
-      if ((c == '\n') && (prev == '\r')) {
-          this->erase(this->length() - 2, 2);
+      if ((c == '\n') && (prev == '\r'))
           return *this;
-      }
     }
   }
 
