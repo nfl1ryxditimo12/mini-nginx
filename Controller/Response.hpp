@@ -28,8 +28,5 @@ namespace ws {
 
     void process(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd);
     void generate(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd);
-
-    std::string generate_directory_list() const;
-    std::string generate_directory_list_body() const;
   };
 }

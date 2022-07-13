@@ -65,28 +65,14 @@ void ws::Response::process(ws::Socket* socket, client_value_type& client_data, u
       }
     }
   }
-
-//  if (!_repo.get_autoindex().empty()) {
-//    client_data.response.first = this->generate_directory_list();
-//    _kernel->kevent_ctl(client_fd, EVFILT_WRITE, EV_ADD, 0, 0, reinterpret_cast<void*>(&ws::Socket::send_response));
-//  }
 }
 
 void ws::Response::generate(ws::Socket *socket, ws::Response::client_value_type &client_data, uintptr_t client_fd) {
   set_data(socket, client_data, client_fd);
 
   std::string& response_data = client_data.response;
-  std::string response_header = ws::HeaderGenerator::generate(client_data.status, response_data.length());
+  std::string response_header = ws::HeaderGenerator::generate(client_data, response_data.length());
   if (client_data.status < 400 && client_data.status >= 300 && client_data.repository.get_redirect().first > 0)
     response_header += ("Location: " + client_data.repository.get_redirect().second + "\r\n");
   response_data = response_header + "\r\n" + response_data;
-}
-
-std::string ws::Response::generate_directory_list() const {
-  std::string body = this->generate_directory_list_body();
-  return ws::HeaderGenerator::generate(301, body.length()) + "\r\n" + body; // todo status
-}
-
-std::string ws::Response::generate_directory_list_body() const {
-  return "https://www.naver.com"; // todo html directory list page
 }
