@@ -33,7 +33,7 @@ void ws::Validator::check_method(client_value_type& client_data) {
     limit_except_vec_type::iterator limit_except = limit_except_vec.begin();
     limit_except != limit_except_vec.end();
     ++limit_except
-    ) {
+  ) {
     if (request_method == *limit_except)
       return;
     if (request_method == "HEAD")

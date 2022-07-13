@@ -12,7 +12,11 @@ std::string ws::HeaderGenerator::generate(unsigned int stat, std::string::size_t
 
   generate_start_line(data, stat);
   generate_representation_header(data, stat, content_length);
+  //representation: content-type, content-length, transfer-encoding
   generate_response_header(data);
+  //response header: date, server, allow
+  generate_connection_header(data);
+  //connection header: connection
 
   return data;
 }
@@ -23,6 +27,7 @@ void ws::HeaderGenerator::generate_start_line(std::string& data, unsigned int st
 }
 
 // representation field
+  //representation: content-type, content-length, transfer-encoding
 void ws::HeaderGenerator::generate_representation_header(
   std::string& data, unsigned int stat, std::string::size_type content_length
 ) {
@@ -30,22 +35,35 @@ void ws::HeaderGenerator::generate_representation_header(
   (void) content_length;
   (void) stat;
 //  if (!((100 <= stat && stat < 200) || stat == NO_CONTENT))
-//    generate_content_length(data, content_length);
+//    generate_content_length_line(data, content_length);
+  generate_content_length_line(data);
+  generate_transfer_encoding_line(data);
 }
 
 void ws::HeaderGenerator::generate_content_type_line(std::string& data) {
   data += "Content-Type: text/html; charset=UTF-8\r\n";
 }
 
-void ws::HeaderGenerator::generate_content_length(std::string& data, std::string::size_type content_length) {
+void ws::HeaderGenerator::generate_content_length_line(std::string& data, std::string::size_type content_length) {
   data += "Content-Length: " + ws::Util::ultos(content_length) + " bytes\r\n";
+} //header -> body -> content-lenght
+
+void ws::HeaderGenerator::generate_transfer_encoding_line(std::string& data) {
+  const std::string transfer_encoding = client_data.request.get_transfer_encoding();
+  if (transfer_encoding == "chunked")
+    data += "Transfer-Encoding: " + transfer_encoding + "\r\n";
 }
+
+//client_value_type& client_data
+//stat 변경 가능
 
 
 // response field
+  //response header: date, server, allow
 void ws::HeaderGenerator::generate_response_header(std::string& data) {
   generate_date_line(data);
   generate_server_line(data);
+  generate_allow_line(data);
 }
 
 void ws::HeaderGenerator::generate_date_line(std::string& data) {
@@ -58,4 +76,32 @@ void ws::HeaderGenerator::generate_date_line(std::string& data) {
 
 void ws::HeaderGenerator::generate_server_line(std::string& data) {
   data += "Server: Webserv\r\n";
+}
+
+void ws::HeaderGenerator::generate_allow_line(std::string& data, unsigned int stat) {
+  if (client_data.repository.get_status() != METHOD_NOT_ALLOWED)
+    return;
+
+  data += "Allow ";
+
+  const limit_except_vec_type& limit_except_vec = client_data.repository.get_location()->get_limit_except_vec();
+  for (
+    limit_except_vec_type::const_iterator it = limit_except_vec.begin();
+    it != limit_except_vec.end();
+    ++it
+  )
+    data += *it + ", ";
+
+  data[data.length() - 2] = '\r';
+  data[data.length() - 1] = '\n';
+}
+
+//connection field
+  //connection header: connection
+void ws::HeaderGenerator::generate_connection_header(std::string& data) {
+  generate_connection_line(data);
+}
+
+void generate_connection_line(std::string& data) {
+  
 }
