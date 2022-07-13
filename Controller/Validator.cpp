@@ -26,6 +26,9 @@ void ws::Validator::check_method(client_value_type& client_data) {
   std::string request_method = client_data.request.get_method();
   limit_except_vec_type limit_except_vec = client_data.repository.get_location()->get_limit_except_vec();
 
+  if (!(request_method == "GET" || request_method == "HEAD" || request_method == "POST" || request_method == "DELETE"))
+    client_data.status = METHOD_NOT_ALLOWED;
+
   for (
     limit_except_vec_type::iterator limit_except = limit_except_vec.begin();
     limit_except != limit_except_vec.end();
@@ -108,7 +111,9 @@ void ws::Validator::check_connection(ws::Validator::client_value_type& client_da
 }
 
 void ws::Validator::check_transfer_encoding(ws::Validator::client_value_type& client_data) {
-  (void) client_data; // todo
+  const std::string transfer_encoding = client_data.request.get_transfer_encoding();
+  if (!(transfer_encoding == "chunked" || transfer_encoding == "")) 
+    client_data.status = BAD_REQUEST;
 }
 
 void ws::Validator::check_host(ws::Validator::client_value_type& client_data) {
@@ -120,6 +125,5 @@ void ws::Validator::check_host(ws::Validator::client_value_type& client_data) {
   //host가 2줄 이상 존재 -> 400
   //host가 잘못된 값 -> 400
 }
-
 
 //connection close인데 close로 설정되어있지 않으면 error <- response에서 status랑 비교해서 결정하기
