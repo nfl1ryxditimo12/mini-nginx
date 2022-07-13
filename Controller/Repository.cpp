@@ -252,6 +252,26 @@ const ws::Repository::redirect_type&  ws::Repository::get_redirect() const throw
   return _config.redirect;
 }
 
+void ws::Repository::clear() throw() {
+  _fatal = false;
+  _dir = false;
+  _status = 0;
+  _fd = FD_DEFAULT;
+  _project_root.clear();
+  _uri.clear();
+  _file_path.clear();
+  _host.clear();
+  _method.clear();
+  _request_body.clear();
+  _autoindex.clear();
+  _cgi.first.clear();
+  // todo: cgi second
+  _content_type.clear();
+  _server = NULL;
+  _location = NULL;
+  _request = NULL;
+}
+
 #define NC "\e[0m"
 #define RED "\e[0;31m"
 #define GRN "\e[0;32m"

@@ -168,5 +168,8 @@ namespace ws {
     const cgi_type&       get_cgi() const throw();
     const std::string&    get_content_type() const throw();
     const redirect_type&  get_redirect() const throw();
+
+    // clear for keep-alive
+    void clear() throw();
   };
 }
