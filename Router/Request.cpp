@@ -74,9 +74,6 @@ void	ws::Request::parse_request_chunked_body() {
       return;
     }
 
-    if (_token == "\r\n")
-      break;
-
     _token.erase(_token.length() - 2, 2);
 
     if (!_chunked_line_type) {
@@ -84,8 +81,6 @@ void	ws::Request::parse_request_chunked_body() {
       _chunked_line_type = 1;
       if (_chunked_byte == std::string::npos)
         _status = BAD_REQUEST;
-      if (_chunked_byte == 0)
-        _eof = true;
     }
     else {
       if (_chunked_byte == 0 && _token.length() == 0) {

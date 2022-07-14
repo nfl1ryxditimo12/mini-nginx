@@ -141,17 +141,17 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   }
 
   buffer[read_size] = 0;
-  std::cout << "input" << std::endl;
-  std::cout << buffer << std::endl; // todo;
-  std::cout << "input end" << std::endl;
+  // std::cout << "input" << std::endl;
+  // std::cout << buffer << std::endl; // todo;
+  // std::cout << "input end" << std::endl;
 
   if (client_data.request.eof() && read_size > 0) // todo session
     client_data.request.clear();
 
   if (read_size > 0) {
-//    std::cout << YLW << "\n== Request ======================================\n" << NC << std::endl;
-//    std::cout << buffer << std::endl;
-//    std::cout << RED << "\n== Parsing ======================================\n" << NC << std::endl;
+   std::cout << YLW << "\n== Request " << NC << event.ident << YLW << " ======================================\n" << NC << std::endl;
+   std::cout << buffer << std::endl;
+  //  std::cout << RED << "\n== Parsing ======================================\n" << NC << std::endl;
     client_data.status = client_data.request.parse_request_message(self->_conf, buffer, client_data.repository);
   }
 
