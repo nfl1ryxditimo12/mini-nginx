@@ -2,10 +2,13 @@
 *.o
 a.out
 webserv
-tes_t*
+
+test_*
+output
+
 *.gch
 a.out.dSYM
 .DS_Store
-output
+
 # clion
 .idea
