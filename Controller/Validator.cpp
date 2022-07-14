@@ -24,14 +24,14 @@ void ws::Validator::operator()(client_value_type& client_data) {
 }
 
 void ws::Validator::check_method(client_value_type& client_data) {
-  std::string request_method = client_data.request.get_method();
-  limit_except_vec_type limit_except_vec = client_data.repository.get_location()->get_limit_except_vec();
+  const std::string& request_method = client_data.request.get_method();
+  const limit_except_vec_type& limit_except_vec = client_data.repository.get_location()->get_limit_except_vec();
 
   if (!(request_method == "GET" || request_method == "HEAD" || request_method == "POST" || request_method == "DELETE"))
     client_data.status = METHOD_NOT_ALLOWED;
 
   for (
-    limit_except_vec_type::iterator limit_except = limit_except_vec.begin();
+    limit_except_vec_type::const_iterator limit_except = limit_except_vec.begin();
     limit_except != limit_except_vec.end();
     ++limit_except
   ) {
@@ -109,19 +109,19 @@ void ws::Validator::check_content_length(ws::Validator::client_value_type& clien
 }
 
 void ws::Validator::check_connection(ws::Validator::client_value_type& client_data) {
-  const std::string connection = client_data.request.get_connection();
+  const std::string& connection = client_data.request.get_connection();
   if (!(connection == "close" || connection == "keep-alive" || connection == ""))
     client_data.status = BAD_REQUEST;
 }
 
 void ws::Validator::check_transfer_encoding(ws::Validator::client_value_type& client_data) {
-  const std::string transfer_encoding = client_data.request.get_transfer_encoding();
+  const std::string& transfer_encoding = client_data.request.get_transfer_encoding();
   if (!(transfer_encoding == "chunked" || transfer_encoding == "")) 
     client_data.status = BAD_REQUEST;
 }
 
 void ws::Validator::check_host(ws::Validator::client_value_type& client_data) {
-  std::string host = client_data.request.get_server_name();
+  const std::string& host = client_data.request.get_server_name();
 
   if (host == "") //host가 비어있으면 400
     client_data.status = BAD_REQUEST;
