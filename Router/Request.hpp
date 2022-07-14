@@ -82,7 +82,7 @@ namespace ws {
     bool                    _chunked;
 
     /* line type is "bytes to send" or "data" */
-    int                     _chunked_line_type;
+    bool                    _chunked_line_type;
 
     /* Number of bytes being read */
     size_t                  _chunked_byte;
@@ -115,6 +115,8 @@ namespace ws {
     void  parse_request_header();
     void  parse_request_body();
     void  parse_request_chunked_body();
+    void  parse_request_chunked_start_line();
+    void  parse_request_chunked_data_line();
 
     /* =================================== */
     /*     Request header field parser     */

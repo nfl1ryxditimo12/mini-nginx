@@ -12,7 +12,7 @@
 
 ws::Request::Request(const ws::Configure::listen_type& listen)
   : _listen(listen), _eof(false), _content_length(std::numeric_limits<std::size_t>::max()),
-    _status(0), _chunked(false), _chunked_line_type(0), _chunked_byte(0), _client_max_body_size(0), _is_header(true),
+    _status(0), _chunked(false), _chunked_line_type(false), _chunked_byte(std::string::npos), _client_max_body_size(0), _is_header(true),
     _token(), _buffer() {
   insert_require_header_field();
 }
@@ -45,36 +45,66 @@ ws::Request::Request(const Request& cls) {
 
 ws::Request::~Request() {}
 
+// void  ws::Request::parse_request_chunked_start_line() {
+//   bool start = false;
+
+//   if (_chunked_byte == std::string::npos) {
+//     start = true;
+//     _chunked_byte++;
+//   }
+  
+// }
+
+// void  ws::Request::parse_request_chunked_data_line() {
+
+// }
+
 /*
   chunked인 경우 어떻게 처리할까?
   chunk-start-line 파싱 -> chunked-content push_back 형식?
   만약 chunked-content-length보다 chunked-content가 적게 들어오면?
 */
 void	ws::Request::parse_request_chunked_body() {
-
   while (!_buffer.eof() && !_status) {
-    rd_http_line(); // todo \r\n
+    rd_http_line(); // 0\r\n 으로 들어오는 경우 \r\n 잘라주는 로직 필요
+
+    if (_token.length() < 2 || _token.compare(_token.length() - 2, 2, "\r\n")) {
+      _buffer.clear();
+      _buffer << _token;
+      return;
+    }
+
+    if (_token == "\r\n")
+      break;
+
+    _token.erase(_token.length() - 2, 2);
+
     if (!_chunked_line_type) {
       _chunked_byte = ws::Util::stoul(_token, std::numeric_limits<unsigned long>::max(), 0, "0123456789ABCDE");
       _chunked_line_type = 1;
       if (_chunked_byte == std::string::npos)
         _status = BAD_REQUEST;
+      if (_chunked_byte == 0)
+        _eof = true;
     }
     else {
       if (_chunked_byte == 0 && _token.length() == 0) {
         _eof = true;
-        break;
+        return;
       }
       for (std::string::size_type i = 0; i < _token.length(); ++i, --_chunked_byte) {
+        if (_chunked_byte == std::string::npos) {
+          _status = BAD_REQUEST;
+          return;
+        }
+        
         if (_request_body.length() == _client_max_body_size) {
           _status = 413;
-          break;
+          return;
         }
         _request_body.push_back(_token[i]);
       }
-      if (_chunked_byte < 0)
-        _status = BAD_REQUEST;
-      else if (_chunked_byte == 0)
+      if (_chunked_byte == 0)
         _chunked_line_type = 0;
     }
   }
@@ -175,7 +205,7 @@ void	ws::Request::parse_request_header() {
     }
 
     key = _token.substr(0, pos);
-    value = _token.substr(pos + 1, _token.length() - pos - 1);
+    value = _token.substr(pos + 2, _token.length() - pos - 1);
 
     header_parse_map_type::iterator header_iter = _header_parser.find(key);
 
@@ -197,8 +227,9 @@ void	ws::Request::parse_request_header() {
   repository를 header파싱 후 해줘서 client_max_body_size까지만 받아올 지 생각 해 봐야함
 */
 int ws::Request::parse_request_message(const ws::Configure& conf, const std::string& message, ws::Repository& repo) {
-  _buffer << message;
 
+    _buffer << message;
+  
   /*
     buffer size 가 0 인 경우 어떻게 처리해야 할까?
     case 1: kernel buffer가 모두 읽힌 뒤 발생한 kevent -> buffer size == 0 으로 들어옴
@@ -349,10 +380,10 @@ void  ws::Request::parse_transfer_encoding(const std::string& value) {
 /* Else private function */
 
 void  ws::Request::insert_require_header_field() {
-  _header_parser.insert(header_parse_map_type::value_type("Host:", &Request::parse_host));
-  _header_parser.insert(header_parse_map_type::value_type("Connection:", &Request::parse_connection));
-  _header_parser.insert(header_parse_map_type::value_type("Content-Length:", &Request::parse_content_length));
-  _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding:", &Request::parse_transfer_encoding));
+  _header_parser.insert(header_parse_map_type::value_type("Host", &Request::parse_host));
+  _header_parser.insert(header_parse_map_type::value_type("Connection", &Request::parse_connection));
+  _header_parser.insert(header_parse_map_type::value_type("Content-Length", &Request::parse_content_length));
+  _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding", &Request::parse_transfer_encoding));
 }
 
 ws::Token&  ws::Request::rdword() {
