@@ -33,8 +33,7 @@ namespace ws {
       uint16_t flags,
       uint32_t fflags,
       intptr_t data,
-      void *udata,
-      struct timespec* limit
+      void *udata
     );
 
     int   kevent_wait(struct kevent* event_list, size_t event_size);
