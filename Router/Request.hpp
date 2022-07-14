@@ -62,6 +62,7 @@ namespace ws {
     */
     std::size_t _content_length;
     std::string _server_name;
+    u_int16_t   _port;
     std::string _connection;
     std::string _transfer_encoding;
 

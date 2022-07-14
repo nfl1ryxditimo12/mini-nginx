@@ -11,9 +11,18 @@
 #include "Repository.hpp"
 
 ws::Request::Request(const ws::Configure::listen_type& listen)
-  : _listen(listen), _eof(false), _content_length(std::numeric_limits<std::size_t>::max()),
-    _status(0), _chunked(false), _chunked_line_type(0), _chunked_byte(0), _client_max_body_size(0), _is_header(true),
-    _token(), _buffer() {
+  : _listen(listen),
+    _eof(false),
+    _content_length(std::numeric_limits<std::size_t>::max()),
+    _port(0),
+    _status(0),
+    _chunked(false),
+    _chunked_line_type(0),
+    _chunked_byte(0),
+    _client_max_body_size(0),
+    _is_header(true),
+    _token(),
+    _buffer() {
   insert_require_header_field();
 }
 
@@ -31,6 +40,7 @@ ws::Request::Request(const Request& cls) {
 
   _content_length = cls._content_length;
   _server_name = cls._server_name;
+  _port = cls._port;
   _connection = cls._connection;
   _transfer_encoding = cls._transfer_encoding;
 
@@ -245,6 +255,7 @@ void  ws::Request::clear() {
 
   _content_length = std::numeric_limits<size_t>::max();
   _server_name.clear();
+  _port = 0;
   _connection.clear();
   _transfer_encoding.clear();
 
@@ -316,12 +327,19 @@ const std::string& ws::Request::get_transfer_encoding() const throw() {
 /* parser function */
 
 void  ws::Request::parse_host(const std::string& value) {
-  std::string server_name = value.substr(0, value.find_first_of(":"));
+  std::string::size_type pos = value.find_first_of(":");
 
-  if (inet_addr(server_name.c_str()) == static_cast<in_addr_t>(-1))
+  if (!(_server_name.empty() == 0)) {
+    _status = BAD_REQUEST;
+    return;
+  }
+
+  _server_name = value.substr(0, pos);
+  if (inet_addr(_server_name.c_str()) != INADDR_NONE) //ip
     _server_name = "_";
-  else
-    _server_name = server_name;
+
+  if (pos != std::string::npos)
+    _port = ws::Util::stoul((value.substr(pos + 1, value.length())).c_str(), std::numeric_limits<u_int16_t>::max());
 }
 
 void  ws::Request::parse_connection(const std::string& value) {
