@@ -49,10 +49,12 @@ void ws::Validator::check_uri(client_value_type& client_data) {
   const std::string& uri = client_data.request.get_uri();
   std::string url = repository.get_root() + uri;
   struct stat file_status;
+  const ws::Server::location_map_type& location_map = client_data.repository.get_server()->get_location_map();
 
   if (lstat(url.c_str(), &file_status) != 0) {
-    //location dir이랑 비교
     client_data.status = NOT_FOUND;
+    if (location_map.find(uri) != location_map.end())
+      client_data.status = OK; //status를 redirect.first값으로 해주는건 repository에 있음!
   } else {
     if (S_ISREG(file_status.st_mode)) {
       // if (url.compare(url.find('.'), 5, ".html") != 0) {
