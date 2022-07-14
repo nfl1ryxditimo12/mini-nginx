@@ -2,7 +2,7 @@
 *.o
 a.out
 webserv
-test*
+tes_t*
 *.gch
 a.out.dSYM
 .DS_Store
