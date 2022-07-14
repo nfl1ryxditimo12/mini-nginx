@@ -7,6 +7,8 @@
 
 #include <cctype>
 
+#include <sys/stat.h>
+
 #include "Util.hpp"
 
 // initialize buffer with configure file
@@ -55,6 +57,11 @@ std::string ws::ConfParser::read_file(const std::string& file) const {
   input.open(file, std::ifstream::in);
   if (input.fail() || input.bad())
     throw std::invalid_argument("Configure: fail to open file");
+
+  struct stat status;
+  stat(file.c_str(), &status);
+  if (!(S_IFREG & status.st_mode))
+    throw std::invalid_argument("Configure: wrong file type");
 
   std::stringstream buffer;
   buffer << input.rdbuf();
