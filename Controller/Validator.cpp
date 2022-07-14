@@ -1,6 +1,7 @@
 #include "Validator.hpp"
 #include "Socket.hpp"
 #include <sys/stat.h>
+// #include <iostream>//@
 
 ws::Validator::Validator() {
   _check_func_vec.push_back(&Validator::check_method);
@@ -50,6 +51,7 @@ void ws::Validator::check_uri(client_value_type& client_data) {
   struct stat file_status;
 
   if (lstat(url.c_str(), &file_status) != 0) {
+    //location dir이랑 비교
     client_data.status = NOT_FOUND;
   } else {
     if (S_ISREG(file_status.st_mode)) {
@@ -58,7 +60,7 @@ void ws::Validator::check_uri(client_value_type& client_data) {
       //   return;
       // }
       client_data.status = OK;
-      if (file_status.st_mode & S_IREAD) //읽기권한 없으면 403
+      if ((file_status.st_mode & S_IREAD) == 0) //읽기권한 없으면 403
         client_data.status = FORBIDDEN;
     } else if (S_ISDIR(file_status.st_mode)) {
       if (url[url.length() - 1] == '/')

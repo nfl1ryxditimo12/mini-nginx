@@ -55,7 +55,7 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
 
   /*set server*/
   _config.listen = request.get_listen();
-  _config.server_name = request.get_request_header().find("Host")->second;
+  // _config.server_name = request.get_request_header().find("Host")->second;
   _config.server_name = request.get_server_name();
 
   if (_location != NULL) {

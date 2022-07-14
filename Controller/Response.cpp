@@ -75,4 +75,6 @@ void ws::Response::generate(ws::Socket *socket, ws::Response::client_value_type 
   if (client_data.status < 400 && client_data.status >= 300 && client_data.repository.get_redirect().first > 0)
     response_header += ("Location: " + client_data.repository.get_redirect().second + "\r\n");
   response_data = response_header + "\r\n" + response_data;
+
+  // std::cout << "test\n" << response_data << "\ntest\n"; //@
 }

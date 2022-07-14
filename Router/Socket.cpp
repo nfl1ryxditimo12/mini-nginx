@@ -141,9 +141,9 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   }
 
   buffer[read_size] = 0;
-  std::cout << "input" << std::endl;
-  std::cout << buffer << std::endl; // todo;
-  std::cout << "input end" << std::endl;
+  // std::cout << "input" << std::endl;
+  // std::cout << buffer << std::endl; // todo;
+  // std::cout << "input end" << std::endl;
 
   if (client_data.request.eof() && read_size > 0) // todo session
     client_data.request.clear();
@@ -156,9 +156,13 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   }
 
 //  todo
-//  if (read_size == 0) {
-    // operation timeout
-//  }
+if (read_size == 0) {
+  // operation timeout
+  exit(1);
+  // close(event.ident);
+  // self->disconnect_client(event.ident);
+  return;
+}
 
   /*
     Request 클래스에서 모든 데이터를 다 읽었다면 eof == true로 설정된다.
