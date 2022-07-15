@@ -144,7 +144,7 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   if (client_data.request.eof() && read_size > 0) // todo session
     client_data.request.clear();
 
-  if (read_size > 0) {
+  if (read_size > 0) { // todo: test print
 //    std::cout << YLW << "\n== Request ======================================\n" << NC << std::endl;
 //    std::cout << buffer << std::endl;
 //    std::cout << RED << "\n== Parsing ======================================\n" << NC << std::endl;
@@ -166,7 +166,7 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   if (client_data.request.eof() || client_data.status || !read_size) {
     /* EV_DELETE flags는 필요 없을듯 keep-alive 생각 */
 
-//    client_data.request.test();
+//    client_data.request.test(); // todo: test print
 //    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
     self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request));
     self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
