@@ -331,7 +331,7 @@ const std::string& ws::Request::get_transfer_encoding() const throw() {
 void  ws::Request::parse_host(const std::string& value) {
   std::string::size_type pos = value.find_first_of(":");
 
-  if (!(_server_name.empty() == 0)) {
+  if (!_server_name.empty()) {
     _status = BAD_REQUEST;
     return;
   }
