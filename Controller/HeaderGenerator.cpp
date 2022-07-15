@@ -31,8 +31,7 @@ void ws::HeaderGenerator::generate_start_line(std::string& data, unsigned int st
 void ws::HeaderGenerator::generate_representation_header(
   std::string& data, const client_value_type& client_data, std::string::size_type content_length
 ) {
-//  generate_content_type_line(data); // todo
-  (void)data;
+  generate_content_type_line(data); // todo
   (void)client_data;
   (void) content_length; // todo: maybe not required
 //  if (!((100 <= client_data.status && client_data.status < 200) || client_data.status == NO_CONTENT))
