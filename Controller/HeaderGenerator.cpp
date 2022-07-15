@@ -107,5 +107,5 @@ void ws::HeaderGenerator::generate_connection_header(std::string& data, const cl
 
 void ws::HeaderGenerator::generate_connection_line(std::string& data) {
 //  data += "Connection: keep-alive\r\n";
-   data += "Connection: close\r\n";
+   data += "Connection: closed\r\n";
 }

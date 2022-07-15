@@ -26,7 +26,7 @@ void ws::Response::process(ws::Socket* socket, client_value_type& client_data, u
   ws::Repository::redirect_type redirect = client_data.repository.get_redirect();
 
   if (client_data.status >= BAD_REQUEST)
-    _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD, NOTE_TRIGGER, 0, reinterpret_cast<void*>(ws::Socket::read_data), NULL);
+    _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD, NOTE_TRIGGER, 0, reinterpret_cast<void*>(ws::Socket::read_data));
   else if (redirect.first > 0) {
     /*
       redirect.second 값을 어디에 세팅하나
@@ -35,12 +35,12 @@ void ws::Response::process(ws::Socket* socket, client_value_type& client_data, u
     */
     if (redirect.first < 300)
       client_data.response = redirect.second;
-    _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(ws::Socket::generate_response), NULL);
+    _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(ws::Socket::generate_response));
   }
   else {
     if (client_data.repository.get_method() == "DELETE") {
       remove(client_data.repository.get_file_path().c_str());
-      _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(ws::Socket::generate_response), NULL);
+      _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(ws::Socket::generate_response));
     }
     else {
       if (client_data.repository.get_cgi().first != "") {
@@ -57,11 +57,11 @@ void ws::Response::process(ws::Socket* socket, client_value_type& client_data, u
         }
         response += "</ul>\n</body>\n</html>";
         client_data.response = response;
-        _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(ws::Socket::generate_response), NULL);
+        _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(ws::Socket::generate_response));
       }
       else {
         ws::Socket::kevent_func func = client_data.repository.get_method() == "GET" ? ws::Socket::read_data : ws::Socket::write_data;
-        _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD, NOTE_TRIGGER, 0, reinterpret_cast<void*>(func), NULL);
+        _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD, NOTE_TRIGGER, 0, reinterpret_cast<void*>(func));
       }
     }
   }

@@ -1,5 +1,7 @@
 #include "Kernel.hpp"
 
+#include <cstdlib>
+
 ws::Kernel::Kernel() {
   _kq = kqueue();
   if (_kq == -1)
@@ -15,21 +17,19 @@ ws::Kernel::~Kernel() {
 */
 
 void  ws::Kernel::kevent_ctl(uintptr_t ident, int16_t filter,
-        uint16_t flags, uint32_t fflags, intptr_t data, void *udata, struct timespec* limit) {
+        uint16_t flags, uint32_t fflags, intptr_t data, void *udata) {
   struct kevent event;
   EV_SET(&event, ident, filter, flags, fflags, data, udata);
-  if (kevent(_kq, &event, 1, NULL, 0, limit) == -1)
+  if (kevent(_kq, &event, 1, NULL, 0, NULL) == -1)
     throw; // require custom exception
 }
-
 /*
   커널에서 발생한 이벤트 리턴해주는 함수
 */
-#include <stdlib.h>
 int ws::Kernel::kevent_wait(struct kevent* event_list, size_t event_size) {
   int new_event;
 
-  memset(event_list, 0, sizeof(struct kevent) * event_size);
+  std::memset(event_list, 0, sizeof(struct kevent) * event_size);
   if ((new_event = kevent(_kq, NULL, 0, event_list, event_size, NULL)) == -1)
     throw; // require custom exception
   return new_event;
