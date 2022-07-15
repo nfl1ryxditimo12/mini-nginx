@@ -37,9 +37,6 @@ void ws::Validator::check_method(client_value_type& client_data) {
   ) {
     if (request_method == *limit_except)
       return;
-    if (request_method == "HEAD")
-      if (*limit_except == "GET")
-        return;
   }
   client_data.status = METHOD_NOT_ALLOWED;
 }

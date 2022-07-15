@@ -20,6 +20,7 @@ void ws::Response::set_kernel(Kernel *kernel) {
 }
 
 // todo: can remove client_data arg
+// todo: need to add HEAD method
 void ws::Response::process(ws::Socket* socket, client_value_type& client_data, uintptr_t client_fd) {
   set_data(socket, client_data, client_fd);
 
@@ -46,20 +47,19 @@ void ws::Response::process(ws::Socket* socket, client_value_type& client_data, u
       if (client_data.repository.get_cgi().first != "") {
         (void)redirect;
         /* 알아서 cgi 처리해야함 */
-      }
-      else if (!client_data.repository.get_autoindex().empty()) {
+      } else if (!client_data.repository.get_autoindex().empty()) {
         ws::Repository::autoindex_type autoindex = client_data.repository.get_autoindex();
-        std::string response;
 
-        response += "<html>\n<head>\n</head>\n<body>\n<ul>\n";
+        client_data.response += "<html>\n<head>\n</head>\n<body>\n<ul>\n";
         for (ws::Repository::autoindex_type::iterator it = autoindex.begin(); it != autoindex.end(); ++it) {
-          response += ("<li><a href=\"" + *it +"\">" + *it +"</a></li>\n");
+          client_data.response += ("<li><a href=\"" + *it + "\">" + *it + "</a></li>\n");
         }
-        response += "</ul>\n</body>\n</html>";
-        client_data.response = response;
+        client_data.response += "</ul>\n</body>\n</html>";
+        _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0,
+                            reinterpret_cast<void *>(ws::Socket::generate_response));
+      } else if (client_data.repository.get_method() == "HEAD") {
         _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(ws::Socket::generate_response));
-      }
-      else {
+      } else {
         ws::Socket::kevent_func func = client_data.repository.get_method() == "GET" ? ws::Socket::read_data : ws::Socket::write_data;
         _kernel->kevent_ctl(client_fd, EVFILT_USER, EV_ADD, NOTE_TRIGGER, 0, reinterpret_cast<void*>(func));
       }
@@ -72,7 +72,7 @@ void ws::Response::generate(ws::Socket *socket, ws::Response::client_value_type 
 
   std::string& response_data = client_data.response;
   std::string response_header = ws::HeaderGenerator::generate(client_data, response_data.length());
-  if (client_data.status < 400 && client_data.status >= 300 && client_data.repository.get_redirect().first > 0)
+  if (client_data.status < 400 && client_data.status >= 300 && client_data.repository.get_redirect().first > 0) // todo: move to generate
     response_header += ("Location: " + client_data.repository.get_redirect().second + "\r\n");
   response_data = response_header + "\r\n" + response_data;
 

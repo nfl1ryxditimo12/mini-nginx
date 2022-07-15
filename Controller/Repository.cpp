@@ -117,7 +117,7 @@ void ws::Repository::set_fatal() {
 
 void ws::Repository::set_autoindex() {
 
-  if (_method != "GET") {
+  if (!(_method == "GET" || _method == "HEAD")) {
     this->set_status(METHOD_NOT_ALLOWED);
     return;
   }
@@ -141,7 +141,7 @@ void ws::Repository::set_autoindex() {
       _autoindex.push_back(file->d_name);
   }
 
-  if (_fd == FD_DEFAULT && !_config.autoindex)
+  if (_fd == FD_DEFAULT && !_config.autoindex && !(_method == "HEAD" || _method == "DELETE"))
     this->set_status(FORBIDDEN);
 
   closedir(dir);
@@ -159,7 +159,7 @@ void ws::Repository::set_content_type() {
 }
 
 void ws::Repository::open_file(std::string filename) {
-  if (_method == "DELETE")
+  if (_method == "DELETE" || _method == "HEAD")
     return;
 
   int open_flag = _method == "GET" ? O_RDONLY : O_WRONLY | O_TRUNC | O_CREAT;

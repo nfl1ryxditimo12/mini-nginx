@@ -31,6 +31,9 @@ void ws::HeaderGenerator::generate_start_line(std::string& data, unsigned int st
 void ws::HeaderGenerator::generate_representation_header(
   std::string& data, const client_value_type& client_data, std::string::size_type content_length
 ) {
+  if (client_data.repository.get_method() == "HEAD")
+    return;
+
   generate_content_type_line(data); // todo
   (void)client_data;
   (void) content_length; // todo: maybe not required
