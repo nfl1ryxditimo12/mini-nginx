@@ -1,7 +1,7 @@
-#include "Response.hpp"
-#include "Validator.hpp"
 #include "Socket.hpp"
 
+#include "Response.hpp"
+#include "Validator.hpp"
 
 ws::Validator ws::Socket::_validator;
 ws::Response ws::Socket::_response;
@@ -156,9 +156,13 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   }
 
 //  todo
-//  if (read_size == 0) {
-    // operation timeout
-//  }
+if (read_size == 0) {
+  // operation timeout
+  exit(1);
+  // close(event.ident);
+  // self->disconnect_client(event.ident);
+  return;
+}
 
   /*
     Request 클래스에서 모든 데이터를 다 읽었다면 eof == true로 설정된다.
@@ -178,8 +182,8 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
 void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   client_value_type& client_data = self->_client.find(event.ident)->second;
 
-//  if (!client_data.status)
-//    _validator(client_data);
+  if (!client_data.status)
+    _validator(client_data);
 
   client_data.repository.set_repository(client_data.status);
   client_data.status = client_data.repository.get_status();
@@ -207,7 +211,7 @@ void ws::Socket::send_response(ws::Socket *self, struct kevent event) {
   ssize_t n;
   if ((n = write(event.ident, response_data.c_str() + offset, response_data.length() - offset)) == -1) {
     self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL, NULL);
-    self->disconnect_client(event.ident);
+    self->disconnect_client(event.ident); // todo: close
     return;
   }
 
@@ -215,7 +219,23 @@ void ws::Socket::send_response(ws::Socket *self, struct kevent event) {
 
   if (offset == response_data.length()) {
     self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL, NULL);
-    self->disconnect_client(event.ident);
+    struct timespec limit;
+    limit.tv_sec = 2;
+    limit.tv_nsec = 0;
+
+    client_data.request.clear();
+    client_data.repository.clear();
+    client_data.response.clear();
+    self->_kernel.kevent_ctl(
+      event.ident,
+      EVFILT_READ,
+      EV_ADD,
+      0,
+      0,
+      reinterpret_cast<void*>(ws::Socket::recv_request),
+      &limit
+    );
+    // todo
   }
 }
 //  int fd = open("/goinfre/jaham/webserv/test_create.html", O_WRONLY | O_TRUNC | O_CREAT, 0666);
@@ -300,27 +320,3 @@ void ws::Socket::generate_response(ws::Socket *self, struct kevent event) {
     &limit
   );
 }
-
-// todo: original send response
-//void ws::Socket::send_response(ws::Socket* self, struct kevent event) {
-//  // client_value_type* client_data = self->_client.find(event.ident)->second;
-//  int n;
-//  const std::string& response = self->_client.find(event.ident)->second->response;
-//
-//  if ((n = write(event.ident, response.c_str(), response.size())) == -1)
-//    self->exit_socket();
-//
-//  /*
-//    keep-alive 방식으로 납둘지 close 해버릴지 고민해봐야함
-//    세션같은 경우 keep-alive가 좋을 수도 있다.
-//
-//    EVFILT_WRITE인 경우 event.data의 값이 커널에 할당 가능한 buffer size 일텐데 이게 정확한 방법인지 생각해봐야 한다.
-//
-//    keep-alive인 경우 client_data 구조체 초기화 후, EVFILT_WRITE - EV_DELETE 해주면 끗
-//  */
-//  std::cout << n << ", " << event.data << std::endl;
-//  if (n <= event.data) {
-//    self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-//    self->disconnect_client(event.ident);
-//  }
-//}

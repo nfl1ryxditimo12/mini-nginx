@@ -31,6 +31,7 @@ ws::Request::Request(const Request& cls) {
 
   _content_length = cls._content_length;
   _server_name = cls._server_name;
+  _port = cls._port;
   _connection = cls._connection;
   _transfer_encoding = cls._transfer_encoding;
 
@@ -45,20 +46,6 @@ ws::Request::Request(const Request& cls) {
 
 ws::Request::~Request() {}
 
-// void  ws::Request::parse_request_chunked_start_line() {
-//   bool start = false;
-
-//   if (_chunked_byte == std::string::npos) {
-//     start = true;
-//     _chunked_byte++;
-//   }
-  
-// }
-
-// void  ws::Request::parse_request_chunked_data_line() {
-
-// }
-
 /*
   chunked인 경우 어떻게 처리할까?
   chunk-start-line 파싱 -> chunked-content push_back 형식?
@@ -66,7 +53,7 @@ ws::Request::~Request() {}
 */
 void	ws::Request::parse_request_chunked_body() {
   while (!_buffer.eof() && !_status) {
-    rd_http_line(); // 0\r\n 으로 들어오는 경우 \r\n 잘라주는 로직 필요
+    rd_http_line(); // todo: 0\r\n 으로 들어오는 경우 \r\n 잘라주는 로직 필요
 
     if (_token.length() < 2 || _token.compare(_token.length() - 2, 2, "\r\n")) {
       _buffer.clear();
@@ -92,7 +79,7 @@ void	ws::Request::parse_request_chunked_body() {
           _status = BAD_REQUEST;
           return;
         }
-        
+
         if (_request_body.length() == _client_max_body_size) {
           _status = 413;
           return;
@@ -222,9 +209,8 @@ void	ws::Request::parse_request_header() {
   repository를 header파싱 후 해줘서 client_max_body_size까지만 받아올 지 생각 해 봐야함
 */
 int ws::Request::parse_request_message(const ws::Configure& conf, const std::string& message, ws::Repository& repo) {
+  _buffer << message;
 
-    _buffer << message;
-  
   /*
     buffer size 가 0 인 경우 어떻게 처리해야 할까?
     case 1: kernel buffer가 모두 읽힌 뒤 발생한 kevent -> buffer size == 0 으로 들어옴
@@ -271,6 +257,7 @@ void  ws::Request::clear() {
 
   _content_length = std::numeric_limits<size_t>::max();
   _server_name.clear();
+  _port = 0;
   _connection.clear();
   _transfer_encoding.clear();
 
@@ -342,12 +329,19 @@ const std::string& ws::Request::get_transfer_encoding() const throw() {
 /* parser function */
 
 void  ws::Request::parse_host(const std::string& value) {
-  std::string server_name = value.substr(0, value.find_first_of(":"));
+  std::string::size_type pos = value.find_first_of(":");
 
-  if (inet_addr(server_name.c_str()) == static_cast<in_addr_t>(-1))
+  if (!(_server_name.empty() == 0)) {
+    _status = BAD_REQUEST;
+    return;
+  }
+
+  _server_name = value.substr(0, pos);
+  if (inet_addr(_server_name.c_str()) != INADDR_NONE) //ip
     _server_name = "_";
-  else
-    _server_name = server_name;
+
+  if (pos != std::string::npos)
+    _port = ws::Util::stoul((value.substr(pos + 1, value.length())).c_str(), std::numeric_limits<u_int16_t>::max());
 }
 
 void  ws::Request::parse_connection(const std::string& value) {
