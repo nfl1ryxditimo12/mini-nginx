@@ -3,7 +3,7 @@
 a.out
 webserv
 
-test_*
+test*
 output
 
 *.gch
