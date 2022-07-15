@@ -219,22 +219,23 @@ void ws::Socket::send_response(ws::Socket *self, struct kevent event) {
 
   if (offset == response_data.length()) {
     self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL, NULL);
-    struct timespec limit;
-    limit.tv_sec = 2;
-    limit.tv_nsec = 0;
-
-    client_data.request.clear();
-    client_data.repository.clear();
-    client_data.response.clear();
-    self->_kernel.kevent_ctl(
-      event.ident,
-      EVFILT_READ,
-      EV_ADD,
-      0,
-      0,
-      reinterpret_cast<void*>(ws::Socket::recv_request),
-      &limit
-    );
+    self->disconnect_client(event.ident);
+//    struct timespec limit;
+//    limit.tv_sec = 2;
+//    limit.tv_nsec = 0;
+//
+//    client_data.request.clear();
+//    client_data.repository.clear();
+//    client_data.response.clear();
+//    self->_kernel.kevent_ctl(
+//      event.ident,
+//      EVFILT_READ,
+//      EV_ADD,
+//      0,
+//      0,
+//      reinterpret_cast<void*>(ws::Socket::recv_request),
+//      &limit
+//    );
     // todo
   }
 }

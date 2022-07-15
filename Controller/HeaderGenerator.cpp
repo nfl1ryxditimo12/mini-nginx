@@ -31,12 +31,14 @@ void ws::HeaderGenerator::generate_start_line(std::string& data, unsigned int st
 void ws::HeaderGenerator::generate_representation_header(
   std::string& data, const client_value_type& client_data, std::string::size_type content_length
 ) {
-  generate_content_type_line(data); // todo
+//  generate_content_type_line(data); // todo
+  (void)data;
+  (void)client_data;
   (void) content_length; // todo: maybe not required
 //  if (!((100 <= client_data.status && client_data.status < 200) || client_data.status == NO_CONTENT))
 //    generate_content_length_line(data, content_length);
 
-  generate_transfer_encoding_line(data, client_data);
+//  generate_transfer_encoding_line(data, client_data);
 }
 
 void ws::HeaderGenerator::generate_content_type_line(std::string& data) {
@@ -104,7 +106,6 @@ void ws::HeaderGenerator::generate_connection_header(std::string& data, const cl
 }
 
 void ws::HeaderGenerator::generate_connection_line(std::string& data) {
-  data += "Connection: keep-alive\r\n";
-  // data += "Connection: close\r\n";
-  (void) data;
+//  data += "Connection: keep-alive\r\n";
+   data += "Connection: close\r\n";
 }
