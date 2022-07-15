@@ -44,7 +44,7 @@ void ws::Validator::check_method(client_value_type& client_data) {
 void ws::Validator::check_uri(client_value_type& client_data) {
   const ws::Repository& repository = client_data.repository;
   const std::string& uri = client_data.request.get_uri();
-  std::string url = repository.get_root() + uri;
+  std::string url = repository.get_project_root() + uri;
   struct stat file_status;
   const ws::Server::location_map_type& location_map = client_data.repository.get_server()->get_location_map();
 
