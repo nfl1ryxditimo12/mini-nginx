@@ -16,7 +16,7 @@
 
 ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _status(status), _fd(FD_DEFAULT) {
   memset(&_file_stat, 0, sizeof(struct stat));
-  _index_root = ws::Util::get_root_dir() + "/www";
+  _index_root = ws::Util::get_root_dir();
 }
 
 ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(cls._status) {
@@ -43,13 +43,9 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   _request = &request;
   _request_body = _request->get_request_body();
   _server = &server;
-  _location = &(_server->find_location(Util::parse_relative_path(_file_path + _request->get_uri())));
+  _location = &(_server->find_location(Util::parse_relative_path(_request->get_uri())));
 
-  _uri = _request->get_uri().substr(_location->get_block_name().length());
-  _file_path = _index_root + (_uri[0] == '/' ? "" : "/") + _uri;
-
-
-  lstat(_file_path.c_str(), &_file_stat);
+  _uri = _request->get_uri().substr(_location->get_block_name().length());;
 
   /*set server*/
   _config.listen = request.get_listen();
@@ -63,6 +59,15 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
     ws::Repository::set_option(_location->get_option());
   } else
     ws::Repository::set_option(_server->get_option());
+
+  _file_path = _config.root + (_uri[0] == '/' ? "" : "/") + _uri;
+
+  lstat(_file_path.c_str(), &_file_stat);
+
+    std::string server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
+
+  _host = server_name + ":" + ws::Util::ultos(ntohs(_config.listen.second));
+  _method = _request->get_method();
 }
 
 void ws::Repository::set_option(const ws::InnerOption& option) {
@@ -74,19 +79,9 @@ void ws::Repository::set_option(const ws::InnerOption& option) {
 }
 
 void ws::Repository::set_repository(unsigned int value)  {
-  std::string server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
-
   this->set_status(value);
   if (_config.redirect.first > 0)
     this->set_status(_config.redirect.first); // todo
-
-  _host = server_name + ":" + ws::Util::ultos(ntohs(_config.listen.second));
-  _method = _request->get_method();
-
-  // file_stat 초기화 해줘야함
-  struct stat file_stat;
-  lstat(_file_path.c_str(), &file_stat);
-
 
   if (_status == 0) {
     if (S_ISDIR(_file_stat.st_mode))
@@ -99,7 +94,7 @@ void ws::Repository::set_repository(unsigned int value)  {
     this->open_error_html();
 
   if (_status == 0)
-    this->set_status(_method == "POST" || _method == "PUT" ? 201 : 200);
+    this->set_status(_method == "POST" || _method == "PUT" ? 200 : 200);
 
   this->set_content_type();
 
@@ -143,7 +138,7 @@ void ws::Repository::set_autoindex() {
   }
 
   if (_fd == FD_DEFAULT && !_config.autoindex && !(_method == "HEAD" || _method == "DELETE"))
-    this->set_status(FORBIDDEN);
+    this->set_status(NOT_FOUND);
 
   closedir(dir);
 }
@@ -167,7 +162,7 @@ void ws::Repository::open_file(std::string filename) {
   
   if (_method == "GET")
     open_flag = O_RDONLY;
-  else if (_method == "POST")
+  else if (_method == "POST" || _method == "PUT")
     open_flag = O_WRONLY | O_TRUNC | O_CREAT;
   else
     open_flag = O_WRONLY | O_APPEND;
