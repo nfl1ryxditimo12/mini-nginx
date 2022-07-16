@@ -37,9 +37,6 @@ void ws::Validator::check_method(client_value_type& client_data) {
   ) {
     if (request_method == *limit_except)
       return;
-    if (request_method == "HEAD")
-      if (*limit_except == "GET")
-        return;
   }
   client_data.status = METHOD_NOT_ALLOWED;
 }
@@ -47,27 +44,27 @@ void ws::Validator::check_method(client_value_type& client_data) {
 void ws::Validator::check_uri(client_value_type& client_data) {
   const ws::Repository& repository = client_data.repository;
   const std::string& uri = client_data.request.get_uri();
-  std::string url = repository.get_root() + uri;
+  std::string url = repository.get_project_root() + uri;
   struct stat file_status;
   const ws::Server::location_map_type& location_map = client_data.repository.get_server()->get_location_map();
 
   if (lstat(url.c_str(), &file_status) != 0) {
     client_data.status = NOT_FOUND;
     if (location_map.find(uri) != location_map.end())
-      client_data.status = OK; //status를 redirect.first값으로 해주는건 repository에 있음!
+      client_data.status = 0; //status를 redirect.first값으로 해주는건 repository에 있음!
   } else {
     if (S_ISREG(file_status.st_mode)) {
       // if (url.compare(url.find('.'), 5, ".html") != 0) {
       //   client_data.status = NOT_MODIFIED;
       //   return;
       // }
-      client_data.status = OK;
+      client_data.status = 0;
       if ((file_status.st_mode & S_IREAD) == 0)
         client_data.status = FORBIDDEN;
     } else if (S_ISDIR(file_status.st_mode)) {
       if (url[url.length() - 1] == '/')
         url += '/';
-      client_data.status = OK; //default file 권한은 url넘겨준 후에 repository에서 검사
+      client_data.status = 0; //default file 권한은 url넘겨준 후에 repository에서 검사
     } else {
       if (repository.get_server()->get_autoindex() == false) {
         client_data.status = NOT_FOUND;
@@ -90,7 +87,7 @@ void ws::Validator::check_content_length(ws::Validator::client_value_type& clien
   if (request->get_content_length() == std::numeric_limits<unsigned long>::max())
     return;
 
-  client_data.status = OK;
+  client_data.status = 0;
 
   if (!(request->get_transfer_encoding().empty()))
     client_data.status = BAD_REQUEST;

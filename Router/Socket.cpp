@@ -45,7 +45,7 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(cls), _kernel() {
       std::cout << strerror(errno) << std::endl;
         exit_socket();
     }
-    if (listen(socket_fd, 5) == -1) // todo: backlog issue
+    if (listen(socket_fd, 200) == -1)
       exit_socket();
     fcntl(socket_fd, F_SETFL, O_NONBLOCK);
     _server.insert(server_map_type::value_type(socket_fd, host[i]));
