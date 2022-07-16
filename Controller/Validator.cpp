@@ -48,8 +48,6 @@ void ws::Validator::check_method(client_value_type& client_data) {
 }
 
 void ws::Validator::check_uri(client_value_type& client_data) {
-  const std::string& uri = client_data.request.get_uri();
-  const std::string& url = client_data.repository.get_index_root() + uri;
   struct stat file_status = client_data.repository.get_file_stat();
   const std::string& method = client_data.repository.get_method();
 
@@ -57,7 +55,7 @@ void ws::Validator::check_uri(client_value_type& client_data) {
       // client_data.status = NOT_MODIFIED;
     if ((file_status.st_mode & S_IREAD) == 0)
       client_data.status = FORBIDDEN;
-  } else if (!(S_ISDIR(file_status.st_mode)) && method != "POST" && method != "DELETE")
+  } else if (!(S_ISDIR(file_status.st_mode)) && method != "POST" && method != "PUT" && method != "DELETE")
     client_data.status = NOT_FOUND;
 }
 
