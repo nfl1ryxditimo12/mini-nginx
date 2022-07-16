@@ -146,6 +146,7 @@ void ws::ConfParser::parse_server(ws::Server& server) {
       std::string dir;
       ws::Location location;
 
+      location.set_block_name(dir);
       this->check_location_header(dir, location);
       this->parse_location(location);
 

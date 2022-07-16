@@ -29,6 +29,10 @@ const ws::InnerOption& ws::Location::get_option() const throw() {
   return _option;
 }
 
+const ws::Location::block_name_type& ws::Location::get_block_name() const throw() {
+  return _block_name;
+}
+
 const ws::Location::autoindex_type& ws::Location::get_autoindex() const throw() {
   return _option.get_autoindex();
 }
@@ -63,6 +67,10 @@ void ws::Location::set_cgi(const cgi_type& value) {
 
 void ws::Location::set_option(const ws::InnerOption& value) {
   _option = value;
+}
+
+void ws::Location::set_block_name(const block_name_type &value) {
+  _block_name = value;
 }
 
 void ws::Location::set_autoindex(const autoindex_type& value) {

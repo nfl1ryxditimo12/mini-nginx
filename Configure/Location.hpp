@@ -11,6 +11,7 @@ namespace ws {
     typedef std::vector<limit_except_type> limit_except_vec_type;
     typedef std::pair<unsigned int, std::string> return_type;
     typedef std::string cgi_type;
+    typedef std::string block_name_type;
     typedef ws::InnerOption::autoindex_type autoindex_type;
     typedef ws::InnerOption::root_type root_type;
     typedef ws::InnerOption::index_set_type index_set_type;
@@ -24,6 +25,7 @@ namespace ws {
     return_type _return;
     cgi_type _cgi;
     ws::InnerOption _option;
+    block_name_type _block_name;
 
     Location& operator=(const Location& other);
 
@@ -32,10 +34,12 @@ namespace ws {
     explicit Location(const Location& other);
     ~Location();
 
+    const
     const limit_except_vec_type& get_limit_except_vec() const throw();
     const return_type& get_return() const throw();
     const cgi_type& get_cgi() const throw();
     const ws::InnerOption& get_option() const throw();
+    const block_name_type& get_block_name() const throw();
 
     const autoindex_type& get_autoindex() const throw();
     const root_type& get_root() const throw();
@@ -47,6 +51,7 @@ namespace ws {
     void set_return(const return_type& value);
     void set_cgi(const cgi_type& value);
     void set_option(const ws::InnerOption& value);
+    void set_block_name(const block_name_type& value);
 
     void set_autoindex(const autoindex_type& value);
     void set_root(const root_type& value);
