@@ -25,6 +25,7 @@ namespace ws {
     static void generate_date_line(std::string& data);
     static void generate_server_line(std::string& data);
     static void generate_allow_line(std::string& data, const client_value_type& client_data);
+    static void generate_location_line(std::string& data, const client_value_type& client_data);
     
     static void generate_connection_line(std::string& data);
 
