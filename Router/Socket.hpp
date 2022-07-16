@@ -10,7 +10,6 @@
 #include "Kernel.hpp"
 #include "Request.hpp"
 #include "Repository.hpp"
-//#include "Validator.hpp"
 
 namespace ws {
   class Validator;

@@ -14,15 +14,15 @@
 
 ws::Configure ws::Socket::_conf;
 ws::Kernel ws::Socket::_kernel;
-ws::Socket::server_map_type _server;
-ws::Socket::client_map_type _client;
+ws::Socket::server_map_type ws::Socket::_server;
+ws::Socket::client_map_type ws::Socket::_client;
 ws::Validator ws::Socket::_validator;
 ws::Response ws::Socket::_response;
 
 const std::size_t ws::Socket::kBUFFER_SIZE = 1024 * 1024;
 
 void ws::Socket::init_server(const ws::Configure& conf) {
-//  _conf = conf;
+  _conf = conf;
   _response.set_kernel(&_kernel);
 
   ws::Configure::listen_vec_type host = conf.get_host_list();
