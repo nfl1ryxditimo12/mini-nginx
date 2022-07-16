@@ -54,15 +54,9 @@ void ws::Validator::check_uri(client_value_type& client_data) {
   const std::string& method = client_data.repository.get_method();
 
   if (S_ISREG(file_status.st_mode)) {
-    const std::string& content_type = client_data.request.get_content_type();
-    std::string type = content_type.substr(content_type.find('/'), content_type.length());
-
-    if (url.compare(url.find('.') + 1, type.length(), type) != 0)
-      client_data.status = NOT_MODIFIED;
-    else {
-      if ((file_status.st_mode & S_IREAD) == 0)
-        client_data.status = FORBIDDEN;
-    }
+      // client_data.status = NOT_MODIFIED;
+    if ((file_status.st_mode & S_IREAD) == 0)
+      client_data.status = FORBIDDEN;
   } else if (!(S_ISDIR(file_status.st_mode)) && method != "POST" && method != "DELETE")
     client_data.status = NOT_FOUND;
 }
