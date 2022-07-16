@@ -84,13 +84,11 @@ namespace ws {
 
     bool _fatal;
 
-    bool _dir;
-
     unsigned int _status; // get_status();
 
     int _fd; // get_fd();
 
-    std::string _project_root;
+    std::string _index_root;
 
     /* filename 필요함 절대경로로 */
     std::string _uri;
@@ -154,13 +152,12 @@ namespace ws {
     const ws::Location* get_location() const throw();
 
     bool                  is_fatal() const throw();
-    bool                  is_dir() const throw();
     const int&            get_fd() const throw();
     const unsigned int&   get_status() const throw();
     const std::string&    get_host() const throw();
     const std::string&    get_method() const throw();
     const std::string&    get_root() const throw();
-    const std::string&    get_project_root() const throw();
+    const std::string&    get_index_root() const throw();
     const std::string&    get_uri() const throw();
     const std::string&    get_file_path() const throw();
     const std::string&    get_request_body() const throw();
