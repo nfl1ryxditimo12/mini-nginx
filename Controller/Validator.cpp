@@ -27,7 +27,13 @@ void ws::Validator::check_method(client_value_type& client_data) {
   const std::string& request_method = client_data.request.get_method();
   const limit_except_vec_type& limit_except_vec = client_data.repository.get_location()->get_limit_except_vec();
 
-  if (!(request_method == "GET" || request_method == "HEAD" || request_method == "POST" || request_method == "DELETE"))
+  if (
+    !(request_method == "GET" ||
+    request_method == "HEAD" ||
+    request_method == "POST" ||
+    request_method == "DELETE" ||
+    request_method == "PUT")
+  )
     client_data.status = METHOD_NOT_ALLOWED;
 
   for (
@@ -42,37 +48,26 @@ void ws::Validator::check_method(client_value_type& client_data) {
 }
 
 void ws::Validator::check_uri(client_value_type& client_data) {
-  const ws::Repository& repository = client_data.repository;
   const std::string& uri = client_data.request.get_uri();
-  std::string url = repository.get_project_root() + uri;
-  struct stat file_status;
-  const ws::Server::location_map_type& location_map = client_data.repository.get_server()->get_location_map();
+  const std::string& url = client_data.repository.get_index_root() + uri;
+  struct stat file_status = client_data.repository.get_file_stat();
+  const std::string& method = client_data.repository.get_method();
 
-  if (lstat(url.c_str(), &file_status) != 0) {
-    client_data.status = NOT_FOUND;
-    if (location_map.find(uri) != location_map.end())
-      client_data.status = 0; //status를 redirect.first값으로 해주는건 repository에 있음!
-  } else {
-    if (S_ISREG(file_status.st_mode)) {
-      // if (url.compare(url.find('.'), 5, ".html") != 0) {
-      //   client_data.status = NOT_MODIFIED;
-      //   return;
-      // }
-      client_data.status = 0;
-      if ((file_status.st_mode & S_IREAD) == 0)
-        client_data.status = FORBIDDEN;
-    } else if (S_ISDIR(file_status.st_mode)) {
-      if (url[url.length() - 1] == '/')
-        url += '/';
-      client_data.status = 0; //default file 권한은 url넘겨준 후에 repository에서 검사
+  if (S_ISREG(file_status.st_mode)) {
+    const std::string& content_type = client_data.request.get_content_type();
+    std::string type = content_type.substr(content_type.find('/'), content_type.length());
+
+    if (url.compare(url.find('.') + 1, type.length(), type) != 0) {
+      client_data.status = NOT_MODIFIED;
+      return;
     } else {
-      if (repository.get_server()->get_autoindex() == false) {
-        client_data.status = NOT_FOUND;
+      if ((file_status.st_mode & S_IREAD) == 0) {
+        client_data.status = FORBIDDEN;
         return;
       }
-      // autoindex가 실행되는 경우는 repository에서 결정
     }
-  }
+  } else if (!(S_ISDIR(file_status.st_mode)) && method != "POST" && method != "DELETE")
+    client_data.status = NOT_FOUND;
 }
 
 void ws::Validator::check_version(client_value_type& client_data) {
@@ -82,7 +77,7 @@ void ws::Validator::check_version(client_value_type& client_data) {
 }
 
 void ws::Validator::check_content_length(ws::Validator::client_value_type& client_data) {
-  const ws::Request* const request = &client_data.request; //@
+  const ws::Request* const request = &client_data.request;
 
   if (request->get_content_length() == std::numeric_limits<unsigned long>::max())
     return;
@@ -123,7 +118,6 @@ void ws::Validator::check_host(ws::Validator::client_value_type& client_data) {
   if (host == "") //host가 비어있으면 400
     client_data.status = BAD_REQUEST;
 
-  //host가 2줄 이상 존재 = 400 -> request파싱단계에서 확인
   //host가 잘못된 값 = 400 -> 공백같은거...?!
 }
 
