@@ -351,7 +351,8 @@ ws::ConfParser::limit_except_type ws::ConfParser::get_method(const std::string& 
     "GET",
     "POST",
     "DELETE",
-    "HEAD"
+    "HEAD",
+    "PUT"
   };
 
   for (std::size_t i = 0; ; ++i) {
@@ -504,6 +505,7 @@ void ws::ConfParser::set_default_location(ws::Server& server, location_map_type&
       location.add_limit_except("POST");
       location.add_limit_except("DELETE");
       location.add_limit_except("HEAD");
+      location.add_limit_except("PUT");
     }
 
     if (location.get_client_max_body_size() == kCLIENT_MAX_BODY_SIZE_UNSET)

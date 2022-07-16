@@ -76,7 +76,7 @@ void ws::Repository::set_repository(unsigned int value)  {
   if (_config.redirect.first > 0)
     this->set_status(_config.redirect.first); // todo
 
-  _host = server_name + ":" + ws::Util::ultos(ntohs((_config.listen.second)));
+  _host = server_name + ":" + ws::Util::ultos(ntohs(_config.listen.second));
   _method = _request->get_method();
 
   // file_stat 초기화 해줘야함
@@ -93,8 +93,8 @@ void ws::Repository::set_repository(unsigned int value)  {
   if (_status >= BAD_REQUEST)
     this->open_error_html();
 
-  if (!_status)
-    this->set_status(_method == "POST" ? 201 : 200);
+  if (_status == 0)
+    this->set_status(_method == "POST" || _method == "PUT" ? 201 : 200);
 
   this->set_content_type();
 
