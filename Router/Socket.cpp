@@ -146,26 +146,17 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   ssize_t read_size;
   read_size = read(event.ident, buffer, std::min(static_cast<long>(kBUFFER_SIZE), event.data));
 
-  std::cout << buffer << std::endl;
   if (read_size == -1) {
     self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
     self->disconnect_client(event.ident);
     return;
   }
 
-  // std::cout << "input" << std::endl;
-  // std::cout << buffer << std::endl; // todo;
-  // std::cout << "input end" << std::endl;
-
   if (client_data.request.eof() && read_size > 0) // todo session
     client_data.request.clear();
 
-  if (read_size > 0) { // todo: test print
-//    std::cout << YLW << "\n== Request ======================================\n" << NC << std::endl;
-//    std::cout << buffer << std::endl;
-//    std::cout << RED << "\n== Parsing ======================================\n" << NC << std::endl;
+  if (read_size > 0)
     client_data.status = client_data.request.parse_request_message(self->_conf, buffer, read_size, client_data.repository);
-  }
 
 //  todo
   if (read_size == 0) {
@@ -182,8 +173,6 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
   if (client_data.request.eof() || client_data.status || !read_size) {
     /* EV_DELETE flags는 필요 없을듯 keep-alive 생각 */
 
-//    client_data.request.test(); // todo: test print
-//    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
     self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request));
     self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
   }
@@ -258,9 +247,6 @@ void ws::Socket::read_data(ws::Socket* self, struct kevent event) {
   ssize_t read_size = 0;
 
   read_size = read(client.repository.get_fd(), buffer, kBUFFER_SIZE);
-  std::cout << "\n============================\n" << std::endl;
-  std::cout << buffer << std::endl;
-  std::cout << "\n============================\n" << std::endl;
 
   if (read_size < 0) {
     self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
