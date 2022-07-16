@@ -3,17 +3,7 @@
 #include "Response.hpp"
 #include "Validator.hpp"
 
-ws::Validator ws::Socket::_validator;
-ws::Response ws::Socket::_response;
-const std::size_t ws::Socket::kBUFFER_SIZE = 1024 * 1024;
-
-/*
-  메모리를 많이 사용하고 CPU를 적게 사용할 지
-  반대로 사용할 지 trade-off 케이스를 생각해 보자
-  보통 서버에선 전자로 많이 사용한다.
-*/
-
-/* console test code */
+/* console test code */ // todo: remove
 #include <iostream>
 #define NC "\e[0m"
 #define RED "\e[0;31m"
@@ -22,9 +12,20 @@ const std::size_t ws::Socket::kBUFFER_SIZE = 1024 * 1024;
 #define CYN "\e[0;36m"
 /* console test code */
 
-ws::Socket::Socket(const ws::Configure& cls): _conf(cls), _kernel() {
+ws::Configure ws::Socket::_conf;
+ws::Kernel ws::Socket::_kernel;
+ws::Socket::server_map_type _server;
+ws::Socket::client_map_type _client;
+ws::Validator ws::Socket::_validator;
+ws::Response ws::Socket::_response;
+
+const std::size_t ws::Socket::kBUFFER_SIZE = 1024 * 1024;
+
+void ws::Socket::init_server(const ws::Configure& conf) {
+//  _conf = conf;
   _response.set_kernel(&_kernel);
-  ws::Configure::listen_vec_type host = cls.get_host_list();
+
+  ws::Configure::listen_vec_type host = conf.get_host_list();
 
   for (size_t i = 0; i < host.size(); i++) {
     int                 socket_fd;
@@ -49,7 +50,7 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(cls), _kernel() {
       exit_socket();
     fcntl(socket_fd, F_SETFL, O_NONBLOCK);
     _server.insert(server_map_type::value_type(socket_fd, host[i]));
-    _kernel.kevent_ctl(socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::connect_client));
+    _kernel.add_read_event(socket_fd, reinterpret_cast<void*>(&Socket::connect_client));
   }
 }
 
@@ -71,7 +72,7 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(cls), _kernel() {
 
 ws::Socket::~Socket() {}
 
-void ws::Socket::connection() {
+void ws::Socket::run_server() {
   size_t event_size = _server.size() * 8;
   struct kevent event_list[event_size];
   int new_event;
@@ -81,7 +82,7 @@ void ws::Socket::connection() {
 
     for (int i = 0; i < new_event; i++) {
       kevent_func func = reinterpret_cast<kevent_func>(event_list[i].udata);
-      (*func)(this, event_list[i]);
+      (*func)(event_list[i]);
     }
   }
 }
@@ -108,31 +109,31 @@ void ws::Socket::exit_socket() {
   exit(1);
 }
 
-void ws::Socket::connect_client(ws::Socket* self, struct kevent event) {
-  listen_type& listen = self->_server.find(event.ident)->second;
+void ws::Socket::connect_client(struct kevent event) {
+  listen_type& listen = _server.find(event.ident)->second;
   int client_socket_fd;
 
   if ((client_socket_fd = accept(event.ident, NULL, NULL)) == -1)
     return;
 
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
-  self->init_client(client_socket_fd, listen);
-  self->_kernel.kevent_ctl(client_socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::recv_request)); // todo
+  init_client(client_socket_fd, listen);
+  _kernel.add_read_event(client_socket_fd, reinterpret_cast<void*>(&Socket::recv_request));
 }
 
 /*
   eof가 아닌데 buffer size가 0인 경우 타임아웃 처리를 해야할 듯
 */
-void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
-  client_value_type& client_data = self->_client.find(event.ident)->second;
+void ws::Socket::recv_request(struct kevent event) {
+  client_value_type& client_data = _client.find(event.ident)->second;
   char buffer[kBUFFER_SIZE + 1];
 
   ssize_t read_size;
   read_size = read(event.ident, buffer, std::min(static_cast<long>(kBUFFER_SIZE), event.data));
 
   if (read_size == -1) {
-    self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-    self->disconnect_client(event.ident);
+    _kernel.delete_read_event(event.ident);
+    disconnect_client(event.ident);
     return;
   }
 
@@ -148,13 +149,13 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
 //    std::cout << YLW << "\n== Request ======================================\n" << NC << std::endl;
 //    std::cout << buffer << std::endl;
 //    std::cout << RED << "\n== Parsing ======================================\n" << NC << std::endl;
-    client_data.status = client_data.request.parse_request_message(self->_conf, buffer, client_data.repository);
+    client_data.status = client_data.request.parse_request_message(_conf, buffer, client_data.repository);
   }
 
 //  todo
   if (read_size == 0) {
-    self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-    self->disconnect_client(event.ident);
+    _kernel.delete_read_event(event.ident);
+    disconnect_client(event.ident);
 //     operation timeout
   }
 
@@ -168,13 +169,13 @@ void ws::Socket::recv_request(ws::Socket* self, struct kevent event) {
 
 //    client_data.request.test(); // todo: test print
 //    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, reinterpret_cast<void*>(&Socket::process_request));
-    self->_kernel.kevent_ctl(event.ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+    _kernel.process_event(event.ident, reinterpret_cast<void*>(&Socket::process_request));
+    _kernel.delete_read_event(event.ident);
   }
 }
 
-void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
-  client_value_type& client_data = self->_client.find(event.ident)->second;
+void ws::Socket::process_request(struct kevent event) {
+  client_value_type& client_data = _client.find(event.ident)->second;
 
   if (!client_data.status)
     _validator(client_data);
@@ -184,36 +185,36 @@ void ws::Socket::process_request(ws::Socket* self, struct kevent event) {
   client_data.fatal = client_data.repository.is_fatal();
 
   if (client_data.fatal) {
-    self->disconnect_client(event.ident);
+    disconnect_client(event.ident);
     return;
   }
 
-  _response.process(self, client_data, event.ident);
+  _response.process(client_data, event.ident);
 
   /*
     EVFILT_USER를 사용하는 경우 EV_ONESHOT flag 사용으로
     한번만 kevent의 change_list에 넣는 방식도 생각해 볼만 하다.
   */
-//  self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
+//  _kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_ADD, 0, 0, reinterpret_cast<void*>(&Socket::send_response));
 }
 
-void ws::Socket::send_response(ws::Socket *self, struct kevent event) {
-  client_value_type& client_data = self->_client.find(event.ident)->second;
+void ws::Socket::send_response(struct kevent event) {
+  client_value_type& client_data = _client.find(event.ident)->second;
   const std::string& response_data = client_data.response;
   std::string::size_type& offset = client_data.write_offset;
 
   ssize_t n;
   if ((n = write(event.ident, response_data.c_str() + offset, response_data.length() - offset)) == -1) {
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
-    self->disconnect_client(event.ident); // todo: close
+    _kernel.delete_write_event(event.ident);
+    disconnect_client(event.ident); // todo: close
     return;
   }
 
   offset += n;
 
   if (offset == response_data.length()) {
-    self->_kernel.kevent_ctl(event.ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-    self->disconnect_client(event.ident);
+    _kernel.delete_write_event(event.ident);
+    disconnect_client(event.ident);
 //    struct timespec limit;
 //    limit.tv_sec = 2;
 //    limit.tv_nsec = 0;
@@ -221,7 +222,7 @@ void ws::Socket::send_response(ws::Socket *self, struct kevent event) {
 //    client_data.request.clear();
 //    client_data.repository.clear();
 //    client_data.response.clear();
-//    self->_kernel.kevent_ctl(
+//    _kernel.kevent_ctl(
 //      event.ident,
 //      EVFILT_READ,
 //      EV_ADD,
@@ -236,38 +237,31 @@ void ws::Socket::send_response(ws::Socket *self, struct kevent event) {
 //  int fd = open("/goinfre/jaham/webserv/test_create.html", O_WRONLY | O_TRUNC | O_CREAT, 0666);
   // int fd = open("/goinfre/jaham/webserv/test.html", O_RDONLY);
 
-void ws::Socket::read_data(ws::Socket* self, struct kevent event) {
-  const client_value_type& client = self->_client.find(event.ident)->second;
+void ws::Socket::read_data(struct kevent event) {
+  const client_value_type& client = _client.find(event.ident)->second;
   char buffer[kBUFFER_SIZE + 1];
   ssize_t read_size = 0;
 
   read_size = read(client.repository.get_fd(), buffer, kBUFFER_SIZE);
 
   if (read_size < 0) {
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
-    self->disconnect_client(event.ident);
+    _kernel.delete_read_event(event.ident);
+    disconnect_client(event.ident);
     return;
   }
 
   if (read_size == 0) {
     close(client.repository.get_fd());
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
-    self->_kernel.kevent_ctl(
-      event.ident,
-      EVFILT_USER,
-      EV_ADD | EV_ONESHOT,
-      NOTE_TRIGGER,
-      0,
-      reinterpret_cast<void *>(ws::Socket::generate_response)
-    );
+    _kernel.delete_read_event(event.ident);
+    _kernel.process_event(event.ident, reinterpret_cast<void *>(ws::Socket::generate_response));
   } else {
     buffer[read_size] = 0;
-    self->_client.find(event.ident)->second.response += buffer;
+    _client.find(event.ident)->second.response += buffer;
   }
 }
 
-void ws::Socket::write_data(ws::Socket *self, struct kevent event) {
-  client_value_type& client = self->_client.find(event.ident)->second;
+void ws::Socket::write_data(struct kevent event) {
+  client_value_type& client = _client.find(event.ident)->second;
   const std::string& request_body = client.request.get_request_body();
   std::size_t& offset = client.write_offset;
   ssize_t write_size = 0;
@@ -275,8 +269,8 @@ void ws::Socket::write_data(ws::Socket *self, struct kevent event) {
   write_size = write(client.repository.get_fd(), request_body.c_str() + offset, request_body.length() - offset);
 
   if (write_size == -1) {
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
-    self->disconnect_client(event.ident);
+    _kernel.delete_write_event(event.ident);
+    disconnect_client(event.ident);
     return;
   }
 
@@ -285,30 +279,16 @@ void ws::Socket::write_data(ws::Socket *self, struct kevent event) {
   if (offset == request_body.length()) {
     close(client.repository.get_fd());
     offset = 0;
-    self->_kernel.kevent_ctl(event.ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
-    self->_kernel.kevent_ctl(
-      event.ident,
-      EVFILT_USER,
-      EV_ADD | EV_ONESHOT,
-      NOTE_TRIGGER,
-      0,
-      reinterpret_cast<void*>(ws::Socket::generate_response)
-    );
+    _kernel.delete_write_event(event.ident);
+    _kernel.process_event(event.ident, reinterpret_cast<void*>(ws::Socket::generate_response));
   }
 }
 
-void ws::Socket::generate_response(ws::Socket *self, struct kevent event) {
+void ws::Socket::generate_response(struct kevent event) {
   struct timespec limit;
   limit.tv_sec = 2;
   limit.tv_nsec = 0;
 
-  _response.generate(self, self->_client.find(event.ident)->second, event.ident);
-  self->_kernel.kevent_ctl(
-    event.ident,
-    EVFILT_WRITE,
-    EV_ADD,
-    0,
-    0,
-    reinterpret_cast<void*>(ws::Socket::send_response)
-  );
+  _response.generate(_client.find(event.ident)->second, event.ident);
+  _kernel.add_write_event(event.ident, reinterpret_cast<void*>(ws::Socket::send_response));
 }
