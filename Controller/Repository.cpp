@@ -16,7 +16,7 @@
 
 ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _status(status), _fd(FD_DEFAULT) {
   memset(&_file_stat, 0, sizeof(struct stat));
-  _project_root = ws::Util::get_root_dir() + "/www";
+  _index_root = ws::Util::get_root_dir() + "/www";
 }
 
 ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(cls._status) {
@@ -34,7 +34,7 @@ ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(c
   _request = cls._request;
 
   _config = cls._config;
-  _project_root = cls._project_root;
+  _index_root = cls._index_root;
 }
 
 ws::Repository::~Repository() {}
@@ -46,21 +46,20 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   _location = &(_server->find_location(Util::parse_relative_path(_file_path + _request->get_uri())));
 
   _uri = _request->get_uri().substr(_location->get_block_name().length());
-  _file_path = _project_root + (_uri[0] == '/' ? "" : "/") + _uri;
+  _file_path = _index_root + (_uri[0] == '/' ? "" : "/") + _uri;
 
 
   lstat(_file_path.c_str(), &_file_stat);
 
   /*set server*/
   _config.listen = request.get_listen();
-  // _config.server_name = request.get_request_header().find("Host")->second;
   _config.server_name = request.get_server_name();
 
   if (_location != NULL) {
     _config.limit_except_vec = _location->get_limit_except_vec();
     _config.redirect = _location->get_return();
     _config.cgi = _location->get_cgi();
-  /*set option*/
+/*set option*/
     ws::Repository::set_option(_location->get_option());
   } else
     ws::Repository::set_option(_server->get_option());
@@ -81,10 +80,12 @@ void ws::Repository::set_repository(unsigned int value)  {
   if (_config.redirect.first > 0)
     this->set_status(_config.redirect.first); // todo
 
-  _host = server_name + ":" + ws::Util::ultos(ntohs((_config.listen.second)));
+  _host = server_name + ":" + ws::Util::ultos(ntohs(_config.listen.second));
   _method = _request->get_method();
 
   // file_stat 초기화 해줘야함
+  struct stat file_stat;
+  lstat(_file_path.c_str(), &file_stat);
 
 
   if (_status == 0) {
@@ -93,16 +94,16 @@ void ws::Repository::set_repository(unsigned int value)  {
     else
       this->open_file(_file_path);
   }
-
+  
   if (_status >= BAD_REQUEST)
     this->open_error_html();
 
-  if (!_status)
-    this->set_status(_method == "POST" ? 201 : 200);
+  if (_status == 0)
+    this->set_status(_method == "POST" || _method == "PUT" ? 201 : 200);
 
   this->set_content_type();
 
-//  test(); // todo
+//  test(); // todo: print test
 }
 
 void ws::Repository::set_status(unsigned int status) {
@@ -184,7 +185,7 @@ void ws::Repository::open_error_html() {
   if (error_iter != _config.error_page_map.end())
     filename = error_iter->second;
   else
-    filename = _project_root + "/" + ws::Util::ultos(_status) + ".html"; // _defualt_root_path + status.html
+    filename = _index_root + "/" + ws::Util::ultos(_status) + ".html"; // _defualt_root_path + status.html
 
   if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1)
     this->set_fatal();
@@ -231,8 +232,8 @@ const std::string&  ws::Repository::get_uri() const throw() {
   return _uri;
 }
 
-const std::string&  ws::Repository::get_project_root() const throw() {
-  return _project_root;
+const std::string&  ws::Repository::get_index_root() const throw() {
+  return _index_root;
 }
 
 const std::string&  ws::Repository::get_file_path() const throw() {
@@ -264,7 +265,7 @@ void ws::Repository::clear() throw() {
   memset(&_file_stat, 0, sizeof(struct stat));
   _status = 0;
   _fd = FD_DEFAULT;
-  _project_root.clear();
+  _index_root.clear();
   _uri.clear();
   _file_path.clear();
   _host.clear();
@@ -279,6 +280,7 @@ void ws::Repository::clear() throw() {
   _request = NULL;
 }
 
+// todo: test print
 #define NC "\e[0m"
 #define RED "\e[0;31m"
 #define GRN "\e[0;32m"
@@ -323,7 +325,7 @@ void ws::Repository::test() {
   std::cout << std::endl;
   std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "_cgi: " << NC << _cgi.first << ", " << _cgi.second << std::endl;
   std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_content_type: " << NC << _content_type << std::endl;
-  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_project_root: " << NC << _project_root << std::endl;
+  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_index_root: " << NC << _index_root << std::endl;
 
   std::cout << GRN << "\n============================================\n" << NC << std::endl;
 }

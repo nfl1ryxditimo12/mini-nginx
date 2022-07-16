@@ -14,7 +14,7 @@ std::string ws::HeaderGenerator::generate(const client_value_type& client_data, 
   generate_representation_header(data, client_data, content_length);
   //representation: content-type, content-length, transfer-encoding
   generate_response_header(data, client_data);
-  //response header: date, server, allow
+  //response header: date, server, allow, location
   generate_connection_header(data, client_data);
   //connection header: connection
 
@@ -67,6 +67,7 @@ void ws::HeaderGenerator::generate_response_header(std::string& data, const clie
   generate_date_line(data);
   generate_server_line(data);
   generate_allow_line(data, client_data);
+  generate_location_line(data, client_data);
 }
 
 void ws::HeaderGenerator::generate_date_line(std::string& data) {
@@ -97,6 +98,11 @@ void ws::HeaderGenerator::generate_allow_line(std::string& data, const client_va
 
   data[data.length() - 2] = '\r';
   data[data.length() - 1] = '\n';
+}
+
+void ws::HeaderGenerator::generate_location_line(std::string& data, const client_value_type& client_data) {
+if (client_data.status < 400 && client_data.status >= 300 && client_data.repository.get_redirect().first > 0)
+    data += ("Location: " + client_data.repository.get_redirect().second + "\r\n");
 }
 
 //connection field

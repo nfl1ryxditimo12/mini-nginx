@@ -30,6 +30,7 @@ ws::Request::Request(const Request& cls) {
   _request_body = cls._request_body;
 
   _content_length = cls._content_length;
+  _content_type = cls._content_type;
   _server_name = cls._server_name;
   _port = cls._port;
   _connection = cls._connection;
@@ -268,6 +269,83 @@ void  ws::Request::clear() {
   _buffer.rdbuf();
 }
 
+/* parser function */
+
+void  ws::Request::parse_host(const std::string& value) {
+  std::string::size_type pos = value.find_first_of(":");
+
+  if (!_server_name.empty()) {
+    _status = BAD_REQUEST;
+    return;
+  }
+
+  _server_name = value.substr(0, pos);
+  if (inet_addr(_server_name.c_str()) != INADDR_NONE) //ip
+    _server_name = "_";
+
+  if (pos != std::string::npos)
+    _port = ws::Util::stoul((value.substr(pos + 1, value.length())).c_str(), std::numeric_limits<u_int16_t>::max());
+}
+
+void  ws::Request::parse_connection(const std::string& value) {
+  _connection = value;
+}
+
+void  ws::Request::parse_content_length(const std::string& value) {
+  std::string::size_type content_length = ws::Util::stoul(value);
+
+  if (content_length == value.npos) {
+    _status = BAD_REQUEST;
+    return;
+  }
+
+  _content_length = content_length;
+}
+
+void  ws::Request::parse_content_type(const std::string& value) {
+  //text/html; charset=utf-8
+  std::string::size_type pos = value.find(';');
+
+  _content_type = value.substr(0, pos);
+}
+
+void  ws::Request::parse_transfer_encoding(const std::string& value) {
+  _transfer_encoding = value;
+  if (value == "chunked")
+    _chunked = true;
+  return;
+}
+
+/* Else private function */
+
+void  ws::Request::insert_require_header_field() {
+  _header_parser.insert(header_parse_map_type::value_type("Host", &Request::parse_host));
+  _header_parser.insert(header_parse_map_type::value_type("Connection", &Request::parse_connection));
+  _header_parser.insert(header_parse_map_type::value_type("Content-Length", &Request::parse_content_length));
+  _header_parser.insert(header_parse_map_type::value_type("Content-Type", &Request::parse_content_type));
+  _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding", &Request::parse_transfer_encoding));
+}
+
+ws::Token&  ws::Request::rdword() {
+  _token.rdword(_buffer);
+  return _token;
+}
+
+ws::Token& ws::Request::rdline(char delim) {
+  _token.rdline(_buffer, delim);
+  return _token;
+}
+
+ws::Token& ws::Request::rd_http_line() {
+  _token.rd_http_line(_buffer);
+  return _token;
+}
+
+ws::Token& ws::Request::rdall() {
+  _token.rdall(_buffer);
+  return _token;
+}
+
 /* getter */
 
 /*
@@ -311,6 +389,10 @@ const std::string::size_type& ws::Request::get_content_length() const throw() {
   return _content_length;
 }
 
+const std::string& ws::Request::get_content_type() const throw() {
+  return _content_type;
+}
+
 const std::string& ws::Request::get_server_name() const throw() {
   return _server_name;
 }
@@ -323,75 +405,7 @@ const std::string& ws::Request::get_transfer_encoding() const throw() {
   return _transfer_encoding;
 }
 
-/* parser function */
-
-void  ws::Request::parse_host(const std::string& value) {
-  std::string::size_type pos = value.find_first_of(":");
-
-  if (!_server_name.empty()) {
-    _status = BAD_REQUEST;
-    return;
-  }
-
-  _server_name = value.substr(0, pos);
-  if (inet_addr(_server_name.c_str()) != INADDR_NONE) //ip
-    _server_name = "_";
-
-  if (pos != std::string::npos)
-    _port = ws::Util::stoul((value.substr(pos + 1, value.length())).c_str(), std::numeric_limits<u_int16_t>::max());
-}
-
-void  ws::Request::parse_connection(const std::string& value) {
-  _connection = value;
-}
-
-void  ws::Request::parse_content_length(const std::string& value) {
-  std::string::size_type content_length = ws::Util::stoul(value);
-
-  if (content_length == value.npos) {
-    _status = BAD_REQUEST;
-    return;
-  }
-
-  _content_length = content_length;
-}
-
-void  ws::Request::parse_transfer_encoding(const std::string& value) {
-  _transfer_encoding = value;
-  if (value == "chunked")
-    _chunked = true;
-  return;
-}
-
-/* Else private function */
-
-void  ws::Request::insert_require_header_field() {
-  _header_parser.insert(header_parse_map_type::value_type("Host", &Request::parse_host));
-  _header_parser.insert(header_parse_map_type::value_type("Connection", &Request::parse_connection));
-  _header_parser.insert(header_parse_map_type::value_type("Content-Length", &Request::parse_content_length));
-  _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding", &Request::parse_transfer_encoding));
-}
-
-ws::Token&  ws::Request::rdword() {
-  _token.rdword(_buffer);
-  return _token;
-}
-
-ws::Token& ws::Request::rdline(char delim) {
-  _token.rdline(_buffer, delim);
-  return _token;
-}
-
-ws::Token& ws::Request::rd_http_line() {
-  _token.rd_http_line(_buffer);
-  return _token;
-}
-
-ws::Token& ws::Request::rdall() {
-  _token.rdall(_buffer);
-  return _token;
-}
-
+//todo: print test
 void ws::Request::test() {
   std::cout << "host: _: " << _listen.first << ", port: " << _listen.second << std::endl;
   std::cout << "eof: " << _eof << std::endl;
@@ -403,6 +417,7 @@ void ws::Request::test() {
   }
   std::cout << "http version: " << _http_version << std::endl;
   std::cout << "content length: " << _content_length << std::endl;
+  std::cout << "content type: " << _content_type << std::endl;
   std::cout << "server name: " << _server_name << std::endl;
   std::cout << "connection: " << _connection << std::endl;
   std::cout << "transfer encoding: " << _transfer_encoding << std::endl;

@@ -90,7 +90,7 @@ namespace ws {
 
     struct stat _file_stat;
 
-    std::string _project_root;
+    std::string _index_root;
 
     /* filename 필요함 절대경로로 */
     std::string _uri;
@@ -160,7 +160,7 @@ namespace ws {
     const std::string&    get_host() const throw();
     const std::string&    get_method() const throw();
     const std::string&    get_root() const throw();
-    const std::string&    get_project_root() const throw();
+    const std::string&    get_index_root() const throw();
     const std::string&    get_uri() const throw();
     const std::string&    get_file_path() const throw();
     const std::string&    get_request_body() const throw();
