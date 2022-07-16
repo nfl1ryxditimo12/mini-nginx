@@ -45,7 +45,7 @@ ws::Socket::Socket(const ws::Configure& cls): _conf(cls), _kernel() {
       std::cout << strerror(errno) << std::endl;
         exit_socket();
     }
-    if (listen(socket_fd, 200) == -1)
+    if (listen(socket_fd, 2000) == -1)
       exit_socket();
     fcntl(socket_fd, F_SETFL, O_NONBLOCK);
     _server.insert(server_map_type::value_type(socket_fd, host[i]));
@@ -77,9 +77,19 @@ void ws::Socket::connection() {
   int new_event;
 
   while (true) {
+
+    /*
+      - signal 처리
+        프로세스 강제종료가 들어와도 기존 로직은 모두 수행 한 뒤 프로세스 종료되게 해야함
+    */
+
     new_event = _kernel.kevent_wait(event_list, event_size);
 
     for (int i = 0; i < new_event; i++) {
+      /*
+        - timeout 처리
+        - socket eof 처리
+      */
       kevent_func func = reinterpret_cast<kevent_func>(event_list[i].udata);
       (*func)(this, event_list[i]);
     }

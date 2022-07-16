@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <vector>
+#include <time.h>
 
 #include "Configure.hpp"
 #include "Kernel.hpp"
@@ -26,10 +27,10 @@ namespace ws {
     struct client_data {
 
       client_data(ws::Configure::listen_type listen)
-      : fatal(false), status(0), repository(ws::Repository(fatal, status)), request(ws::Request(listen)), response(""), write_offset(0) {};
+      : fatal(false), status(0), repository(ws::Repository(fatal, status)), request(ws::Request(listen)), response(""), write_offset(0), start_time(clock()) {};
 
       client_data(const client_data& cls)
-      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request), response(cls.response), write_offset(cls.write_offset) {};
+      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request), response(cls.response), write_offset(cls.write_offset), start_time(cls.start_time) {};
 
       bool                    fatal;
       unsigned int            status;
@@ -37,6 +38,7 @@ namespace ws {
       ws::Request             request;
       std::string             response;
       std::string::size_type  write_offset;
+      clock_t                 start_time;
     };
 
   public:
