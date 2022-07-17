@@ -146,6 +146,7 @@ std::string ws::Util::parse_relative_path(const std::string &str) {
 bool ws::Util::is_eof(int fd) throw() {
   off_t curr = lseek(fd, 0, SEEK_CUR);
   off_t end = lseek(fd, 0, SEEK_END);
+  lseek(fd, curr, SEEK_SET);
 
   return curr == end || curr < 0 || end < 0;
 }

@@ -242,10 +242,6 @@ void ws::Socket::write_data(struct kevent event) {
 }
 
 void ws::Socket::generate_response(struct kevent event) {
-  struct timespec limit;
-  limit.tv_sec = 2;
-  limit.tv_nsec = 0;
-
   _response.generate(_client.find(event.ident)->second, event.ident);
   _kernel.add_write_event(event.ident, reinterpret_cast<void*>(ws::Socket::send_response));
 }
