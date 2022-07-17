@@ -16,7 +16,7 @@
 
 ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _status(status), _fd(FD_DEFAULT) {
   memset(&_file_stat, 0, sizeof(struct stat));
-  _index_root = ws::Util::get_root_dir();
+  _index_root = ws::Util::get_root_dir() + "/www";
 }
 
 ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(cls._status) {
@@ -60,7 +60,7 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   } else
     ws::Repository::set_option(_server->get_option());
 
-  _file_path = _config.root + (_uri[0] == '/' ? "" : "/") + _uri;
+  _file_path = _config.root + (_uri[0] == '/' || !_uri.length() ? "" : "/") + _uri;
 
   lstat(_file_path.c_str(), &_file_stat);
 
