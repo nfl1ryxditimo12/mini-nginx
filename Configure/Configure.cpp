@@ -2,9 +2,15 @@
 
 #include <iostream>
 
-ws::Configure::Configure() {}
+ws::Configure::Configure() throw() {}
 
 ws::Configure::~Configure() {}
+
+ws::Configure &ws::Configure::operator=(const ws::Configure &other) {
+  _server_vec = other._server_vec;
+  _server_finder = other._server_finder;
+  return *this;
+}
 
 const ws::Configure::server_vec_type& ws::Configure::get_server_vec() const throw() {
   return _server_vec;

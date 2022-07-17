@@ -407,7 +407,7 @@ void ws::Request::test() {
   std::cout << "http version: " << _http_version << std::endl;
   std::cout << "content length: " << _content_length << std::endl;
   std::cout << "server name: " << _server_name << std::endl;
-  std::cout << "connection: " << _connection << std::endl;
+  std::cout << "run_server: " << _connection << std::endl;
   std::cout << "transfer encoding: " << _transfer_encoding << std::endl;
 
   

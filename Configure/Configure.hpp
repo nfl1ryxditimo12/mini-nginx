@@ -34,11 +34,11 @@ namespace ws {
     server_vec_type _server_vec;
     server_finder_type _server_finder;
 
-    Configure& operator=(const Configure& other);
     Configure(const Configure& other);
 
   public:
-    Configure();
+    Configure() throw();
+    Configure& operator=(const Configure& other);
     ~Configure();
 
     const server_vec_type& get_server_vec() const throw();
