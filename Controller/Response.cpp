@@ -24,8 +24,10 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
   set_data(client_data, client_fd);
 
 //1. 400error
-  if (client_data.status >= BAD_REQUEST)
+  if (client_data.status >= BAD_REQUEST) {
     _kernel->add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(ws::Socket::read_data));
+    return;
+  }
 
 //2. redirect
   ws::Repository::redirect_type redirect = client_data.repository.get_redirect();
@@ -34,6 +36,7 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
       client_data.response = redirect.second;
 
     _kernel->process_event(client_fd, reinterpret_cast<void*>(&Socket::generate_response));
+    return;
   }
 
 //3. autoindex
@@ -46,12 +49,14 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
     }
     client_data.response += "</ul>\n</body>\n</html>";
     _kernel->process_event(client_fd, reinterpret_cast<void*>(&Socket::generate_response));
+    return;
   }
   
 //4. delete method
   if (client_data.repository.get_method() == "DELETE") {
     remove(client_data.repository.get_file_path().c_str());
     _kernel->process_event(client_fd, reinterpret_cast<void*>(&Socket::generate_response));
+    return;
   }
 
 //4. head method
