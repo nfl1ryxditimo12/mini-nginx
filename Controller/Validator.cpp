@@ -54,13 +54,16 @@ void ws::Validator::check_method(client_value_type& client_data) {
 }
 
 void ws::Validator::check_uri(client_value_type& client_data) {
-  const std::string& uri = client_data.request.get_uri();
-  const std::string& url = client_data.repository.get_index_root() + uri;
-  struct stat file_status = client_data.repository.get_file_stat();
+  // struct stat file_status = client_data.repository.get_file_stat();
   const std::string& method = client_data.repository.get_method();
 
+//todo: delete
+  struct stat file_status;
+  std::string _file_path = ws::Util::get_root_dir() + "/www" + client_data.request.get_uri();
+  lstat(_file_path.c_str(), &file_status);
+
   if (S_ISREG(file_status.st_mode)) {
-      // client_data.status = NOT_MODIFIED;
+      // client_data.status = NOT_MODIFIED; -> file download
     if ((file_status.st_mode & S_IREAD) == 0)
       client_data.status = FORBIDDEN;
   } else if (!(S_ISDIR(file_status.st_mode)) && method != "POST" && method != "DELETE")
