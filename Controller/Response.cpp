@@ -58,9 +58,10 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
   if (client_data.repository.get_method() == "HEAD") {
     _kernel->process_event(client_fd, reinterpret_cast<void*>(&Socket::generate_response));
   } else if (client_data.repository.get_method() == "GET") {
-    if (Util::is_eof(client_data.repository.get_fd()))
+    if (Util::is_eof(client_data.repository.get_fd())) {
+      close(client_data.repository.get_fd());
       _kernel->process_event(client_fd, reinterpret_cast<void*>(Socket::generate_response));
-    else
+    } else
       _kernel->add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(&Socket::read_data));
   } else {
     _kernel->add_write_event(client_data.repository.get_fd(), reinterpret_cast<void*>(&Socket::write_data));

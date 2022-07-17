@@ -152,7 +152,7 @@ namespace ws {
     Request(const Request& cls);
     ~Request();
 
-    int   parse_request_message(const ws::Configure& conf, const std::string& message, ws::Repository& repo);
+    int   parse_request_message(const ws::Configure& conf, const char* message, const int& read_size, ws::Repository& repo);
     void  clear();
     void  test();
 

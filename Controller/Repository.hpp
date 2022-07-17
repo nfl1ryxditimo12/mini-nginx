@@ -88,6 +88,8 @@ namespace ws {
 
     int _fd; // get_fd();
 
+    struct stat _file_stat;
+
     std::string _index_root;
 
     /* filename 필요함 절대경로로 */
@@ -154,6 +156,7 @@ namespace ws {
     bool                  is_fatal() const throw();
     const int&            get_fd() const throw();
     const unsigned int&   get_status() const throw();
+    const struct stat&    get_file_stat() const throw();
     const std::string&    get_host() const throw();
     const std::string&    get_method() const throw();
     const std::string&    get_root() const throw();

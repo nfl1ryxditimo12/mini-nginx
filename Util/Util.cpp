@@ -26,6 +26,7 @@ std::string ws::Util::set_curr_dir() {
   free(c_curr_dir);
 
   Util::check_executed_dir();
+  ret += "/www";
 
   return ret;
 }

@@ -46,7 +46,7 @@ void ws::Socket::init_server(const ws::Configure& conf) {
       std::cout << strerror(errno) << std::endl;
         exit_socket();
     }
-    if (listen(socket_fd, 200) == -1)
+    if (listen(socket_fd, 2000) == -1)
       exit_socket();
     fcntl(socket_fd, F_SETFL, O_NONBLOCK);
     _server.insert(server_map_type::value_type(socket_fd, host[i]));
@@ -78,11 +78,26 @@ void ws::Socket::run_server() {
   int new_event;
 
   while (true) {
+
+    /*
+      - signal 처리 todo
+        프로세스 강제종료가 들어와도 기존 로직은 모두 수행 한 뒤 프로세스 종료되게 해야함
+    */
+
     new_event = _kernel.kevent_wait(event_list, event_size);
 
     for (int i = 0; i < new_event; i++) {
-      kevent_func func = reinterpret_cast<kevent_func>(event_list[i].udata);
-      (*func)(event_list[i]);
+      /*
+        - timeout 처리 todo
+        - socket eof 처리 todo
+      */
+      if (event_list[i].flags & EV_EOF) {
+        std::cout << "EOF" << std::endl;
+        disconnect_client(event_list[i].ident);
+      } else {
+        kevent_func func = reinterpret_cast<kevent_func>(event_list[i].udata);
+        (*func)(event_list[i]);
+      }
     }
   }
 }
@@ -134,20 +149,11 @@ void ws::Socket::recv_request(struct kevent event) {
     return;
   }
 
-  buffer[read_size] = 0;
-  // std::cout << "input" << std::endl;
-  // std::cout << buffer << std::endl; // todo;
-  // std::cout << "input end" << std::endl;
-
   if (client_data.request.eof() && read_size > 0) // todo session
     client_data.request.clear();
 
-  if (read_size > 0) {
-//    std::cout << YLW << "\n== Request ======================================\n" << NC << std::endl;  // todo: test print
-//    std::cout << buffer << std::endl;
-//    std::cout << RED << "\n== Parsing ======================================\n" << NC << std::endl;
-    client_data.status = client_data.request.parse_request_message(_conf, buffer, client_data.repository);
-  }
+  if (read_size > 0)
+    client_data.status = client_data.request.parse_request_message(_conf, buffer, read_size, client_data.repository);
 
 //  todo
   if (read_size == 0) {
@@ -201,21 +207,20 @@ void ws::Socket::read_data(struct kevent event) {
 
   if (read_size <= 0) { // todo: read 0 is an error?
     std::cerr << "Socket: read error occurred" << std::endl;
-    _kernel.delete_read_event(event.ident);
+    close(event.ident);
+//    _kernel.delete_read_event(event.ident);
     disconnect_client(event.ident);
     return;
   }
 
-//  if (read_size == 0) { // todo: error?
-//    close(client->second.repository.get_fd());
-//  } else {
-  buffer[read_size] = 0;
-  client->second.response += buffer;
+  for (int i = 0; i < read_size; ++i)
+    client->second.response.push_back(buffer[i]);
+
   if (Util::is_eof(event.ident)) {
-    _kernel.delete_read_event(event.ident);
-    _kernel.process_event(client->first, reinterpret_cast<void *>(ws::Socket::generate_response));
+    close(client->second.repository.get_fd());
+//    _kernel.delete_read_event(event.ident);
+    _kernel.process_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response));
   }
-//  }
 }
 
 void ws::Socket::write_data(struct kevent event) {
@@ -226,7 +231,9 @@ void ws::Socket::write_data(struct kevent event) {
   ssize_t write_size = write(client->second.repository.get_fd(), request_body.c_str() + offset, request_body.length() - offset);
 
   if (write_size == -1) {
-    _kernel.delete_write_event(event.ident);
+    std::cerr << "Socket: write error occurred" << std::endl;
+    close(event.ident);
+//    _kernel.delete_write_event(event.ident);
     disconnect_client(event.ident);
     return;
   }
@@ -236,7 +243,7 @@ void ws::Socket::write_data(struct kevent event) {
   if (offset == request_body.length()) {
     close(client->second.repository.get_fd());
     offset = 0;
-    _kernel.delete_write_event(event.ident);
+//    _kernel.delete_write_event(event.ident);
     _kernel.process_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response));
   }
 }

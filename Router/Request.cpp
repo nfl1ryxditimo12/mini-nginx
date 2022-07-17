@@ -106,19 +106,10 @@ void	ws::Request::parse_request_body() {
   /* token 대입 시간 테스트 해야함 */
   std::string::size_type i = _request_body.length();
 
-  // _request_body = token.rdall(buffer);
+  for (; i < _content_length; ++i)
+    _request_body.push_back(static_cast<char>(_buffer.get()));
 
-  for (char c = _buffer.get(); i <= _content_length || i <= _client_max_body_size; c = _buffer.get(), ++i) {
-    if (_buffer.eof())
-      break;
-
-    _request_body.push_back(c);
-  }
-
-  if (i == _client_max_body_size)
-    _status = 413;
-
-  if (i == _content_length || i == _client_max_body_size)
+  if (i == _content_length)
     _eof = true;
 }
 
@@ -209,8 +200,12 @@ void	ws::Request::parse_request_header() {
 /*
   repository를 header파싱 후 해줘서 client_max_body_size까지만 받아올 지 생각 해 봐야함
 */
-int ws::Request::parse_request_message(const ws::Configure& conf, const std::string& message, ws::Repository& repo) {
-  _buffer << message;
+int ws::Request::parse_request_message(const ws::Configure& conf, const char* message, const int& read_size, ws::Repository& repo) {
+  
+  // _buffer << message;
+
+  for (int i = 0; i < read_size; ++i)
+    _buffer.put(message[i]);
 
   /*
     buffer size 가 0 인 경우 어떻게 처리해야 할까?
@@ -229,6 +224,8 @@ int ws::Request::parse_request_message(const ws::Configure& conf, const std::str
     const ws::Server& curr_server = conf.find_server(this->get_listen(), this->get_server_name());
     _client_max_body_size = curr_server.get_client_max_body_size();
     repo(curr_server, *this);
+    if (_content_length != std::string::npos && _content_length > _client_max_body_size)
+      _status = 413;
   }
 
   /* body가 없거나 _status가 양수일 경우 eof 설정 */

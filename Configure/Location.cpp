@@ -9,7 +9,7 @@ ws::Location::Location(const ws::Location& other)
   : _limit_except_vec(other._limit_except_vec),
   _return(other._return),
   _cgi(other._cgi),
-  _option(other._option) ,
+  _option(other._option),
   _block_name(other._block_name) {}
 
 ws::Location::~Location() {}
