@@ -86,6 +86,8 @@ namespace ws {
     /* line type is "bytes to send" or "data" */
     bool                    _chunked_line_type;
 
+    bool                    _chunked_eof;
+
     /* Number of bytes being read */
     size_t                  _chunked_byte;
 
