@@ -114,7 +114,6 @@ void ws::Socket::disconnect_client(int fd) {
   if (client_iter == _client.end())
     return;
 
-//  close(client_iter->second.repository.get_fd());// todo why..?
   _client.erase(client_iter);
 
   close(fd);
@@ -181,6 +180,7 @@ void ws::Socket::process_request(struct kevent event) {
   client_data.fatal = client_data.repository.is_fatal();
 
   if (client_data.fatal) {
+    close(client_data.repository.get_fd());
     disconnect_client(event.ident);
     return;
   }
