@@ -27,5 +27,7 @@ namespace ws {
     static bool is_valid_server_name(const std::string& str);
 
     static std::string parse_relative_path(const std::string& str);
+
+    static bool is_eof(int fd) throw();
   };
 }

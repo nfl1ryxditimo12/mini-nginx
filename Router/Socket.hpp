@@ -92,7 +92,7 @@ namespace ws {
     static void connect_client(struct kevent event);
     static void recv_request(struct kevent event);
     static void process_request(struct kevent event);
-
+    static ws::Socket::client_map_type::iterator find_client_by_file(int file) throw();
 
   public:
 
