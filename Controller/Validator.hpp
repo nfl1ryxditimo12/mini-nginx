@@ -32,7 +32,7 @@ namespace ws {
     Validator& operator=(const Validator& cls);
     
   public:
-    Validator();
+    Validator() throw();
     ~Validator();
 
     void operator()(client_value_type& client_data);

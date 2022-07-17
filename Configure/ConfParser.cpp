@@ -146,8 +146,8 @@ void ws::ConfParser::parse_server(ws::Server& server) {
       std::string dir;
       ws::Location location;
 
-      location.set_block_name(dir);
       this->check_location_header(dir, location);
+      location.set_block_name(dir);
       this->parse_location(location);
 
       location_map.insert(location_pair_type(dir, location));
@@ -356,7 +356,7 @@ ws::ConfParser::limit_except_type ws::ConfParser::get_method(const std::string& 
   };
 
   for (std::size_t i = 0; ; ++i) {
-    if (i > 3)
+    if (i > 4)
       throw std::invalid_argument("Configure: location: limit_except: wrong method");
     if (method == method_list[i])
       return std::string(method_list[i]);

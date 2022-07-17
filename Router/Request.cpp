@@ -422,7 +422,7 @@ void ws::Request::test() {
   std::cout << "content length: " << _content_length << std::endl;
   std::cout << "content type: " << _content_type << std::endl;
   std::cout << "server name: " << _server_name << std::endl;
-  std::cout << "connection: " << _connection << std::endl;
+  std::cout << "run_server: " << _connection << std::endl;
   std::cout << "transfer encoding: " << _transfer_encoding << std::endl;
 
   

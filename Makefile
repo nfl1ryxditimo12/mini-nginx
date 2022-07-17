@@ -37,7 +37,7 @@ RM          :=  rm -f
 
 .PHONY      :    all
 all         :
-	$(MAKE) -j $(NAME)
+	$(MAKE) -j8  $(NAME)
 
 $(NAME)     :    $(OBJS) $(INCLUDES)
 	$(CXX) $(LDFLAGS) $(OBJS) -o $@
@@ -55,5 +55,5 @@ fclean      :    clean
 
 .PHONY      :    re
 re          :
-	$(MAKE) -j fclean
-	$(MAKE) -j all
+	$(MAKE) -j8  fclean
+	$(MAKE) -j8  all

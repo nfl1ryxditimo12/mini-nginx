@@ -34,7 +34,6 @@ namespace ws {
     explicit Location(const Location& other);
     ~Location();
 
-    const
     const limit_except_vec_type& get_limit_except_vec() const throw();
     const return_type& get_return() const throw();
     const cgi_type& get_cgi() const throw();

@@ -1,15 +1,11 @@
 #pragma once
 
-#include <sstream>
-#include <sys/types.h>
-#include <sys/event.h>
-#include <sys/time.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
+#include <cstdint>
+
+#include <sys/event.h> // kevent header
+#include <sys/time.h> // kevent header
+#include <sys/types.h> // kevent header
 #include <unistd.h>
-#include <fcntl.h>
-#include <vector>
-#include <map>
 
 namespace ws {
   class Kernel {
@@ -19,10 +15,6 @@ namespace ws {
 
     Kernel(const Kernel& cls);
     Kernel& operator=(const Kernel& cls);
-
-  public:
-    Kernel();
-    ~Kernel();
 
     /*
       On call pending state until kernel fetches new events
@@ -36,6 +28,18 @@ namespace ws {
       void *udata
     );
 
+  public:
+    Kernel() throw();
+    ~Kernel();
+
     int   kevent_wait(struct kevent* event_list, size_t event_size);
+
+    void  add_read_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
+    void  add_write_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
+
+    void  delete_read_event(int fd, void* udata = NULL, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
+    void  delete_write_event(int fd, void* udata = NULL, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
+
+    void  process_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
   };
 }

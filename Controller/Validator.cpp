@@ -3,14 +3,20 @@
 #include <sys/stat.h>
 // #include <iostream>//@
 
-ws::Validator::Validator() {
-  _check_func_vec.push_back(&Validator::check_method);
-  _check_func_vec.push_back(&Validator::check_uri);
-  _check_func_vec.push_back(&Validator::check_version);
-  _check_func_vec.push_back(&Validator::check_content_length);
-  _check_func_vec.push_back(&Validator::check_connection);
-  _check_func_vec.push_back(&Validator::check_transfer_encoding);
-  _check_func_vec.push_back(&Validator::check_host);
+//extern bool webserv_fatal;
+
+ws::Validator::Validator() throw() {
+  try {
+    _check_func_vec.push_back(&Validator::check_method);
+    _check_func_vec.push_back(&Validator::check_uri);
+    _check_func_vec.push_back(&Validator::check_version);
+    _check_func_vec.push_back(&Validator::check_content_length);
+    _check_func_vec.push_back(&Validator::check_connection);
+    _check_func_vec.push_back(&Validator::check_transfer_encoding);
+    _check_func_vec.push_back(&Validator::check_host);
+  } catch (...) {
+//    webserv_fatal = true;
+  }
 }
 
 ws::Validator::~Validator() {}

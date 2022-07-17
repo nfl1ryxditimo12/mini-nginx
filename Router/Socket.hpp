@@ -1,12 +1,8 @@
 #pragma once
 
 #include <sstream>
-#include <sys/types.h>
-#include <sys/event.h>
-#include <sys/time.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <vector>
 
@@ -14,7 +10,6 @@
 #include "Kernel.hpp"
 #include "Request.hpp"
 #include "Repository.hpp"
-//#include "Validator.hpp"
 
 namespace ws {
   class Validator;
@@ -49,7 +44,7 @@ namespace ws {
     typedef std::pair<unsigned int, client_value_type>                           client_type;
     typedef std::map<client_type::first_type, client_type::second_type> client_map_type;
 
-    typedef void (*kevent_func)(ws::Socket* self, struct kevent event);
+    typedef void (*kevent_func)(struct kevent event);
 
   private:
 
@@ -57,21 +52,21 @@ namespace ws {
     /*             Member Variable            */
     /* ====================================== */
 
-    const ws::Configure& _conf;
+    static ws::Configure _conf;
 
-    ws::Kernel _kernel;
+    static ws::Kernel _kernel;
 
     /*
       first: server socket fd
       second: server socket address info
     */
-    server_map_type _server;
+    static server_map_type _server;
 
     /*
       first: client socket fd
       second: client data pointer
     */
-    client_map_type _client;
+    static client_map_type _client;
 
     static ws::Validator _validator;
     static ws::Response  _response;
@@ -89,15 +84,15 @@ namespace ws {
     /*            Private Function            */
     /* ====================================== */
 
-    void init_client(unsigned int fd, listen_type listen);
-    void disconnect_client(int fd);
-    void exit_socket();
+    static void init_client(unsigned int fd, listen_type listen);
+    static void disconnect_client(int fd);
+    static void exit_socket();
 
     /* control socket to kenel event */
-    static void connect_client(ws::Socket* self, struct kevent event);
-    static void recv_request(ws::Socket* self, struct kevent event);
-    static void process_request(ws::Socket* self, struct kevent event);
-
+    static void connect_client(struct kevent event);
+    static void recv_request(struct kevent event);
+    static void process_request(struct kevent event);
+    static ws::Socket::client_map_type::iterator find_client_by_file(int file) throw();
 
   public:
 
@@ -105,20 +100,20 @@ namespace ws {
     /*                Structor                */
     /* ====================================== */
 
-    Socket(const ws::Configure& cls);
     ~Socket();
 
     /* ====================================== */
     /*            Public Function             */
     /* ====================================== */
 
-    static void send_response(ws::Socket* self, struct kevent event);
+    static void init_server(const ws::Configure& conf);
+    static void run_server();
+
+    static void send_response(struct kevent event);
     /* control data to kenel event */
-    static void read_data(ws::Socket* self, struct kevent event);
-    static void write_data(ws::Socket* self, struct kevent event);
+    static void read_data(struct kevent event);
+    static void write_data(struct kevent event);
 
-    static void generate_response(ws::Socket* self, struct kevent event);
-
-    void connection();
+    static void generate_response(struct kevent event);
   };
 }
