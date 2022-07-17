@@ -13,7 +13,7 @@
 
 // initialize buffer with configure file
 ws::ConfParser::ConfParser(const std::string& file, const std::string& curr_dir)
-  : _buffer(this->read_file(file)), _root_dir(curr_dir) {
+  : _buffer(this->read_file(file)), _root_dir(curr_dir + "/www") {
   init_server_parser();
   init_location_parser();
   init_option_parser();
@@ -407,8 +407,9 @@ void ws::ConfParser::parse_root(ws::InnerOption& option) {
 
   if (!_token.compare(0, std::max(_token.length() - 1, 4UL), "html"))
     option.set_root(_root_dir);
-  else
-    option.set_root(_token.substr(0, _token.length() - 1));
+  else {
+    option.set_root(Util::parse_relative_path(_root_dir + "/" + _token.substr(0, _token.length() - 1)));
+  }
 }
 
 void ws::ConfParser::parse_index(ws::InnerOption& option) {
