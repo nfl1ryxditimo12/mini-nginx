@@ -44,9 +44,9 @@ ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(c
 
 ws::Repository::~Repository() {}
 
-void ws::Repository::operator()(const ws::Server& server, const ws::Request& request) {
+void ws::Repository::operator()(const ws::Server& server, ws::Request& request) {
   _request = &request;
-  _request_body = _request->get_request_body();
+  _request_body = request.get_request_body();
   _server = &server;
   _location = &(_server->find_location(Util::parse_relative_path(_request->get_uri())));
 
@@ -244,7 +244,7 @@ const std::string&  ws::Repository::get_file_path() const throw() {
   return _file_path;
 }
 
-const std::string&  ws::Repository::get_request_body() const throw() {
+const ws::Request::body_list_type&  ws::Repository::get_request_body() const throw() {
   return _request_body;
 }
 
@@ -322,7 +322,7 @@ void ws::Repository::test() {
   std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_uri: " << NC << _uri << std::endl;
   std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_host: " << NC << _host << std::endl;
   std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_method: " << NC << _method << std::endl;
-  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_request_body: " << NC << _request_body << std::endl;
+//  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_request_body: " << NC << _request_body << std::endl;
   std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "_autoindex:" << NC;
   for (autoindex_type::iterator it = _autoindex.begin(); it != _autoindex.end(); ++it)
     std::cout << " " << *it;

@@ -101,7 +101,7 @@ namespace ws {
 
     std::string _method; // get_method();
 
-    std::string _request_body;
+    ws::Request::body_list_type _request_body;
 
     autoindex_type _autoindex; // get_autoindex();
 
@@ -138,7 +138,7 @@ namespace ws {
     Repository(const Repository& cls);
     ~Repository();
 
-    void operator()(const ws::Server& server, const ws::Request& request);
+    void operator()(const ws::Server& server, ws::Request& request);
 
     void set_repository(unsigned int status);
     void set_status(const unsigned int status);
@@ -163,7 +163,7 @@ namespace ws {
     const std::string&    get_index_root() const throw();
     const std::string&    get_uri() const throw();
     const std::string&    get_file_path() const throw();
-    const std::string&    get_request_body() const throw();
+    const ws::Request::body_list_type&    get_request_body() const throw();
     const autoindex_type& get_autoindex() const throw();
     const cgi_type&       get_cgi() const throw();
     const std::string&    get_content_type() const throw();

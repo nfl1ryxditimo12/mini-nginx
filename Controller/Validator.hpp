@@ -16,7 +16,7 @@ namespace ws {
     typedef void (Validator::*check_func)(client_value_type&);
     typedef std::vector<check_func> check_func_vec;
 
-    typedef ws::Request::header_type header_type;
+    typedef ws::Request::header_map_type header_type;
 
     typedef ws::Location::limit_except_vec_type limit_except_vec_type;
 
