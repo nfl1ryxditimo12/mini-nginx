@@ -111,14 +111,14 @@ namespace ws {
     /*            Request parser           */
     /* =================================== */
 
-    void  parse_request_uri(std::string uri);
+    void  parse_request_uri(const std::string& uri);
     bool  parse_request_start_line();
 
     void  parse_request_header();
     void  parse_request_body();
     void  parse_request_chunked_body();
-    void  parse_request_chunked_start_line();
-    void  parse_request_chunked_data_line();
+//    void  parse_request_chunked_start_line(); // todo: remove..?
+//    void  parse_request_chunked_data_line();
 
     /* =================================== */
     /*     Request header field parser     */
