@@ -110,6 +110,7 @@ void ws::Socket::init_client(unsigned int fd, listen_type listen) {
 }
 
 void ws::Socket::init_session() {
+  //todo: POST일때 insert해주기
   _session.insert(session_map_type::value_type(1, session_value_type()));
 }
 

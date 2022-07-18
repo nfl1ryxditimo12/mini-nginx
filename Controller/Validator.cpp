@@ -125,8 +125,9 @@ void ws::Validator::check_session_id(client_value_type &client_data) {
   if (method== "GET" || method== "HEAD" || method == "DELETE") {
     if (_session->find(client_data.request.get_session_id()) == _session->end())
       client_data.status = UNAUTHORIZED;
+  } else { //POST, PUT
+
   }
-    //POST, PUT -> 수정/생성
 }
 
 //void ws::Validator::check_name(client_value_type &client_data) {
@@ -135,8 +136,12 @@ void ws::Validator::check_session_id(client_value_type &client_data) {
 //}
 
 void ws::Validator::check_secret_key(client_value_type &client_data) {
-  if (!(client_data.request.get_secret_key() == "hellowebserv"))
-    client_data.status = UNAUTHORIZED;
+  const std::string& method = client_data.request.get_method();
+
+  if (method == "POST" || method == "PUT") {
+    if (client_data.request.get_secret_key() != "hellowebserv")
+      client_data.status = UNAUTHORIZED;
+  }
 }
 
 //connection close인데 close로 설정되어있지 않으면 error <- response에서 status랑 비교해서 결정하기
