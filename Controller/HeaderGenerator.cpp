@@ -7,6 +7,9 @@
 #include "Define.hpp"
 #include "Util.hpp"
 
+ws::HeaderGenerator::HeaderGenerator() throw() {}
+ws::HeaderGenerator::~HeaderGenerator() {}
+
 std::string ws::HeaderGenerator::generate(const client_value_type& client_data, std::string::size_type content_length) {
   std::string data;
 

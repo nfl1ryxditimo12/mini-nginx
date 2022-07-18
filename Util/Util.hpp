@@ -11,6 +11,11 @@ namespace ws {
 
     static std::string set_curr_dir();
 
+    Util();
+    Util(const Util& other);
+    Util& operator=(const Util& other);
+    ~Util();
+
   public:
     static const std::string& get_root_dir();
     static void check_executed_dir();

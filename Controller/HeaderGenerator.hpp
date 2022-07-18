@@ -29,7 +29,7 @@ namespace ws {
     
     static void generate_connection_line(std::string& data);
 
-    HeaderGenerator();
+    HeaderGenerator() throw();
     ~HeaderGenerator();
     HeaderGenerator(const HeaderGenerator& other);
     HeaderGenerator& operator=(const HeaderGenerator& other);
