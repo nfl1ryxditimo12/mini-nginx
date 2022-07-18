@@ -10,13 +10,13 @@ ws::Validator::Validator() throw() : _session(NULL) {
     _check_func_vec.push_back(&Validator::check_method);
     _check_func_vec.push_back(&Validator::check_uri);
     _check_func_vec.push_back(&Validator::check_version);
+    _check_func_vec.push_back(&Validator::check_session_id);
+//    _check_func_vec.push_back(&Validator::check_name);
+    _check_func_vec.push_back(&Validator::check_secret_key);
     _check_func_vec.push_back(&Validator::check_host);
     _check_func_vec.push_back(&Validator::check_connection);
     _check_func_vec.push_back(&Validator::check_content_length);
     _check_func_vec.push_back(&Validator::check_transfer_encoding);
-    _check_func_vec.push_back(&Validator::check_session_id);
-//    _check_func_vec.push_back(&Validator::check_name);
-    _check_func_vec.push_back(&Validator::check_secret_key);
   } catch (...) {
 //    webserv_fatal = true;
   }
@@ -122,11 +122,13 @@ void ws::Validator::check_transfer_encoding(client_value_type& client_data) {
 
 void ws::Validator::check_session_id(client_value_type &client_data) {
   const std::string& method = client_data.request.get_method();
-  if (method== "GET" || method== "HEAD" || method == "DELETE") {
-    if (_session->find(client_data.request.get_session_id()) == _session->end())
-      client_data.status = UNAUTHORIZED;
-  } else { //POST, PUT
+  const unsigned int session_id = client_data.request.get_session_id();
 
+  if (session_id == 0)
+    return;
+  if (method== "GET" || method== "HEAD" || method == "DELETE") {
+    if (_session->find(session_id) == _session->end())
+      client_data.status = UNAUTHORIZED;
   }
 }
 
@@ -137,9 +139,12 @@ void ws::Validator::check_session_id(client_value_type &client_data) {
 
 void ws::Validator::check_secret_key(client_value_type &client_data) {
   const std::string& method = client_data.request.get_method();
+  const std::string& secret_key = client_data.request.get_secret_key();
 
+  if (secret_key == "")
+      return;
   if (method == "POST" || method == "PUT") {
-    if (client_data.request.get_secret_key() != "hellowebserv")
+    if (secret_key != "hellowebserv")
       client_data.status = UNAUTHORIZED;
   }
 }

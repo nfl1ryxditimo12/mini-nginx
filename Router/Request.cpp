@@ -11,7 +11,7 @@
 #include "Repository.hpp"
 
 ws::Request::Request(const ws::Configure::listen_type& listen)
-  : _listen(listen), _eof(false), _content_length(std::numeric_limits<std::size_t>::max()), _port(),
+  : _listen(listen), _eof(false), _content_length(std::numeric_limits<std::size_t>::max()), _port(), _session_id(0),
     _status(0), _chunked(false), _chunked_line_type(false), _chunked_byte(std::string::npos), _client_max_body_size(0), _is_header(true),
     _token(), _buffer() {
   insert_require_header_field();
@@ -119,6 +119,10 @@ void	ws::Request::parse_request_body() {
 void  ws::Request::parse_request_uri(const std::string& uri) {
   std::string::size_type mark_pos = uri.find('?');
 
+    _request_uri = uri.substr(0, mark_pos);
+//  _request_uri = "/"; // todo
+  return;
+
   if (mark_pos == std::string::npos)
     _request_uri = uri;
   else {
@@ -126,7 +130,6 @@ void  ws::Request::parse_request_uri(const std::string& uri) {
     std::string key;
     std::string value;
 
-    _request_uri = uri.substr(0, mark_pos);
     buffer << uri.substr(mark_pos + 1);
 
     while (!buffer.eof()) {
@@ -150,7 +153,8 @@ bool ws::Request::parse_request_start_line() {
 
   _method = _token.substr(0, pos1);
   parse_request_uri(_token.substr(pos1 + 1, pos2 - pos1 - 1));
-  _http_version = _token.substr(pos2 + 1);
+  _http_version = _token.substr(pos2 + 1); // todo
+
 
   return true;
 }
@@ -319,10 +323,13 @@ void  ws::Request::parse_transfer_encoding(const std::string& value) {
 
 void  ws::Request::parse_session_id(const std::string &value) {
   std::string::size_type pos = value.find('=');
+  std::string id = value.substr(pos + 1, value.length());
   if (pos == std::string::npos)
     return;
+  if (id == "0") //todo
+    return;
 
-  _session_id = stoul(value.substr(pos + 1, value.length()));
+  _session_id = ws::Util::stoul(id);
 }
 
 void  ws::Request::parse_name(const std::string &value) {

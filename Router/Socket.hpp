@@ -86,6 +86,7 @@ namespace ws {
     const static std::size_t kBUFFER_SIZE;
 
     static session_map_type _session;
+    static unsigned int _session_index;
 
     /* ====================================== */
     /*                  OCCF                  */
@@ -100,7 +101,7 @@ namespace ws {
     /* ====================================== */
 
     static void init_client(unsigned int fd, listen_type listen);
-    static void init_session();
+    static void init_session(client_value_type& client_data);
     static void disconnect_client(int fd);
     static void exit_socket();
 

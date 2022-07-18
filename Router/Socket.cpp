@@ -19,6 +19,7 @@ ws::Socket::client_map_type ws::Socket::_client;
 ws::Socket::session_map_type ws::Socket::_session;
 ws::Validator ws::Socket::_validator;
 ws::Response ws::Socket::_response;
+unsigned int ws::Socket::_session_index = 0;
 
 const std::size_t ws::Socket::kBUFFER_SIZE = 1024 * 1024;
 
@@ -109,9 +110,29 @@ void ws::Socket::init_client(unsigned int fd, listen_type listen) {
   _client.insert(client_map_type::value_type(fd, client_value_type(listen)));
 }
 
-void ws::Socket::init_session() {
-  //todo: POST일때 insert해주기
-  _session.insert(session_map_type::value_type(1, session_value_type()));
+void ws::Socket::init_session(client_value_type& client_data) {
+  const std::string& method = client_data.request.get_method();
+  session_map_type::const_iterator it = _session.find(client_data.request.get_session_id());
+  /* todo:
+   * - GET일때 세션아이디 검색해서 존재하면 html에 추가해서 띄워주기
+   * - POST일때 세션아이디 ++해서 insert 해주기
+   * - DELETE일때 세션아이디 검색해서 지우기
+   */
+  if (method == "GET" || method == "HEAD") {
+    if (it != _session.end()) {
+      //todo: html에 뭔가 더 더하기... (GET결과)
+      client_data.response += "GET";
+    }
+  }
+  else if (method == "POST" || method == "PUT") {
+    ++_session_index;
+    //todo: session_value_type
+    _session.insert(session_map_type::value_type(_session_index, session_value_type()));
+  }
+  else { // DELETE
+    if (it != _session.end())
+      _session.erase(it);
+  }
 }
 
 void ws::Socket::disconnect_client(int fd) {
@@ -138,7 +159,6 @@ void ws::Socket::connect_client(struct kevent event) {
 
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
   init_client(client_socket_fd, listen);
-  init_session();
   _kernel.add_read_event(client_socket_fd, reinterpret_cast<void*>(&Socket::recv_request));
 }
 
@@ -178,6 +198,8 @@ void ws::Socket::recv_request(struct kevent event) {
 
 void ws::Socket::process_request(struct kevent event) {
   client_value_type& client_data = _client.find(event.ident)->second;
+
+  init_session(client_data);
 
   if (!client_data.status)
     _validator(_session, client_data);

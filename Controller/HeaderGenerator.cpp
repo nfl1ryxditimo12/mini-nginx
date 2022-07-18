@@ -120,5 +120,5 @@ void ws::HeaderGenerator::generate_connection_line(std::string& data) {
 }
 
 void ws::HeaderGenerator::generate_cookie(std::string& data) {
-    data += "Set-Cookie: session_id=1\r\n"; // todo
+    data += "Set-Cookie: session_id=0\r\n"; // todo
 }
