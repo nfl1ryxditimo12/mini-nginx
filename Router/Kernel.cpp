@@ -52,14 +52,18 @@ void ws::Kernel::add_write_event(int fd, void *udata, uint16_t flags, uint32_t f
   kevent_ctl(fd, EVFILT_WRITE, EV_ADD | flags, fflags, data, udata);
 }
 
-void ws::Kernel::delete_read_event(int fd, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
-  kevent_ctl(fd, EVFILT_READ, EV_DELETE | flags, fflags, data, udata);
+void ws::Kernel::add_process_event(int fd, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
+  kevent_ctl(fd, EVFILT_USER, EV_ADD | flags, NOTE_TRIGGER | fflags, data, udata);
 }
 
-void ws::Kernel::delete_write_event(int fd, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
-  kevent_ctl(fd, EVFILT_WRITE, EV_DELETE | flags, fflags, data, udata);
+void ws::Kernel::delete_read_event(int fd) {
+  kevent_ctl(fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 }
 
-void ws::Kernel::process_event(int fd, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
-  kevent_ctl(fd, EVFILT_USER, EV_ADD | EV_ONESHOT | flags, NOTE_TRIGGER | fflags, data, udata);
+void ws::Kernel::delete_write_event(int fd) {
+  kevent_ctl(fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+}
+
+void ws::Kernel::delete_process_event(int fd) {
+  kevent_ctl(fd, EVFILT_USER, EV_DELETE, 0, 0, NULL);
 }
