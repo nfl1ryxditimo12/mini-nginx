@@ -7,7 +7,7 @@ namespace ws {
   class RequestParser {
 
   public:
-    typedef void (Request::*header_parse_func) (const std::string&);
+    typedef void (RequestParser::*header_parse_func) (const std::string&);
     typedef std::map<std::string, header_parse_func> header_parse_map_type;
 
     typedef ws::Socket::client_value_type client_value_type;

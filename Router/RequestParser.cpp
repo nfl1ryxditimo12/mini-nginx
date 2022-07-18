@@ -1,23 +1,25 @@
 #include "RequestParser.hpp"
 
-ws::RequestParser::RequestParser() {
-  _header_parser.insert(header_parse_map_type::value_type("Host", &Request::parse_host));
-  _header_parser.insert(header_parse_map_type::value_type("Connection", &Request::parse_connection));
-  _header_parser.insert(header_parse_map_type::value_type("Content-Length", &Request::parse_content_length));
-  _header_parser.insert(header_parse_map_type::value_type("Content-Type", &Request::parse_content_type));
-  _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding", &Request::parse_transfer_encoding));
+ws::RequestParser::RequestParser(): _fatal(NULL), _status(NULL), _request(NULL), _repository(NULL) {
+  _header_parser.insert(header_parse_map_type::value_type("Host", &RequestParser::parse_host));
+  _header_parser.insert(header_parse_map_type::value_type("Connection", &RequestParser::parse_connection));
+  _header_parser.insert(header_parse_map_type::value_type("Content-Length", &RequestParser::parse_content_length));
+  _header_parser.insert(header_parse_map_type::value_type("Content-Type", &RequestParser::parse_content_type));
+  _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding", &RequestParser::parse_transfer_encoding));
 }
 
 ws::RequestParser::~RequestParser() {}
 
-void  ws::RequestParser::init_client_data(client_value_type &client_data) {
+void  ws::RequestParser::init_client_data(client_value_type& client_data) {
   _fatal = &client_data.fatal;
   _status = &client_data.status;
   _request = &client_data.request;
   _repository = &client_data.repository;
 }
 
-int   parse_request_message(const ws::Configure& conf, client_value_type& client_data, const char* message, const int read_size) {
+int   ws::RequestParser::parse_request_message(const ws::Configure& conf, client_value_type& client_data, const char* message, const int read_size) {
+  init_client_data(client_data);
+
 
 }
 
