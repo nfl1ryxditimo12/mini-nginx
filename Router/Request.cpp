@@ -11,8 +11,8 @@
 #include "Repository.hpp"
 
 ws::Request::Request(const ws::Configure::listen_type& listen)
-  : _listen(listen), _eof(false), _content_length(std::numeric_limits<std::size_t>::max()),
-    _status(0), _chunked(false), _chunked_line_type(false), _chunked_eof(false), _chunked_byte(std::string::npos), _client_max_body_size(0), _is_header(true),
+  : _listen(listen), _eof(false), _content_length(std::numeric_limits<std::size_t>::max()), _port(),
+    _status(0), _chunked(false), _chunked_line_type(false), _chunked_byte(std::string::npos), _client_max_body_size(0), _is_header(true),
     _token(), _buffer() {
   insert_require_header_field();
 }
@@ -70,7 +70,7 @@ void	ws::Request::parse_request_chunked_body() {
 
     if (!_chunked_line_type) {
       _chunked_byte = ws::Util::stoul(_token, std::numeric_limits<unsigned long>::max(), 0, "0123456789ABCDEF");
-      _chunked_line_type = 1;
+      _chunked_line_type = true;
       if (_chunked_byte == std::string::npos)
         _status = BAD_REQUEST;
     }
@@ -131,10 +131,10 @@ void	ws::Request::parse_request_body() {
     _eof = true;
 }
 
-void  ws::Request::parse_request_uri(std::string uri) {
-  std::string::size_type mark_pos = uri.find("?");
+void  ws::Request::parse_request_uri(const std::string& uri) {
+  std::string::size_type mark_pos = uri.find('?');
 
-  if (mark_pos == uri.npos)
+  if (mark_pos == std::string::npos)
     _request_uri = uri;
   else {
     std::stringstream buffer;
@@ -221,8 +221,7 @@ void	ws::Request::parse_request_header() {
 int ws::Request::parse_request_message(const ws::Configure& conf, const char* message, const int& read_size, ws::Repository& repo) {
   
   // _buffer << message;
-
-  for (int i = 0; i < read_size; ++i)
+    for (int i = 0; i < read_size; ++i)
     _buffer.put(message[i]);
 
   /*
@@ -280,7 +279,7 @@ void  ws::Request::clear() {
   _header_parser.clear();
   _status = 0;
   _chunked = false;
-  _chunked_line_type = 0;
+  _chunked_line_type = false;
   _chunked_byte = 0;
   _client_max_body_size = 0;
   _token.clear();
@@ -290,7 +289,7 @@ void  ws::Request::clear() {
 /* parser function */
 
 void  ws::Request::parse_host(const std::string& value) {
-  std::string::size_type pos = value.find_first_of(":");
+  std::string::size_type pos = value.find_first_of(':');
 
   if (!_server_name.empty()) {
     _status = BAD_REQUEST;
@@ -302,7 +301,7 @@ void  ws::Request::parse_host(const std::string& value) {
     _server_name = "_";
 
   if (pos != std::string::npos)
-    _port = ws::Util::stoul((value.substr(pos + 1, value.length())).c_str(), std::numeric_limits<u_int16_t>::max());
+    _port = ws::Util::stoul((value.substr(pos + 1, value.length())), std::numeric_limits<u_int16_t>::max());
 }
 
 void  ws::Request::parse_connection(const std::string& value) {
@@ -312,7 +311,7 @@ void  ws::Request::parse_connection(const std::string& value) {
 void  ws::Request::parse_content_length(const std::string& value) {
   std::string::size_type content_length = ws::Util::stoul(value);
 
-  if (content_length == value.npos) {
+  if (content_length == std::string::npos) {
     _status = BAD_REQUEST;
     return;
   }
@@ -331,7 +330,6 @@ void  ws::Request::parse_transfer_encoding(const std::string& value) {
   _transfer_encoding = value;
   if (value == "chunked")
     _chunked = true;
-  return;
 }
 
 /* Else private function */

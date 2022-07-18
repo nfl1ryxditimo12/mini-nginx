@@ -12,3 +12,6 @@ a.out.dSYM
 
 # clion
 .idea
+
+# webserv tester
+file_should_exist_after

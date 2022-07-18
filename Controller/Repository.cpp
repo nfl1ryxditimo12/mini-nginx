@@ -65,7 +65,7 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   } else
     ws::Repository::set_option(_server->get_option());
 
-  _file_path = _config.root + (_uri[0] == '/' ? "" : "/") + _uri;
+  _file_path = _config.root + (_uri[0] == '/' || !_uri.length() ? "" : "/") + _uri;
 
   lstat(_file_path.c_str(), &_file_stat);
 

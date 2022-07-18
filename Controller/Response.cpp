@@ -36,6 +36,7 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
       client_data.response = redirect.second;
 
     _kernel->process_event(client_fd, reinterpret_cast<void*>(&Socket::generate_response));
+    return;
   }
 
 //3. autoindex
@@ -48,12 +49,14 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
     }
     client_data.response += "</ul>\n</body>\n</html>";
     _kernel->process_event(client_fd, reinterpret_cast<void*>(&Socket::generate_response));
+    return;
   }
   
 //4. delete method
   if (client_data.repository.get_method() == "DELETE") {
     remove(client_data.repository.get_file_path().c_str());
     _kernel->process_event(client_fd, reinterpret_cast<void*>(&Socket::generate_response));
+    return;
   }
 
 //4. head method
