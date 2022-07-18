@@ -16,6 +16,7 @@ ws::Configure ws::Socket::_conf;
 ws::Kernel ws::Socket::_kernel;
 ws::Socket::server_map_type ws::Socket::_server;
 ws::Socket::client_map_type ws::Socket::_client;
+ws::Socket::session_map_type ws::Socket::_session;
 ws::Validator ws::Socket::_validator;
 ws::Response ws::Socket::_response;
 
@@ -108,6 +109,10 @@ void ws::Socket::init_client(unsigned int fd, listen_type listen) {
   _client.insert(client_map_type::value_type(fd, client_value_type(listen)));
 }
 
+void ws::Socket::init_session() {
+  _session.insert(session_map_type::value_type(1, session_value_type()));
+}
+
 void ws::Socket::disconnect_client(int fd) {
   client_map_type::iterator client_iter = _client.find(fd);
 
@@ -132,6 +137,7 @@ void ws::Socket::connect_client(struct kevent event) {
 
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
   init_client(client_socket_fd, listen);
+  init_session();
   _kernel.add_read_event(client_socket_fd, reinterpret_cast<void*>(&Socket::recv_request));
 }
 
@@ -162,8 +168,8 @@ void ws::Socket::recv_request(struct kevent event) {
   }
 
   if (client_data.request.eof() || client_data.status || !read_size) {
-//    client_data.request.test(); // todo: test print
-//    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
+    client_data.request.test(); // todo: test print
+    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
     _kernel.process_event(event.ident, reinterpret_cast<void*>(&Socket::process_request));
     _kernel.delete_read_event(event.ident);
   }
@@ -173,7 +179,7 @@ void ws::Socket::process_request(struct kevent event) {
   client_value_type& client_data = _client.find(event.ident)->second;
 
   if (!client_data.status)
-    _validator(client_data);
+    _validator(_session, client_data);
 
   client_data.repository.set_repository(client_data.status);
   client_data.status = client_data.repository.get_status();

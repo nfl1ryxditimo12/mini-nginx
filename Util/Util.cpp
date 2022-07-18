@@ -150,3 +150,11 @@ bool ws::Util::is_eof(int fd) throw() {
 
   return curr == end || curr < 0 || end < 0;
 }
+
+//todo: delete: test time
+#include <sys/time.h>
+std::string ws::Util::getTime() throw() {
+    timeval t;
+    gettimeofday(&t, NULL);
+    return (ultos(t.tv_sec * 1000000 + t.tv_usec));
+}

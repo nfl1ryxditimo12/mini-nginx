@@ -5,15 +5,18 @@
 
 //extern bool webserv_fatal;
 
-ws::Validator::Validator() throw() {
+ws::Validator::Validator() throw() : _session(NULL) {
   try {
     _check_func_vec.push_back(&Validator::check_method);
     _check_func_vec.push_back(&Validator::check_uri);
     _check_func_vec.push_back(&Validator::check_version);
-    _check_func_vec.push_back(&Validator::check_content_length);
-    _check_func_vec.push_back(&Validator::check_connection);
-    _check_func_vec.push_back(&Validator::check_transfer_encoding);
     _check_func_vec.push_back(&Validator::check_host);
+    _check_func_vec.push_back(&Validator::check_connection);
+    _check_func_vec.push_back(&Validator::check_content_length);
+    _check_func_vec.push_back(&Validator::check_transfer_encoding);
+    _check_func_vec.push_back(&Validator::check_session_id);
+//    _check_func_vec.push_back(&Validator::check_name);
+    _check_func_vec.push_back(&Validator::check_secret_key);
   } catch (...) {
 //    webserv_fatal = true;
   }
@@ -21,10 +24,12 @@ ws::Validator::Validator() throw() {
 
 ws::Validator::~Validator() {}
 
-void ws::Validator::operator()(client_value_type& client_data) {
+void ws::Validator::operator()(const session_map_type& session, client_value_type& client_data) {
+  _session = &session;
+
   for (check_func_vec::iterator it = _check_func_vec.begin(); it != _check_func_vec.end(); ++it) {
     (this->**it)(client_data);
-    if (client_data.status != 0)
+    if (client_data.status != 0) //todo: < 300
       break;
   }
 }
@@ -68,10 +73,24 @@ void ws::Validator::check_uri(client_value_type& client_data) {
 void ws::Validator::check_version(client_value_type& client_data) {
   if (client_data.request.get_version() != "HTTP/1.1")
     client_data.status = HTTP_VERSION_NOT_SUPPORTED;
-  return;
 }
 
-void ws::Validator::check_content_length(ws::Validator::client_value_type& client_data) {
+void ws::Validator::check_host(client_value_type& client_data) {
+  const std::string& host = client_data.request.get_server_name();
+
+  if (host == "")
+    client_data.status = BAD_REQUEST;
+
+  //host가 잘못된 값 = 400 -> 공백같은거...?!
+}
+
+void ws::Validator::check_connection(client_value_type& client_data) {
+  const std::string& connection = client_data.request.get_connection();
+  if (!(connection == "close" || connection == "keep-alive" || connection == ""))
+    client_data.status = BAD_REQUEST;
+}
+
+void ws::Validator::check_content_length(client_value_type& client_data) {
   const ws::Request* const request = &client_data.request;
 
   if (request->get_content_length() == std::numeric_limits<unsigned long>::max())
@@ -95,25 +114,29 @@ void ws::Validator::check_content_length(ws::Validator::client_value_type& clien
   }
 }
 
-void ws::Validator::check_connection(ws::Validator::client_value_type& client_data) {
-  const std::string& connection = client_data.request.get_connection();
-  if (!(connection == "close" || connection == "keep-alive" || connection == ""))
-    client_data.status = BAD_REQUEST;
-}
-
-void ws::Validator::check_transfer_encoding(ws::Validator::client_value_type& client_data) {
+void ws::Validator::check_transfer_encoding(client_value_type& client_data) {
   const std::string& transfer_encoding = client_data.request.get_transfer_encoding();
   if (!(transfer_encoding == "chunked" || transfer_encoding == "")) 
     client_data.status = BAD_REQUEST;
 }
 
-void ws::Validator::check_host(ws::Validator::client_value_type& client_data) {
-  const std::string& host = client_data.request.get_server_name();
+void ws::Validator::check_session_id(client_value_type &client_data) {
+  const std::string& method = client_data.request.get_method();
+  if (method== "GET" || method== "HEAD" || method == "DELETE") {
+    if (_session->find(client_data.request.get_session_id()) == _session->end())
+      client_data.status = UNAUTHORIZED;
+  }
+    //POST, PUT -> 수정/생성
+}
 
-  if (host == "") //host가 비어있으면 400
-    client_data.status = BAD_REQUEST;
+//void ws::Validator::check_name(client_value_type &client_data) {
+//
+//  client_data.status = UNAUTHORIZED;
+//}
 
-  //host가 잘못된 값 = 400 -> 공백같은거...?!
+void ws::Validator::check_secret_key(client_value_type &client_data) {
+  if (!(client_data.request.get_secret_key() == "hellowebserv"))
+    client_data.status = UNAUTHORIZED;
 }
 
 //connection close인데 close로 설정되어있지 않으면 error <- response에서 status랑 비교해서 결정하기

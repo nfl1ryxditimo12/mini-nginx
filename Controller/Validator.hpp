@@ -20,6 +20,8 @@ namespace ws {
 
     typedef ws::Location::limit_except_vec_type limit_except_vec_type;
 
+    typedef ws::Socket::session_map_type session_map_type;
+
   private:
     // const ws::Request _request;
     // const ws::Repository _repository;
@@ -27,6 +29,7 @@ namespace ws {
     validate_func _validate_func;
     check_func_vec _check_func_vec;
 
+    const session_map_type* _session;
 
     Validator(const Validator& cls);
     Validator& operator=(const Validator& cls);
@@ -35,16 +38,20 @@ namespace ws {
     Validator() throw();
     ~Validator();
 
-    void operator()(client_value_type& client_data);
+    void operator()(const session_map_type& session, client_value_type& client_data);
 
     void check_method(client_value_type& client_data);
     void check_uri(client_value_type& client_data);
     void check_version(client_value_type& client_data);
-    void check_content_length(client_value_type& client_data);
-    void check_connection(client_value_type& client_data);
-    void check_transfer_encoding(client_value_type& client_data);
-    void check_host(client_value_type& client_data);
 
-    void check_request_header();
+    void check_host(client_value_type& client_data);
+    void check_connection(client_value_type& client_data);
+    void check_content_length(client_value_type& client_data);
+    void check_transfer_encoding(client_value_type& client_data);
+    void check_session_id(client_value_type& client_data);
+//    void check_name(client_value_type& client_data);
+    void check_secret_key(client_value_type& client_data);
+
+    void check_request_header(client_value_type& client_data);
   };
 }

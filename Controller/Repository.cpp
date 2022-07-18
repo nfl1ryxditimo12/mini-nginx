@@ -68,6 +68,8 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
 
   _host = server_name + ":" + ws::Util::ultos(ntohs(_config.listen.second));
   _method = _request->get_method();
+
+
 }
 
 void ws::Repository::set_option(const ws::InnerOption& option) {

@@ -11,12 +11,13 @@ std::string ws::HeaderGenerator::generate(const client_value_type& client_data, 
   std::string data;
 
   generate_start_line(data, client_data.status);
-  generate_representation_header(data, client_data, content_length);
+  generate_representation(data, client_data, content_length);
   //representation: content-type, content-length, transfer-encoding
-  generate_response_header(data, client_data);
+  generate_response(data, client_data);
   //response header: date, server, allow, location
-  generate_connection_header(data, client_data);
+  generate_connection(data, client_data);
   //connection header: connection
+  generate_cookie(data);
 
   return data;
 }
@@ -28,7 +29,7 @@ void ws::HeaderGenerator::generate_start_line(std::string& data, unsigned int st
 
 // representation field
   //representation: content-type, content-length, transfer-encoding
-void ws::HeaderGenerator::generate_representation_header(
+void ws::HeaderGenerator::generate_representation(
   std::string& data, const client_value_type& client_data, std::string::size_type content_length
 ) {
   if (client_data.repository.get_method() == "HEAD")
@@ -63,7 +64,7 @@ void ws::HeaderGenerator::generate_transfer_encoding_line(std::string& data, con
 
 // response field
   //response header: date, server, allow
-void ws::HeaderGenerator::generate_response_header(std::string& data, const client_value_type& client_data) {
+void ws::HeaderGenerator::generate_response(std::string& data, const client_value_type& client_data) {
   generate_date_line(data);
   generate_server_line(data);
   generate_allow_line(data, client_data);
@@ -107,7 +108,7 @@ if (client_data.status < 400 && client_data.status >= 300 && client_data.reposit
 
 //connection field
   //connection header: connection
-void ws::HeaderGenerator::generate_connection_header(std::string& data, const client_value_type& client_data) {
+void ws::HeaderGenerator::generate_connection(std::string& data, const client_value_type& client_data) {
 //  if (client_data.repository.get_connection) // todo
     generate_connection_line(data);
   (void) client_data; // todo
@@ -116,4 +117,8 @@ void ws::HeaderGenerator::generate_connection_header(std::string& data, const cl
 void ws::HeaderGenerator::generate_connection_line(std::string& data) {
 //  data += "Connection: keep-alive\r\n";
    data += "Connection: close\r\n";
+}
+
+void ws::HeaderGenerator::generate_cookie(std::string& data) {
+    data += "Set-Cookie: session_id=1\r\n"; // todo
 }
