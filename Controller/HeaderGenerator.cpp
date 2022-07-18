@@ -20,7 +20,7 @@ std::string ws::HeaderGenerator::generate(const client_value_type& client_data, 
   //response header: date, server, allow, location
   generate_connection(data, client_data);
   //connection header: connection
-  generate_cookie(data);
+//  generate_cookie(data);
 
   return data;
 }

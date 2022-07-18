@@ -126,7 +126,7 @@ void ws::Socket::init_client(unsigned int fd, listen_type listen) {
 }
 
 void ws::Socket::init_session() {
-  _session.insert(session_map_type::value_type(1, session_value_type()));
+//  _session.insert(session_map_type::value_type(1, session_value_type()));
 }
 
 void ws::Socket::disconnect_client(int fd) {
@@ -153,7 +153,7 @@ void ws::Socket::connect_client(struct kevent event) {
 
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
   init_client(client_socket_fd, listen);
-  init_session();
+//  init_session();
   _kernel.add_read_event(client_socket_fd, reinterpret_cast<void*>(&Socket::recv_request));
 }
 

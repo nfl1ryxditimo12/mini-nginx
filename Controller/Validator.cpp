@@ -14,9 +14,9 @@ ws::Validator::Validator() throw() : _session(NULL) {
     _check_func_vec.push_back(&Validator::check_connection);
     _check_func_vec.push_back(&Validator::check_content_length);
     _check_func_vec.push_back(&Validator::check_transfer_encoding);
-    _check_func_vec.push_back(&Validator::check_session_id);
+//    _check_func_vec.push_back(&Validator::check_session_id);
 //    _check_func_vec.push_back(&Validator::check_name);
-    _check_func_vec.push_back(&Validator::check_secret_key);
+//    _check_func_vec.push_back(&Validator::check_secret_key);
   } catch (...) {
 //    webserv_fatal = true;
   }
@@ -25,7 +25,8 @@ ws::Validator::Validator() throw() : _session(NULL) {
 ws::Validator::~Validator() {}
 
 void ws::Validator::operator()(const session_map_type& session, client_value_type& client_data) {
-  _session = &session;
+  (void) session;
+//  _session = &session;
 
   for (check_func_vec::iterator it = _check_func_vec.begin(); it != _check_func_vec.end(); ++it) {
     (this->**it)(client_data);
