@@ -74,7 +74,7 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   _host = server_name + ":" + ws::Util::ultos(ntohs(_config.listen.second));
   _method = _request->get_method();
 
-  // todo
+  // todo: test print
   std::cout << YLW << "\n=========================================================\n" << NC << std::endl;
   std::cout << RED << _method << " " << _location->get_block_name() << NC << std::endl;
 }

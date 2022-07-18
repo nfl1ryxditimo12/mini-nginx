@@ -12,11 +12,12 @@ namespace ws {
 
   private:
     static void generate_start_line(std::string& data, unsigned int stat);
-    static void generate_representation_header(
+    static void generate_representation(
       std::string& data, const client_value_type& client_data, std::string::size_type content_length
     );
-    static void generate_response_header(std::string& data, const client_value_type& client_data);
-    static void generate_connection_header(std::string& data, const client_value_type& client_data);
+    static void generate_response(std::string& data, const client_value_type& client_data);
+    static void generate_connection(std::string& data, const client_value_type& client_data);
+    static void generate_cookie(std::string& data);
 
     static void generate_content_type_line(std::string& data);
     static void generate_content_length_line(std::string& data, std::string::size_type content_length);

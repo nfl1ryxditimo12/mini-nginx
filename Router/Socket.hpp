@@ -24,8 +24,8 @@ namespace ws {
       client_data(ws::Configure::listen_type listen)
       : fatal(false), status(0), repository(ws::Repository(fatal, status)), request(ws::Request(listen)), response(""), write_offset(0), start_time(clock()) {};
 
-      client_data(const client_data& cls)
-      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request), response(cls.response), write_offset(cls.write_offset), start_time(cls.start_time) {};
+//      client_data(const client_data& cls)
+//      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request), response(cls.response), write_offset(cls.write_offset), start_time(cls.start_time), session_iter(cls.session_iter) {};
 
       bool                    fatal;
       unsigned int            status;
@@ -36,15 +36,26 @@ namespace ws {
       clock_t                 start_time;
     };
 
+    struct session_data {
+        session_data(): hit_count(0) {};
+
+        unsigned int hit_count;
+        std::string value;
+    };
+
   public:
-    typedef ws::Configure::listen_type                listen_type;
+    typedef ws::Configure::listen_type                                    listen_type;
 
-    typedef std::pair<int, ws::Configure::listen_type> server_type;
-    typedef std::map<server_type::first_type, server_type::second_type> server_map_type;
+    typedef std::pair<int, ws::Configure::listen_type>                    server_type;
+    typedef std::map<server_type::first_type, server_type::second_type>   server_map_type;
 
-    typedef struct client_data                                          client_value_type;
-    typedef std::pair<unsigned int, client_value_type>                           client_type;
-    typedef std::map<client_type::first_type, client_type::second_type> client_map_type;
+    typedef struct client_data                                            client_value_type;
+    typedef std::pair<unsigned int, client_value_type>                    client_type;
+    typedef std::map<client_type::first_type, client_type::second_type>   client_map_type;
+
+    typedef struct session_data                                           session_value_type;
+    typedef std::pair<unsigned int, session_value_type>                   session_type;
+    typedef std::map<session_type::first_type, session_type::second_type> session_map_type;
 
     typedef void (*kevent_func)(struct kevent event);
 
@@ -74,6 +85,8 @@ namespace ws {
     static ws::Response  _response;
     const static std::size_t kBUFFER_SIZE;
 
+    static session_map_type _session;
+
     /* ====================================== */
     /*                  OCCF                  */
     /* ====================================== */
@@ -87,6 +100,7 @@ namespace ws {
     /* ====================================== */
 
     static void init_client(unsigned int fd, listen_type listen);
+    static void init_session();
     static void disconnect_client(int fd);
     static void exit_socket();
 

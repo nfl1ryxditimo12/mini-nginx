@@ -27,6 +27,7 @@ namespace ws {
 
     typedef std::map<std::string, std::string> header_type;
 
+
   private:
 
     /* =================================== */
@@ -61,11 +62,14 @@ namespace ws {
       그 외 Content-Length의 value가 들어감
     */
     std::size_t _content_length;
-    std::string _content_type;
+//    std::string _content_type;
     std::string _server_name;
     u_int16_t   _port;
     std::string _connection;
     std::string _transfer_encoding;
+    unsigned int _session_id;
+    std::string _name;
+    std::string _secret_key;
 
     /* =================================== */
     /*         Non-getter variable         */
@@ -136,8 +140,11 @@ namespace ws {
     void  parse_host(const std::string& value);
     void  parse_connection(const std::string& value);
     void  parse_content_length(const std::string& value);
-    void  parse_content_type(const std::string& value);
+//    void  parse_content_type(const std::string& value);
     void  parse_transfer_encoding(const std::string& value);
+    void  parse_session_id(const std::string& value);
+    void  parse_name(const std::string& value);
+    void  parse_secret_key(const std::string& value);
 
     /* =================================== */
     /*        Else private function        */
@@ -174,9 +181,12 @@ namespace ws {
     const listen_type& get_listen() const throw();
 
     const std::string::size_type& get_content_length() const throw();
-    const std::string& get_content_type() const throw();
+//    const std::string& get_content_type() const throw();
     const std::string& get_server_name() const throw();
     const std::string& get_connection() const throw();
     const std::string& get_transfer_encoding() const throw();
+    const unsigned int& get_session_id() const throw();
+    const std::string& get_name() const throw();
+    const std::string& get_secret_key() const throw();
   };
 }

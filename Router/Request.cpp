@@ -30,11 +30,14 @@ ws::Request::Request(const Request& cls) {
   _request_body = cls._request_body;
 
   _content_length = cls._content_length;
-  _content_type = cls._content_type;
+//  _content_type = cls._content_type;
   _server_name = cls._server_name;
   _port = cls._port;
   _connection = cls._connection;
   _transfer_encoding = cls._transfer_encoding;
+  _session_id = cls._session_id;
+  _name = cls._name;
+  _secret_key = cls._secret_key;
 
   _header_parser = cls._header_parser;
   _status = cls._status;
@@ -319,17 +322,33 @@ void  ws::Request::parse_content_length(const std::string& value) {
   _content_length = content_length;
 }
 
-void  ws::Request::parse_content_type(const std::string& value) {
-  //text/html; charset=utf-8
-  std::string::size_type pos = value.find(';');
-
-  _content_type = value.substr(0, pos);
-}
+//void  ws::Request::parse_content_type(const std::string& value) {
+//  //text/html; charset=utf-8
+//  std::string::size_type pos = value.find(';');
+//
+//  _content_type = value.substr(0, pos);
+//}
 
 void  ws::Request::parse_transfer_encoding(const std::string& value) {
   _transfer_encoding = value;
   if (value == "chunked")
     _chunked = true;
+}
+
+void  ws::Request::parse_session_id(const std::string &value) {
+  std::string::size_type pos = value.find('=');
+  if (pos == std::string::npos)
+    return;
+
+  _session_id = stoul(value.substr(pos + 1, value.length()));
+}
+
+void  ws::Request::parse_name(const std::string &value) {
+  _name = value;
+}
+
+void ws::Request::parse_secret_key(const std::string &value) {
+  _secret_key = value;
 }
 
 /* Else private function */
@@ -338,8 +357,12 @@ void  ws::Request::insert_require_header_field() {
   _header_parser.insert(header_parse_map_type::value_type("Host", &Request::parse_host));
   _header_parser.insert(header_parse_map_type::value_type("Connection", &Request::parse_connection));
   _header_parser.insert(header_parse_map_type::value_type("Content-Length", &Request::parse_content_length));
-  _header_parser.insert(header_parse_map_type::value_type("Content-Type", &Request::parse_content_type));
+//  _header_parser.insert(header_parse_map_type::value_type("Content-Type", &Request::parse_content_type));
   _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding", &Request::parse_transfer_encoding));
+  _header_parser.insert(header_parse_map_type::value_type("Cookie", &Request::parse_session_id));
+  _header_parser.insert(header_parse_map_type::value_type("Name", &Request::parse_name));
+  _header_parser.insert(header_parse_map_type::value_type("Secret-Key", &Request::parse_secret_key));
+
 }
 
 ws::Token&  ws::Request::rdword() {
@@ -405,9 +428,9 @@ const std::string::size_type& ws::Request::get_content_length() const throw() {
   return _content_length;
 }
 
-const std::string& ws::Request::get_content_type() const throw() {
-  return _content_type;
-}
+//const std::string& ws::Request::get_content_type() const throw() {
+//  return _content_type;
+//}
 
 const std::string& ws::Request::get_server_name() const throw() {
   return _server_name;
@@ -419,6 +442,18 @@ const std::string& ws::Request::get_connection() const throw() {
 
 const std::string& ws::Request::get_transfer_encoding() const throw() {
   return _transfer_encoding;
+}
+
+const unsigned int& ws::Request::get_session_id() const throw() {
+  return _session_id;
+}
+
+const std::string& ws::Request::get_name() const throw() {
+  return _name;
+}
+
+const std::string& ws::Request::get_secret_key() const throw() {
+  return _secret_key;
 }
 
 //todo: print test
@@ -433,12 +468,15 @@ void ws::Request::test() {
   }
   std::cout << "http version: " << _http_version << std::endl;
   std::cout << "content length: " << _content_length << std::endl;
-  std::cout << "content type: " << _content_type << std::endl;
+//  std::cout << "content type: " << _content_type << std::endl;
   std::cout << "server name: " << _server_name << std::endl;
   std::cout << "run_server: " << _connection << std::endl;
   std::cout << "transfer encoding: " << _transfer_encoding << std::endl;
+  std::cout << "session_id: " << _session_id << std::endl;
+  std::cout << "name: " << _name << std::endl;
+  std::cout << "secret_key: " << _secret_key << std::endl;
 
-  
+
   std::cout << "_status: " << _status << std::endl;
   std::cout << "_chunked: " << (_chunked ? "true" : "false") << std::endl;
   std::cout << "_chunked_line_type: " << _chunked_line_type << std::endl;
