@@ -28,7 +28,7 @@ void  ws::Kernel::kevent_ctl(uintptr_t ident, int16_t filter,
   struct kevent event;
   EV_SET(&event, ident, filter, flags, fflags, data, udata);
   if (kevent(_kq, &event, 1, NULL, 0, NULL) == -1) {
-    perror(NULL);
+    perror("kevent");
     throw; // require custom exception
   }
 }
