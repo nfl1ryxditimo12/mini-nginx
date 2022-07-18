@@ -23,9 +23,9 @@ CONTROLLER_INCLUDES :=  Repository.hpp Validator.hpp Response.hpp HeaderGenerato
 CONTROLLER_INCLUDES :=  $(addprefix $(CONTROLLER_DIR)/, $(CONTROLLER_INCLUDES))
 
 ROUTER_DIR          :=  Router
-ROUTER_SRCS         :=  Socket.cpp Kernel.cpp Request.cpp
+ROUTER_SRCS         :=  Socket.cpp Kernel.cpp Request.cpp RequestParser.cpp
 ROUTER_SRCS         :=  $(addprefix $(ROUTER_DIR)/, $(ROUTER_SRCS))
-ROUTER_INCLUDES     :=  Socket.hpp Kernel.hpp Request.hpp
+ROUTER_INCLUDES     :=  Socket.hpp Kernel.hpp Request.hpp RequestParser.hpp
 ROUTER_INCLUDES     :=  $(addprefix $(ROUTER_DIR)/, $(ROUTER_INCLUDES))
 
 SRCS        :=  main.cpp $(UTIL_SRCS) $(CONFIGURE_SRCS) $(CONTROLLER_SRCS) $(ROUTER_SRCS)

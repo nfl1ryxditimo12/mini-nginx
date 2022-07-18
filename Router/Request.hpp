@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <map>
+#include <list>
 #include <string>
 #include <sstream>
 #include <arpa/inet.h>
@@ -23,9 +24,19 @@ namespace ws {
 
     typedef ws::Configure::listen_type listen_type;
 
-    typedef std::map<std::string, std::string> query_type;
+    typedef std::pair<std::string, std::string> query_pair_type;
+    typedef std::map<query_pair_type::first_type, query_pair_type::second_type>  query_map_type;
 
-    typedef std::map<std::string, std::string> header_type;
+    typedef std::pair<std::string, std::string> header_pair_type;
+    typedef std::map<header_pair_type::first_type, header_pair_type::second_type> header_map_type;
+
+    /*
+     * body value type
+     * first: request body
+     * second: body size
+    */
+    typedef std::pair<const char*, size_t>               body_value_type;
+    typedef std::list<body_value_type>                body_list_type;
 
   private:
 
@@ -42,15 +53,16 @@ namespace ws {
 
     std::string _method;
     std::string _request_uri;
-    query_type  _request_uri_query;
+    query_map_type  _request_uri_query;
     std::string _http_version; // required HTTP/1.1 protocol
 
     /* =================================== */
     /*           Request message           */
     /* =================================== */
 
-    header_type _request_header;
-    std::string _request_body;
+    header_map_type _request_header;
+    body_list_type  _request_body;
+    size_t          _request_body_size;
 
     /* =================================== */
     /*         Request header field        */
@@ -68,17 +80,8 @@ namespace ws {
     std::string _transfer_encoding;
 
     /* =================================== */
-    /*         Non-getter variable         */
+    /*           getter variable          */
     /* =================================== */
-
-    /* parser to want header field */
-    header_parse_map_type _header_parser;
-    /*
-      status
-      case   0: Right request message
-      case > 0: Wrong request message
-    */
-    int                     _status;
 
     /* Request field is "Transfer-Encoding: chunked", true or false */
     bool                    _chunked;
@@ -96,8 +99,8 @@ namespace ws {
     // Header end var for chunked header
     bool                    _is_header;
 
-    // token for read buffer
-    ws::Token               _token;
+    int                _request_message_offset;
+    size_t             _request_body_offset;
 
     // buffer to read
     std::stringstream       _buffer;
@@ -109,74 +112,81 @@ namespace ws {
     Request();
     Request& operator=(const Request& cls);
 
-    /* =================================== */
-    /*            Request parser           */
-    /* =================================== */
-
-    void  parse_request_uri(std::string uri);
-    bool  parse_request_start_line();
-
-    void  parse_request_header();
-    void  parse_request_body();
-    void  parse_request_chunked_body();
-    void  parse_request_chunked_start_line();
-    void  parse_request_chunked_data_line();
-
-    /* =================================== */
-    /*     Request header field parser     */
-    /* =================================== */
-
-    /*
-      Transfer-Encoding
-      Host
-      Connection
-      Content-Length
-      등등 추가될 수 있음
-    */
-    void  parse_host(const std::string& value);
-    void  parse_connection(const std::string& value);
-    void  parse_content_length(const std::string& value);
-    void  parse_content_type(const std::string& value);
-    void  parse_transfer_encoding(const std::string& value);
-
-    /* =================================== */
-    /*        Else private function        */
-    /* =================================== */
-
-    void        insert_require_header_field();
-    ws::Token&  rdword();
-    ws::Token&  rdline(char delim = '\n');
-    ws::Token&  rd_http_line();
-    ws::Token&  rdall();
-
   public:
     Request(const ws::Configure::listen_type& listen);
     Request(const Request& cls);
     ~Request();
 
-    int   parse_request_message(const ws::Configure& conf, const char* message, const int& read_size, ws::Repository& repo);
-    void  clear();
-    void  test();
+    void  test(); // todo test function
 
     /* =================================== */
     /*                Getter               */
     /* =================================== */
 
+    std::stringstream& r_buffer() throw();
+
     /* Getter 더 필요함 변수 확인 필요 */
-    bool eof() const throw();
+
+    bool  get_eof() const throw();
     const std::string& get_method() const throw();
     const std::string& get_uri() const throw();
-    const query_type& get_uri_query() const throw();
+    const query_map_type& get_uri_query() const throw();
     const std::string& get_version() const throw();
 
-    const header_type& get_request_header() const throw();
-    const std::string& get_request_body() const throw();
+    const header_map_type& get_request_header() const throw();
+    body_list_type& get_request_body() throw();
+    const size_t& get_request_body_size() const throw();
     const listen_type& get_listen() const throw();
 
     const std::string::size_type& get_content_length() const throw();
     const std::string& get_content_type() const throw();
     const std::string& get_server_name() const throw();
+    const u_int16_t&    get_port() const throw();
     const std::string& get_connection() const throw();
     const std::string& get_transfer_encoding() const throw();
+
+    bool get_is_header() const throw();
+    bool get_chunked() const throw();
+    bool get_chunked_eof() const throw();
+    bool get_chunked_line_type() const throw();
+    const size_t& get_chunked_byte() const throw();
+    const size_t& get_client_max_body_size() const throw();
+    const int& get_request_message_offset() const throw();
+    const size_t& get_request_body_offset() const throw();
+
+    /* =================================== */
+    /*                Setter               */
+    /* =================================== */
+
+    void set_eof(bool) throw();
+    void set_method(const std::string&) throw();
+    void set_request_uri(const std::string&) throw();
+    void set_request_uri_query(const query_pair_type&) throw();
+    void set_http_version(const std::string&) throw();
+
+    void set_request_header(const header_pair_type&) throw();
+    void set_request_body(const char*, size_t, size_t) throw();
+    void set_request_body_size(int size) throw();
+    void add_request_body_size(int size) throw();
+    void set_listen(const listen_type&) throw();
+
+    void set_content_length(const size_t&) throw();
+    void set_content_type(const std::string&) throw();
+    void set_server_name(const std::string&) throw();
+    void set_port(const u_int16_t&) throw();
+    void set_connection(const std::string&) throw();
+    void set_transfer_encoding(const std::string&) throw();
+
+    void set_is_header(bool) throw();
+    void set_chunked(bool) throw();
+    void set_chunked_eof(bool) throw();
+    void set_chunked_line_type(bool) throw();
+    void set_chunked_byte(const size_t&) throw();
+    void add_chunked_byte(const int&) throw();
+    void set_client_max_body_size(const size_t&) throw();
+    void set_request_message_offset(const size_t&) throw();
+    void set_request_body_offset(const size_t&) throw();
+    void add_request_message_offset(const int&) throw();
+    void add_request_body_offset(const size_t&) throw();
   };
 }
