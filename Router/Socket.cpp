@@ -110,7 +110,7 @@ void ws::Socket::init_client(unsigned int fd, listen_type listen) {
   _client.insert(client_map_type::value_type(fd, client_value_type(listen)));
 }
 
-void ws::Socket::init_session(client_value_type& client_data) {
+void ws::Socket::run_session(client_value_type& client_data) {
   const std::string& method = client_data.request.get_method();
   session_map_type::const_iterator it = _session.find(client_data.request.get_session_id());
   /* todo:
@@ -120,14 +120,14 @@ void ws::Socket::init_session(client_value_type& client_data) {
    */
   if (method == "GET" || method == "HEAD") {
     if (it != _session.end()) {
-      //todo: html에 뭔가 더 더하기... (GET결과)
-      client_data.response += "GET";
+      //todo: GET결과로 html에 뭔가 더 더하기...
+      client_data.response += "GET\n";
+      client_data.response += it->second.hit_count;
     }
   }
   else if (method == "POST" || method == "PUT") {
     ++_session_index;
-    //todo: session_value_type
-    _session.insert(session_map_type::value_type(_session_index, session_value_type()));
+    _session.insert(session_map_type::value_type(_session_index, session_value_type(client_data.request.get_name())));
   }
   else { // DELETE
     if (it != _session.end())
@@ -189,8 +189,8 @@ void ws::Socket::recv_request(struct kevent event) {
   }
 
   if (client_data.request.eof() || client_data.status || !read_size) {
-    client_data.request.test(); // todo: test print
-    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
+//    client_data.request.test(); // todo: test print
+//    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
     _kernel.process_event(event.ident, reinterpret_cast<void*>(&Socket::process_request));
     _kernel.delete_read_event(event.ident);
   }
@@ -199,10 +199,10 @@ void ws::Socket::recv_request(struct kevent event) {
 void ws::Socket::process_request(struct kevent event) {
   client_value_type& client_data = _client.find(event.ident)->second;
 
-  init_session(client_data);
-
   if (!client_data.status)
     _validator(_session, client_data);
+
+  run_session(client_data);
 
   client_data.repository.set_repository(client_data.status);
   client_data.status = client_data.repository.get_status();

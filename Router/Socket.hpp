@@ -37,7 +37,7 @@ namespace ws {
     };
 
     struct session_data {
-        session_data(): hit_count(0) {};
+        session_data(const std::string& name): hit_count(0), value(name) {};
 
         unsigned int hit_count;
         std::string value;
@@ -101,7 +101,7 @@ namespace ws {
     /* ====================================== */
 
     static void init_client(unsigned int fd, listen_type listen);
-    static void init_session(client_value_type& client_data);
+    static void run_session(client_value_type& client_data);
     static void disconnect_client(int fd);
     static void exit_socket();
 

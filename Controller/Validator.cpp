@@ -126,7 +126,7 @@ void ws::Validator::check_session_id(client_value_type &client_data) {
 
   if (session_id == 0)
     return;
-  if (method== "GET" || method== "HEAD" || method == "DELETE") {
+  if (method== "GET" || method == "DELETE") {
     if (_session->find(session_id) == _session->end())
       client_data.status = UNAUTHORIZED;
   }
@@ -143,7 +143,7 @@ void ws::Validator::check_secret_key(client_value_type &client_data) {
 
   if (secret_key == "")
       return;
-  if (method == "POST" || method == "PUT") {
+  if (method == "POST") {
     if (secret_key != "hellowebserv")
       client_data.status = UNAUTHORIZED;
   }
