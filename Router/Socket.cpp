@@ -110,10 +110,10 @@ void ws::Socket::init_client(unsigned int fd, listen_type listen) {
   _client.insert(client_map_type::value_type(fd, client_value_type(listen)));
 }
 
-//#include <iostream> //todo: test print
+#include <iostream> //todo: test print
 void ws::Socket::run_session(client_value_type& client_data) {
   const std::string& method = client_data.request.get_method();
-  session_map_type::const_iterator it = _session.find(client_data.request.get_session_id());
+  session_map_type::iterator it = _session.find(client_data.request.get_session_id());
   /* todo:
    * - GET일때 세션아이디 검색해서 존재하면 html에 추가해서 띄워주기
    * - POST일때 세션아이디 ++해서 insert 해주기
@@ -125,13 +125,15 @@ void ws::Socket::run_session(client_value_type& client_data) {
     if (it != _session.end()) {
       //todo: GET결과로 html에 뭔가 더 더하기...
       client_data.response += "GET\n";
+      it->second.hit_count++;
       client_data.response += it->second.hit_count;
+//      std::cout << it->second.hit_count << std::endl; //todo: test print
     }
   }
   else if (method == "POST" || method == "PUT") {
     ++_session_index;
     _session.insert(session_map_type::value_type(_session_index, session_value_type(client_data.request.get_name())));
-//    std::cout << _session_index << std::endl; //todo: test print
+//    std::cout << _session_index << _session.size() << std::endl; //todo: test print
   }
   else { // DELETE
     if (it != _session.end())
