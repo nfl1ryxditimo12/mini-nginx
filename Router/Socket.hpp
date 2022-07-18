@@ -15,6 +15,7 @@
 namespace ws {
   class Validator;
   class Response;
+  class RequestParser;
 
   class Socket {
 
@@ -72,6 +73,8 @@ namespace ws {
 
     static ws::Validator _validator;
     static ws::Response  _response;
+    static ws::RequestParser _request_parser;
+
     const static std::size_t kBUFFER_SIZE;
 
     /* ====================================== */
