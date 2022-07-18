@@ -2,34 +2,32 @@
 
 #include <unistd.h>
 
-#include "Socket.hpp"
+#include "Kernel.hpp"
 
 namespace ws {
   class CgiHandler {
-  public:
-    typedef ws::Socket::client_value_type client_value_type;
-    typedef ws::Socket::client_map_type client_map_type;
-
   private:
     int _fpipe[2];
     int _bpipe[2];
-    ws::Kernel& _kernel;
-    int _client_fd;
-    client_value_type& _client_data;
+    bool _eof;
 
-    CgiHandler(const CgiHandler& other);
+    bool init_pipe() throw();
+    static bool set_cgi_env(const char* method, const char* path_info);
+    pid_t init_child(const char* cgi_path);
+
     CgiHandler& operator=(const CgiHandler& other);
 
   public:
-    CgiHandler(ws::Kernel& kernel, int client_fd, client_value_type& client) throw();
+    CgiHandler() throw();
+    CgiHandler(const CgiHandler& other);
     ~CgiHandler();
 
-    // all boolean functions return false if fail
-    bool set_cgi_env(const char* method, const char* path);
-    bool init_pipe(int fpipe[2], int bpipe[2]);
-    pid_t init_child(int fpipe[2], int bpipe[2], const char* cgi_path);
-    bool send_cgi();
-    bool recv_cgi();
-    bool send_client();
+    const int* get_fpipe() const throw();
+    const int* get_bpipe() const throw();
+    int get_eof() const throw();
+
+    void set_eof(bool value);
+
+    bool run_cgi(const char* method, const char* path_info, const char* cgi_path, ws::Kernel* kernel);
   };
 }

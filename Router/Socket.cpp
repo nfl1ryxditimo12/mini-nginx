@@ -1,5 +1,7 @@
 #include "Socket.hpp"
 
+#include <sys/wait.h>
+
 #include "Response.hpp"
 #include "Validator.hpp"
 
@@ -186,7 +188,7 @@ void ws::Socket::recv_request(struct kevent event) {
   if (client_data.request.eof() || client_data.status || !read_size) {
     client_data.request.test(); // todo: test print
     std::cout << YLW << "\n=================================================\n" << NC << std::endl;
-    _kernel.process_event(event.ident, reinterpret_cast<void*>(&Socket::process_request));
+    _kernel.add_process_event(event.ident, reinterpret_cast<void *>(&Socket::process_request), EV_ONESHOT);
     _kernel.delete_read_event(event.ident);
     clock_t end = clock(); // todo
     std::cout << "recv_request(): " << get_time(end - client_data.start_time) << CYN << "µs" << NC << std::endl;
@@ -231,6 +233,9 @@ ws::Socket::client_map_type::iterator ws::Socket::find_client_by_file(int file) 
   return curr;
 }
 
+
+
+
 void ws::Socket::read_data(struct kevent event) {
   const client_map_type::iterator& client = find_client_by_file(event.ident);
   char buffer[kBUFFER_SIZE + 1];
@@ -252,7 +257,7 @@ void ws::Socket::read_data(struct kevent event) {
   if (Util::is_eof(event.ident)) {
     close(client->second.repository.get_fd());
 //    _kernel.delete_read_event(event.ident);
-    _kernel.process_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response));
+    _kernel.add_process_event(client->first, reinterpret_cast<void *>(ws::Socket::generate_response), EV_ONESHOT);
     clock_t end = clock(); // todo
     std::cout << "read_data(): " << get_time(end - client->second.start_time) << CYN << "µs" << NC << std::endl;
     client->second.start_time = clock();
@@ -280,10 +285,74 @@ void ws::Socket::write_data(struct kevent event) {
     close(client->second.repository.get_fd());
     offset = 0;
 //    _kernel.delete_write_event(event.ident);
-    _kernel.process_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response));
+    _kernel.add_process_event(client->first, reinterpret_cast<void *>(ws::Socket::generate_response), EV_ONESHOT);
     clock_t end = clock(); // todo
     std::cout << "write_data(): " << get_time(end - client->second.start_time) << CYN << "µs" << NC << std::endl;
     client->second.start_time = clock();
+  }
+}
+
+
+
+
+
+
+ws::Socket::client_map_type::iterator ws::Socket::find_client_by_fpipe(int fpipe) throw() {
+  client_map_type::iterator curr = _client.begin();
+  client_map_type::iterator end = _client.end();
+
+  while (curr != end && curr->second.cgi_handler.get_fpipe()[1] != fpipe)
+    ++curr;
+
+  return curr;
+}
+
+ws::Socket::client_map_type::iterator ws::Socket::find_client_by_bpipe(int bpipe) throw() {
+  client_map_type::iterator curr = _client.begin();
+  client_map_type::iterator end = _client.end();
+
+  while (curr != end && curr->second.cgi_handler.get_bpipe()[0] != bpipe)
+    ++curr;
+
+  return curr;
+}
+
+void ws::Socket::read_pipe(struct kevent event) {
+  const client_map_type::iterator& client = find_client_by_bpipe(event.ident);
+  std::string::size_type& offset = client->second.write_offset;
+}
+
+void ws::Socket::write_pipe(struct kevent event) { // todo: when refactoring is done, call read and write both
+  const client_map_type::iterator& client = find_client_by_fpipe(event.ident);
+  const std::string& request_body = client->second.request.get_request_body();
+  std::string::size_type& offset = client->second.fpipe_offset;
+
+  ssize_t write_size = write(event.ident, request_body.c_str() + offset, request_body.length() - offset);
+
+  if (write_size == -1) {
+    std::cerr << "Socket: write error occurred" << std::endl;
+    _kernel.delete_write_event(event.ident);
+    disconnect_client(client->first);
+    return;
+  }
+
+  offset += write_size;
+
+  if (offset == request_body.length()) {
+    close(client->second.repository.get_fd());
+    offset = 0;
+    _kernel.delete_write_event(event.ident);
+    _kernel.add_read_event(client->second.cgi_handler.get_bpipe()[0], reinterpret_cast<void*>(ws::Socket::read_pipe));
+    _kernel.add_process_event(client->first, reinterpret_cast<void *>(ws::Socket::wait_child));
+  }
+}
+
+void ws::Socket::wait_child(struct kevent event) {
+  client_value_type& client = _client.find(event.ident)->second;
+
+  if (waitpid(0, NULL, WNOHANG)) {
+    client.cgi_handler.set_eof(true);
+    _kernel.delete_process_event(event.ident);
   }
 }
 

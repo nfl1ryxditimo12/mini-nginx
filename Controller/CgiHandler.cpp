@@ -3,10 +3,23 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "Socket.hpp"
+
 extern char** environ;
 
-ws::CgiHandler::CgiHandler(ws::Kernel& kernel, int client_fd, client_value_type& client) throw()
-  : _kernel(kernel), _client_fd(client_fd), _client_data(client) {}
+ws::CgiHandler::CgiHandler() throw() : _eof(false) {
+  _fpipe[0] = -1;
+  _fpipe[1] = -1;
+  _bpipe[0] = -1;
+  _bpipe[1] = -1;
+}
+
+ws::CgiHandler::CgiHandler(const CgiHandler& other) {
+  _fpipe[0] = other._fpipe[0];
+  _fpipe[1] = other._fpipe[1];
+  _bpipe[0] = other._bpipe[0];
+  _bpipe[1] = other._bpipe[1];
+}
 
 ws::CgiHandler::~CgiHandler() {
   close(_fpipe[0]);
@@ -16,36 +29,32 @@ ws::CgiHandler::~CgiHandler() {
 }
 
 bool ws::CgiHandler::set_cgi_env(const char* method, const char* path) {
-  return (
-    setenv("SERVER_PROTOCOL", "HTTP/1.1", 1) < 0
-    || setenv("REQUEST_METHOD", method, 1) < 0
+  return !(
+    setenv("SERVER_PROTOCOL", "HTTP/1.1", 1)
+    || setenv("REQUEST_METHOD", method, 1)
     || setenv("PATH_INFO", path, 1)
   );
 }
 
-bool ws::CgiHandler::init_pipe(int fpipe[2], int bpipe[2]) {
-  bool ret = !(pipe(fpipe) || pipe(bpipe));
-  _client_data.repository.set_fpipe(_fpipe[1]);
-  _client_data.repository.set_bpipe(_bpipe[0]);
-
-  return ret;
+bool ws::CgiHandler::init_pipe() throw() {
+  return (!(pipe(_fpipe) || pipe(_bpipe)));
 }
 
-pid_t ws::CgiHandler::init_child(int fpipe[2], int bpipe[2], const char* cgi_path) {
+pid_t ws::CgiHandler::init_child(const char* cgi_path) {
   pid_t pid = fork();
 
   if (!pid) {
     int fatal = false;
 
-    close(fpipe[1]);
-    fatal |= (!dup2(fpipe[0], STDIN_FILENO));
-    close(fpipe[0]);
+    close(_fpipe[1]);
+    fatal |= (!dup2(_fpipe[0], STDIN_FILENO));
+    close(_fpipe[0]);
 
-    close(bpipe[0]);
-    fatal |= (!dup2(bpipe[1], STDOUT_FILENO));
-    close(bpipe[1]);
+    close(_bpipe[0]);
+    fatal |= (!dup2(_bpipe[1], STDOUT_FILENO));
+    close(_bpipe[1]);
 
-    char* argv[2];
+    char *argv[2];
     argv[0] = strdup(cgi_path);
     argv[1] = NULL;
 
@@ -57,23 +66,33 @@ pid_t ws::CgiHandler::init_child(int fpipe[2], int bpipe[2], const char* cgi_pat
     exit(EXIT_FAILURE);
   }
 
-  close(fpipe[0]);
-  close(bpipe[1]);
+  close(_fpipe[0]);
+  close(_bpipe[1]);
 
   return pid;
 }
 
-bool ws::CgiHandler::send_cgi() {
-  _kernel.add_write_event(_client_fd, Socket::write_pipe);
-
-  return false;
+const int* ws::CgiHandler::get_fpipe() const throw() {
+  return _fpipe;
 }
 
-bool ws::CgiHandler::recv_cgi() {
-
-  return false;
+const int* ws::CgiHandler::get_bpipe() const throw() {
+  return _bpipe;
 }
 
-bool ws::CgiHandler::send_client() {
-  return false;
+int ws::CgiHandler::get_eof() const throw() {
+  return _eof;
+}
+
+void ws::CgiHandler::set_eof(bool value) {
+  _eof = value;
+}
+
+bool ws::CgiHandler::run_cgi(const char *method, const char *path_info, const char *cgi_path, ws::Kernel* kernel) {
+  if (!init_pipe() || !set_cgi_env(method, path_info) || init_child(cgi_path) == -1)
+    return false;
+
+  kernel->add_read_event(_fpipe[1], reinterpret_cast<void*>(Socket::write_pipe));
+
+  return true;
 }
