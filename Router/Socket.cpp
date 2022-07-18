@@ -110,6 +110,7 @@ void ws::Socket::init_client(unsigned int fd, listen_type listen) {
   _client.insert(client_map_type::value_type(fd, client_value_type(listen)));
 }
 
+//#include <iostream> //todo: test print
 void ws::Socket::run_session(client_value_type& client_data) {
   const std::string& method = client_data.request.get_method();
   session_map_type::const_iterator it = _session.find(client_data.request.get_session_id());
@@ -118,6 +119,8 @@ void ws::Socket::run_session(client_value_type& client_data) {
    * - POST일때 세션아이디 ++해서 insert 해주기
    * - DELETE일때 세션아이디 검색해서 지우기
    */
+  if (client_data.status == 401)
+    return;
   if (method == "GET" || method == "HEAD") {
     if (it != _session.end()) {
       //todo: GET결과로 html에 뭔가 더 더하기...
@@ -128,10 +131,12 @@ void ws::Socket::run_session(client_value_type& client_data) {
   else if (method == "POST" || method == "PUT") {
     ++_session_index;
     _session.insert(session_map_type::value_type(_session_index, session_value_type(client_data.request.get_name())));
+//    std::cout << _session_index << std::endl; //todo: test print
   }
   else { // DELETE
     if (it != _session.end())
       _session.erase(it);
+//    std::cout << _session.size() << std::endl; //todo: test print
   }
 }
 
