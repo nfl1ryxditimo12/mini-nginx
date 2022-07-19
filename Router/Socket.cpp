@@ -126,7 +126,7 @@ void ws::Socket::init_client(unsigned int fd, listen_type listen) {
   _client.insert(client_map_type::value_type(fd, client_value_type(listen)));
 }
 
-#include <iostream> //todo: test print
+//#include <iostream> //todo: test print
 void ws::Socket::run_session(client_value_type& client_data) {
   const std::string& method = client_data.request.get_method();
   session_map_type::iterator it = _session.find(client_data.request.get_session_id());
@@ -137,21 +137,33 @@ void ws::Socket::run_session(client_value_type& client_data) {
    */
   if (client_data.status == 401)
     return;
-  if (method == "GET" || method == "HEAD") {
+  if (method == "GET") {
     if (it != _session.end()) {
-      //todo: GET결과로 html에 뭔가 더 더하기...
-      client_data.response += "GET\n";
       it->second.hit_count++;
-      client_data.response += it->second.hit_count;
+        // todo: response
+        client_data.response += "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<title>session</title>\n</head>\n<body>\n<h4>hit point: ";
+        client_data.response += Util::ultos(it->second.hit_count);
+        client_data.response += "</h4>\n<h4>name: ";
+        client_data.response += it->second.name;
+        client_data.response += "</h4>\n<h4>id: ";
+        client_data.response += Util::ultos(it->first);
+        client_data.response +="</h4>\n</body>\n</html>";
 //      std::cout << it->second.hit_count << std::endl; //todo: test print
+    } else {
+      client_data.status = UNAUTHORIZED;
+      return; //todo: set error status in socket
     }
-  }
-  else if (method == "POST" || method == "PUT") {
-    ++_session_index;
-    _session.insert(session_map_type::value_type(_session_index, session_value_type(client_data.request.get_name())));
+  } else if (method == "POST") {
+    if (_session.size() > 3000) {
+      _session.clear();
+//      return;
+    }
+    unsigned int session_index = 1;
+    while (_session.find(session_index) != _session.end())
+      session_index++;
+    _session.insert(session_map_type::value_type(session_index, session_value_type(client_data.request.get_name())));
 //    std::cout << _session_index << _session.size() << std::endl; //todo: test print
-  }
-  else { // DELETE
+  } else if (method == "DELETE") {
     if (it != _session.end())
       _session.erase(it);
 //    std::cout << _session.size() << std::endl; //todo: test print
@@ -224,11 +236,16 @@ void ws::Socket::recv_request(struct kevent event) {
 
 void ws::Socket::process_request(struct kevent event) {
   client_value_type& client_data = _client.find(event.ident)->second;
+  bool is_session = (client_data.request.get_uri() == "/session");
 
   if (!client_data.status)
-    _validator(_session, client_data);
+    _validator(_session, client_data, is_session);
 
-  run_session(client_data);
+  if (is_session) {
+    run_session(client_data);
+    _kernel.process_event(event.ident, reinterpret_cast<void*>(Socket::generate_response));
+    return;
+  }
 
   client_data.repository.set_repository(client_data.status);
   client_data.status = client_data.repository.get_status();
@@ -347,4 +364,8 @@ void ws::Socket::send_response(struct kevent event) {
     _kernel.delete_write_event(event.ident);
     disconnect_client(event.ident);
   }
+}
+
+ws::Socket::session_map_type ws::Socket::get_session() throw() {
+  return _session;
 }

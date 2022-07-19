@@ -342,12 +342,10 @@ void  ws::Request::parse_transfer_encoding(const std::string& value) {
 void  ws::Request::parse_session_id(const std::string &value) {
   std::string::size_type pos = value.find('=');
   std::string id = value.substr(pos + 1, value.length());
-  if (pos == std::string::npos)
-    return;
-  if (id == "0") //todo
-    return;
-
-  _session_id = ws::Util::stoul(id);
+  if (pos == std::string::npos || id == "0")
+    _session_id = std::numeric_limits<unsigned int>::max();
+  else
+    _session_id = ws::Util::stoul(id, std::numeric_limits<unsigned int>::max());
 }
 
 void  ws::Request::parse_name(const std::string &value) {

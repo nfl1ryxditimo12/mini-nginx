@@ -10,13 +10,12 @@ ws::Validator::Validator() throw() : _session(NULL) {
     _check_func_vec.push_back(&Validator::check_method);
     _check_func_vec.push_back(&Validator::check_uri);
     _check_func_vec.push_back(&Validator::check_version);
-    _check_func_vec.push_back(&Validator::check_session_id);
-//    _check_func_vec.push_back(&Validator::check_name);
-    _check_func_vec.push_back(&Validator::check_secret_key);
     _check_func_vec.push_back(&Validator::check_host);
     _check_func_vec.push_back(&Validator::check_connection);
     _check_func_vec.push_back(&Validator::check_content_length);
     _check_func_vec.push_back(&Validator::check_transfer_encoding);
+    _check_session_func_vec.push_back(&Validator::check_session_id);
+    _check_session_func_vec.push_back(&Validator::check_secret_key);
   } catch (...) {
 //    webserv_fatal = true;
   }
@@ -24,13 +23,20 @@ ws::Validator::Validator() throw() : _session(NULL) {
 
 ws::Validator::~Validator() {}
 
-void ws::Validator::operator()(const session_map_type& session, client_value_type& client_data) {
+void ws::Validator::operator()(const session_map_type& session, client_value_type& client_data, bool is_session) {
   _session = &session;
 
   for (check_func_vec::iterator it = _check_func_vec.begin(); it != _check_func_vec.end(); ++it) {
     (this->**it)(client_data);
     if (client_data.status != 0) //todo: < 300
       break;
+  }
+  if (is_session) {
+    for (check_session_func_vec::iterator it = _check_session_func_vec.begin(); it != _check_session_func_vec.end(); ++it) {
+      (this->**it)(client_data);
+      if (client_data.status != 0)
+        break;
+    }
   }
 }
 
@@ -61,6 +67,9 @@ void ws::Validator::check_method(client_value_type& client_data) {
 void ws::Validator::check_uri(client_value_type& client_data) {
   const struct stat& file_status = client_data.repository.get_file_stat();
   const std::string& method = client_data.repository.get_method();
+
+  if (client_data.request.get_uri() == "/session")
+    return;
 
   if (S_ISREG(file_status.st_mode)) {
       // client_data.status = NOT_MODIFIED; -> file download
@@ -122,11 +131,9 @@ void ws::Validator::check_transfer_encoding(client_value_type& client_data) {
 
 void ws::Validator::check_session_id(client_value_type &client_data) {
   const std::string& method = client_data.request.get_method();
-  const unsigned int session_id = client_data.request.get_session_id();
+  const unsigned int& session_id = client_data.request.get_session_id();
 
-  if (session_id == 0)
-    return;
-  if (method== "GET" || method == "DELETE") {
+  if (method == "GET" || method == "DELETE") {
     if (_session->find(session_id) == _session->end())
       client_data.status = UNAUTHORIZED;
   }
@@ -141,8 +148,6 @@ void ws::Validator::check_secret_key(client_value_type &client_data) {
   const std::string& method = client_data.request.get_method();
   const std::string& secret_key = client_data.request.get_secret_key();
 
-  if (secret_key == "")
-      return;
   if (method == "POST") {
     if (secret_key != "hellowebserv")
       client_data.status = UNAUTHORIZED;

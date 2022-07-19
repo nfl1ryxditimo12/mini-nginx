@@ -37,10 +37,10 @@ namespace ws {
     };
 
     struct session_data {
-        session_data(const std::string& name): hit_count(0), value(name) {};
+        session_data(const std::string& name): hit_count(0), name(name) {};
 
         unsigned int hit_count;
-        std::string value;
+        std::string name;
     };
 
   public:
@@ -132,5 +132,7 @@ namespace ws {
     static void write_data(struct kevent event);
 
     static void generate_response(struct kevent event);
+
+    static session_map_type get_session() throw();
   };
 }
