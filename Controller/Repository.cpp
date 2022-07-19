@@ -2,7 +2,12 @@
 #include "Request.hpp"
 
 
-#include <iostream> //todo
+#include <iostream> // todo
+#define NC "\e[0m"
+#define RED "\e[0;31m"
+#define GRN "\e[0;32m"
+#define YLW "\e[0;33m"
+#define CYN "\e[0;36m"
 /*
   todo
 
@@ -69,7 +74,9 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   _host = server_name + ":" + ws::Util::ultos(ntohs(_config.listen.second));
   _method = _request->get_method();
 
-
+  // todo: test print
+//  std::cout << YLW << "\n=========================================================\n" << NC << std::endl;
+//  std::cout << RED << _method << " " << _location->get_block_name() << NC << std::endl;
 }
 
 void ws::Repository::set_option(const ws::InnerOption& option) {

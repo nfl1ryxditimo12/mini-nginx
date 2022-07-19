@@ -22,6 +22,7 @@ void ws::Response::set_kernel(Kernel *kernel) {
 void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) {
 //0. set_data
   set_data(client_data, client_fd);
+  ws::Repository::redirect_type redirect = client_data.repository.get_redirect();
 
 //1. 400error
   if (client_data.status >= BAD_REQUEST) {
@@ -30,7 +31,6 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
   }
 
 //2. redirect
-  ws::Repository::redirect_type redirect = client_data.repository.get_redirect();
   if (redirect.first > 0) {
     if (redirect.first < 300 && client_data.repository.get_method() != "HEAD")
       client_data.response = redirect.second;

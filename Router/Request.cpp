@@ -55,13 +55,17 @@ ws::Request::~Request() {}
   chunk-start-line 파싱 -> chunked-content push_back 형식?
   만약 chunked-content-length보다 chunked-content가 적게 들어오면?
 */
+
 void	ws::Request::parse_request_chunked_body() {
-  while (!_buffer.eof() && !_status) {
+  while (!_status && !(_token == "0" && _chunked_line_type == 1) && _chunked_eof == false) {
     rd_http_line(); // todo: 0\r\n 으로 들어오는 경우 \r\n 잘라주는 로직 필요
 
     if (_token.length() < 2 || _token.compare(_token.length() - 2, 2, "\r\n")) {
       _buffer.clear();
       _buffer << _token;
+      // todo
+//      for (size_t i = 0; i < _token.length(); ++i)
+//        _buffer.put(_token[i]);
       return;
     }
 
@@ -74,29 +78,43 @@ void	ws::Request::parse_request_chunked_body() {
         _status = BAD_REQUEST;
     }
     else {
-      if (_chunked_byte == 0 && _token.length() == 0) {
-        _eof = true;
-        return;
-      }
-      for (std::string::size_type i = 0; i < _token.length(); ++i, --_chunked_byte) {
-        if (_chunked_byte == std::string::npos) {
-          _status = BAD_REQUEST;
-          return;
-        }
-
-        if (_request_body.length() == _client_max_body_size) {
-          _status = 413;
-          return;
-        }
-        _request_body.push_back(_token[i]);
-      }
+      _chunked_byte -= _token.length();
+      _request_body += _token;
       if (_chunked_byte == 0)
-        _chunked_line_type = false;
+          _chunked_line_type = 0;
+      // todo
+//      for (std::string::size_type i = 0; i < _token.length(); ++i, --_chunked_byte) {
+//        if (_chunked_byte == std::string::npos) {
+//          _status = BAD_REQUEST;
+//          return;
+//        }
+//
+//        if (_request_body.length() == _client_max_body_size) {
+//          _status = 413;
+//          return;
+//        }
+//        _request_body.push_back(_token[i]);
+//      }
+//      if (_chunked_byte == 0)
+//        _chunked_line_type = 0;
     }
   }
 
-  if (_status)
+  rd_http_line();
+
+  if (_status > 0) {
     _eof = true;
+    return;
+  }
+
+  if (_token != "\r\n") {
+    _chunked_eof = true;
+    _buffer.clear();
+    for (size_t i = 0; i < _token.length(); ++i)
+      _buffer.put(_token[i]);
+    return;
+  }
+  _eof = true;
 }
 
 /*
