@@ -175,8 +175,10 @@ void ws::Repository::open_file(std::string filename) {
   
   if (_method == "GET")
     open_flag = O_RDONLY;
-  else if (_method == "POST" || _method == "PUT")
+  else if (_method == "POST")
     open_flag = O_WRONLY | O_TRUNC | O_CREAT;
+  else if (_method == "PUT")
+    open_flag = O_WRONLY | O_APPEND | O_CREAT;
   else
     open_flag = O_WRONLY | O_APPEND;
 

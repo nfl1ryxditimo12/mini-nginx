@@ -12,8 +12,8 @@
 
 ws::Request::Request(const ws::Configure::listen_type& listen)
   : _listen(listen), _eof(false), _content_length(std::numeric_limits<std::size_t>::max()), _port(),
-    _status(0), _chunked(false), _chunked_line_type(false), _chunked_byte(std::string::npos), _client_max_body_size(0), _is_header(true),
-    _token(), _buffer() {
+    _status(0), _chunked(false), _chunked_line_type(false), _chunked_eof(false), _chunked_byte(std::string::npos), _client_max_body_size(0), _is_header(true),
+    _token() { // todo: added chunked eof initialize to false...
   insert_require_header_field();
 }
 
@@ -43,6 +43,7 @@ ws::Request::Request(const Request& cls) {
   _status = cls._status;
   _chunked = cls._chunked;
   _chunked_line_type = cls._chunked_line_type;
+  _chunked_eof = cls._chunked_eof;
   _chunked_byte = cls._chunked_byte;
   _client_max_body_size = cls._client_max_body_size;
   _is_header = cls._is_header;
@@ -57,12 +58,12 @@ ws::Request::~Request() {}
 */
 
 void	ws::Request::parse_request_chunked_body() {
-  while (!_status && !(_token == "0" && _chunked_line_type == 1) && _chunked_eof == false) {
+  while (!_status && !(_token == "0" && _chunked_line_type == 1) && (_chunked_eof == false)) {
     rd_http_line(); // todo: 0\r\n 으로 들어오는 경우 \r\n 잘라주는 로직 필요
 
     if (_token.length() < 2 || _token.compare(_token.length() - 2, 2, "\r\n")) {
-      _buffer.clear();
-      _buffer << _token;
+      _buffer->clear();
+      *_buffer << _token;
       // todo
 //      for (size_t i = 0; i < _token.length(); ++i)
 //        _buffer.put(_token[i]);
@@ -109,9 +110,8 @@ void	ws::Request::parse_request_chunked_body() {
 
   if (_token != "\r\n") {
     _chunked_eof = true;
-    _buffer.clear();
-    for (size_t i = 0; i < _token.length(); ++i)
-      _buffer.put(_token[i]);
+    _buffer->clear();
+    *_buffer << _token;
     return;
   }
   _eof = true;
@@ -128,7 +128,7 @@ void	ws::Request::parse_request_body() {
   std::string::size_type i = _request_body.length();
 
   for (; i < _content_length; ++i)
-    _request_body.push_back(static_cast<char>(_buffer.get()));
+    _request_body.push_back(static_cast<char>(_buffer->get()));
 
   if (i == _content_length)
     _eof = true;
@@ -178,12 +178,12 @@ void	ws::Request::parse_request_header() {
   std::string value;
   std::string::size_type pos;
 
-  while (!(_buffer.eof() || _status)) {
+  while (!(_buffer->eof() || _status)) {
     rd_http_line();
 
     if (_token.length() < 2 || _token.compare(_token.length() - 2, 2, "\r\n")) {
-      _buffer.clear();
-      _buffer << _token;
+      _buffer->clear();
+      *_buffer << _token;
       return;
     }
 
@@ -221,11 +221,8 @@ void	ws::Request::parse_request_header() {
 /*
   repository를 header파싱 후 해줘서 client_max_body_size까지만 받아올 지 생각 해 봐야함
 */
-int ws::Request::parse_request_message(const ws::Configure& conf, const char* message, const int& read_size, ws::Repository& repo) {
-  
-  // _buffer << message;
-    for (int i = 0; i < read_size; ++i)
-    _buffer.put(message[i]);
+int ws::Request::parse_request_message(const ws::Configure& conf, ws::Buffer* buffer, ws::Repository& repo) {
+  _buffer = buffer;
 
   /*
     buffer size 가 0 인 경우 어떻게 처리해야 할까?
@@ -286,7 +283,7 @@ void  ws::Request::clear() {
   _chunked_byte = 0;
   _client_max_body_size = 0;
   _token.clear();
-  _buffer.rdbuf();
+  _buffer->clear();
 }
 
 /* parser function */
@@ -366,22 +363,22 @@ void  ws::Request::insert_require_header_field() {
 }
 
 ws::Token&  ws::Request::rdword() {
-  _token.rdword(_buffer);
+  _token.rdword(*_buffer);
   return _token;
 }
 
 ws::Token& ws::Request::rdline(char delim) {
-  _token.rdline(_buffer, delim);
+  _token.rdline(*_buffer, delim);
   return _token;
 }
 
 ws::Token& ws::Request::rd_http_line() {
-  _token.rd_http_line(_buffer);
+  _token.rd_http_line(*_buffer);
   return _token;
 }
 
 ws::Token& ws::Request::rdall() {
-  _token.rdall(_buffer);
+  _token.rdall(*_buffer);
   return _token;
 }
 

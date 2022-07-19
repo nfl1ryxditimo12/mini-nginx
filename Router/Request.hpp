@@ -6,6 +6,7 @@
 #include <sstream>
 #include <arpa/inet.h>
 
+#include "Buffer.hpp"
 #include "Configure.hpp"
 #include "Token.hpp"
 #include "Configure.hpp"
@@ -103,8 +104,7 @@ namespace ws {
     // token for read buffer
     ws::Token               _token;
 
-    // buffer to read
-    std::stringstream       _buffer;
+    ws::Buffer*             _buffer;
 
     /* =================================== */
     /*                 OCCF                */
@@ -161,7 +161,7 @@ namespace ws {
     Request(const Request& cls);
     ~Request();
 
-    int   parse_request_message(const ws::Configure& conf, const char* message, const int& read_size, ws::Repository& repo);
+    int   parse_request_message(const ws::Configure& conf, ws::Buffer* buffer, ws::Repository& repo);
     void  clear();
     void  test();
 

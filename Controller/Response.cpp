@@ -74,18 +74,18 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
 
 //4-2. cgi // todo: go up
   if (client_data.repository.get_cgi().first != "") {
-    if (!client_data.cgi_handler.run_cgi(
-      client_data.repository.get_method().c_str(),
-      client_data.repository.get_cgi_path().c_str(),
-      (client_data.repository.get_cgi_path() + client_data.repository.get_location()->get_cgi()).c_str(),
-      _kernel
-    )) {
-      client_data.status = INTERNAL_SERVER_ERROR;
-      close(client_data.repository.get_fd());
-      client_data.repository.set_fd(open((Util::get_root_dir() + "/www/500.html").c_str(), O_RDONLY));
-      _kernel->add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(ws::Socket::read_data));
-    }
-
+//    if (!client_data.cgi_handler.run_cgi(
+//      client_data.repository.get_method().c_str(),
+//      client_data.repository.get_cgi_path().c_str(),
+//      (client_data.repository.get_cgi_path() + client_data.repository.get_location()->get_cgi()).c_str(),
+//      _kernel
+//    )) {
+//      client_data.status = INTERNAL_SERVER_ERROR;
+//      close(client_data.repository.get_fd());
+//      client_data.repository.set_fd(open((Util::get_root_dir() + "/www/500.html").c_str(), O_RDONLY));
+//      _kernel->add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(ws::Socket::read_data));
+//    }
+//
     return;
   }
 }

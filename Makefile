@@ -5,9 +5,9 @@ CXXFLAGS    :=  -std=c++98 -Wall -Wextra -Werror -g -fsanitize=undefined -fsanit
 LDFLAGS		:=	-g -fsanitize=undefined -fsanitize=address
 
 UTIL_DIR            :=  Util
-UTIL_SRCS           :=  Util.cpp Token.cpp
+UTIL_SRCS           :=  Util.cpp Token.cpp Buffer.cpp
 UTIL_SRCS           :=  $(addprefix $(UTIL_DIR)/, $(UTIL_SRCS))
-UTIL_INCLUDES       :=  Util.hpp Token.hpp
+UTIL_INCLUDES       :=  Util.hpp Token.hpp Buffer.hpp
 UTIL_INCLUDES       :=  $(addprefix $(UTIL_DIR)/, $(UTIL_INCLUDES))
 
 CONFIGURE_DIR       :=  Configure
