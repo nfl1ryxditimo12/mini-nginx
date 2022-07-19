@@ -141,8 +141,9 @@ namespace ws {
     void operator()(const ws::Server& server, const ws::Request& request);
 
     void set_repository(unsigned int status);
-    void set_status(const unsigned int status);
+    void set_status(unsigned int status);
     void set_fatal(); // always set true
+    void set_fd(int value);
 
     void test();
 

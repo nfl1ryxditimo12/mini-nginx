@@ -120,6 +120,10 @@ void ws::Repository::set_fatal() {
   _fatal = true;
 }
 
+void ws::Repository::set_fd(int value) {
+  _fd = value;
+}
+
 void ws::Repository::set_autoindex() {
 
   if (!(_method == "GET" || _method == "HEAD")) {
