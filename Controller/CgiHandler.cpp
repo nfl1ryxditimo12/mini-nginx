@@ -44,7 +44,7 @@ pid_t ws::CgiHandler::init_child(const char* cgi_path) {
   pid_t pid = fork();
 
   if (!pid) {
-    int fatal = false;
+    int fatal = 0;
 
     close(_fpipe[1]);
     fatal |= (!dup2(_fpipe[0], STDIN_FILENO));
@@ -92,7 +92,7 @@ bool ws::CgiHandler::run_cgi(const char *method, const char *path_info, const ch
   if (!init_pipe() || !set_cgi_env(method, path_info) || init_child(cgi_path) == -1)
     return false;
 
-  kernel->add_read_event(_fpipe[1], reinterpret_cast<void*>(Socket::write_pipe));
+  kernel->add_write_event(_fpipe[1], reinterpret_cast<void*>(Socket::write_pipe));
 
   return true;
 }
