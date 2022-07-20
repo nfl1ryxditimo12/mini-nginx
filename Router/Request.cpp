@@ -51,22 +51,13 @@ ws::Request::Request(const Request& cls) {
 
 ws::Request::~Request() {}
 
-/*
-  chunked인 경우 어떻게 처리할까?
-  chunk-start-line 파싱 -> chunked-content push_back 형식?
-  만약 chunked-content-length보다 chunked-content가 적게 들어오면?
-*/
-
 void	ws::Request::parse_request_chunked_body() {
-  while (!_status && !(_token == "0" && _chunked_line_type == 1) && (_chunked_eof == false)) {
-    rd_http_line(); // todo: 0\r\n 으로 들어오는 경우 \r\n 잘라주는 로직 필요
+  while (!_status && !(_token == "0" && _chunked_line_type) && !_chunked_eof) {
+    rd_http_line();
 
     if (_token.length() < 2 || _token.compare(_token.length() - 2, 2, "\r\n")) {
       _buffer->clear();
       *_buffer << _token;
-      // todo: optimize here?
-//      for (size_t i = 0; i < _token.length(); ++i)
-//        _buffer.put(_token[i]);
       return;
     }
 
@@ -76,31 +67,14 @@ void	ws::Request::parse_request_chunked_body() {
       _chunked_byte = ws::Util::stoul(_token, std::numeric_limits<unsigned long>::max(), 0, "0123456789ABCDEF");
       _chunked_line_type = true;
 
-      if (_chunked_byte == std::string::npos) {
+      if (_chunked_byte == std::string::npos)
         _status = BAD_REQUEST;
-        std::cout << "80" << std::endl;
-      }
     }
     else {
       _chunked_byte -= _token.length();
-      _request_body += _token; // todo: binary
+      _request_body += _token; // todo: += appends binary too, no need to fix
       if (_chunked_byte == 0)
           _chunked_line_type = 0;
-      // todo
-//      for (std::string::size_type i = 0; i < _token.length(); ++i, --_chunked_byte) {
-//        if (_chunked_byte == std::string::npos) {
-//          _status = BAD_REQUEST;
-//          return;
-//        }
-//
-//        if (_request_body.length() == _client_max_body_size) {
-//          _status = 413;
-//          return;
-//        }
-//        _request_body.push_back(_token[i]);
-//      }
-//      if (_chunked_byte == 0)
-//        _chunked_line_type = 0;
     }
   }
 
@@ -181,7 +155,7 @@ void	ws::Request::parse_request_header() {
   std::string value;
   std::string::size_type pos;
 
-  while (!_status) { // todo: _buffer->eof()?
+  while (!_status) {
     rd_http_line();
 
     if (_token.length() < 2 || _token.compare(_token.length() - 2, 2, "\r\n")) {
@@ -197,10 +171,8 @@ void	ws::Request::parse_request_header() {
 
     pos = _token.find(":");
     if (pos == std::string::npos) {
-      if (!parse_request_start_line()) {
+      if (!parse_request_start_line())
         _status = BAD_REQUEST;
-        std::cout << "201" << std::endl;
-      }
       continue;
     }
 
@@ -215,10 +187,9 @@ void	ws::Request::parse_request_header() {
       _request_header.insert(header_type::value_type(key, value));
   }
 
-  if (_token != "\r\n") {
+  if (_token != "\r\n")
     _status = BAD_REQUEST;
-    std::cout << "220" << std::endl;
-  }
+
   if (_content_length == std::numeric_limits<std::size_t>::max() && !_chunked)
     _eof = true;
 
@@ -230,7 +201,6 @@ void	ws::Request::parse_request_header() {
 */
 int ws::Request::parse_request_message(const ws::Configure& conf, ws::Buffer* buffer, ws::Repository& repo) {
   _buffer = buffer;
-
   /*
     buffer size 가 0 인 경우 어떻게 처리해야 할까?
     case 1: kernel buffer가 모두 읽힌 뒤 발생한 kevent -> buffer size == 0 으로 들어옴
@@ -300,7 +270,6 @@ void  ws::Request::parse_host(const std::string& value) {
 
   if (!_server_name.empty()) {
     _status = BAD_REQUEST;
-    std::cout << "302" << std::endl;
     return;
   }
 
@@ -321,7 +290,6 @@ void  ws::Request::parse_content_length(const std::string& value) {
 
   if (content_length == std::string::npos) {
     _status = BAD_REQUEST;
-    std::cout << "323" << std::endl;
     return;
   }
 

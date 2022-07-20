@@ -186,21 +186,23 @@ ws::Token &ws::Token::rdline(ws::Buffer &buffer, char delim) {
 ws::Token &ws::Token::rd_http_line(ws::Buffer &buffer) {
   this->clear();
 
+  char* const data = buffer.data();
+
   std::size_t i = buffer.get_offset();
-  while (buffer[i] == ' ')
+  while (data[i] == ' ')
     ++i;
 
   buffer.advance(i - buffer.get_offset());
 
-  for (char c, prev = 0; !buffer.eof(); prev = c) {
-    c = buffer.get();
-    this->push_back(c);
-
-    if ((c == '\n') && (prev == '\r')) {
+  for (; i < buffer.size(); ++i) {
+    if (data[i] == '\n' && i > 0 && data[i - 1] == '\r') {
+      ++i;
       break;
     }
   }
 
+  insert(0, data + buffer.get_offset(), i - buffer.get_offset());
+  buffer.advance(i - buffer.get_offset());
 
   return *this;
 }

@@ -72,32 +72,6 @@ void ws::Buffer::clear() {
   _size = 0;
 }
 
-std::string ws::Buffer::rd_line(const std::string& delim) {
-  if (!_buf)
-    throw std::out_of_range("access after delete");
-
-  while (true) {
-    if (_buf[_offset] != ' ')
-      break;
-
-    ++_offset;
-  }
-
-  std::string ret;
-  ret.reserve(1024 * 1024);
-
-  while (
-    _offset < _size
-    && (
-      ret.length() < delim.length()
-      || ret.compare(ret.length() - delim.length(), delim.length(), delim))
-    ) {
-    ret.push_back(_buf[_offset++]);
-  }
-
-  return ret;
-}
-
 std::size_t ws::Buffer::size() const {
   if (!_buf)
     throw std::out_of_range("access after delete");
@@ -117,6 +91,10 @@ void ws::Buffer::init_buf() {
 void ws::Buffer::delete_buf() {
   delete[] _buf;
   _buf = NULL;
+}
+
+char *ws::Buffer::data() const throw() {
+  return _buf;
 }
 
 std::size_t ws::Buffer::get_offset() const throw() {

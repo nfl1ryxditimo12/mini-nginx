@@ -34,7 +34,5 @@ namespace ws {
     static std::string parse_relative_path(const std::string& str);
 
     static bool is_eof(int fd) throw();
-
-    static std::string getTime() throw();
   };
 }

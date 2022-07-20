@@ -26,22 +26,22 @@ namespace ws {
 
     char& operator[](std::size_t n);
     char& operator[](std::size_t n) const;
-    char& get();
-    void  put(char c);
     char* operator+(std::size_t n);
-
-    void advance(std::size_t n = std::numeric_limits<std::size_t>::max());
-    void rewind(std::size_t n);
 
     void init_buf();
     void delete_buf();
 
-    std::string rd_line(const std::string& delim = "\n");
+    char& get();
+    void  put(char c);
+    void  clear();
 
-    void clear();
+    void advance(std::size_t n = std::numeric_limits<std::size_t>::max());
+    void rewind(std::size_t n);
+
     std::size_t size() const;
     bool eof() const;
 
+    char* data() const throw();
     std::size_t get_offset() const throw();
 
     // should call with kevent
