@@ -7,12 +7,14 @@
 
 ws::Validator::Validator() throw() : _session(NULL) {
   try {
+    _check_func_vec.push_back(&Validator::init_content_type_parser);
     _check_func_vec.push_back(&Validator::check_method);
     _check_func_vec.push_back(&Validator::check_uri);
     _check_func_vec.push_back(&Validator::check_version);
     _check_func_vec.push_back(&Validator::check_host);
     _check_func_vec.push_back(&Validator::check_connection);
     _check_func_vec.push_back(&Validator::check_content_length);
+    _check_func_vec.push_back(&Validator::check_content_type);
     _check_func_vec.push_back(&Validator::check_transfer_encoding);
     _check_session_func_vec.push_back(&Validator::check_session_id);
     _check_session_func_vec.push_back(&Validator::check_secret_key);
@@ -38,6 +40,14 @@ void ws::Validator::operator()(const session_map_type& session, client_value_typ
         break;
     }
   }
+}
+
+void ws::Validator::init_content_type_parser(client_value_type&) {
+  _content_type_parser.insert("text/plain");
+  _content_type_parser.insert("text/html");
+  _content_type_parser.insert("image/jpeg");
+  _content_type_parser.insert("image/png");
+  _content_type_parser.insert("application/octet-stream");
 }
 
 void ws::Validator::check_method(client_value_type& client_data) {
@@ -95,6 +105,7 @@ void ws::Validator::check_host(client_value_type& client_data) {
 
 void ws::Validator::check_connection(client_value_type& client_data) {
   const std::string& connection = client_data.request.get_connection();
+
   if (!(connection == "close" || connection == "keep-alive" || connection == ""))
     client_data.status = BAD_REQUEST;
 }
@@ -123,12 +134,21 @@ void ws::Validator::check_content_length(client_value_type& client_data) {
   }
 }
 
+void ws::Validator::check_content_type(client_value_type &client_data) {
+  const std::string& content_type = client_data.request.get_content_type();
+
+  if (_content_type_parser.find(content_type) == _content_type_parser.end())
+    client_data.status = UNSUPPORTED_MEDIA_TYPE;
+}
+
 void ws::Validator::check_transfer_encoding(client_value_type& client_data) {
   const std::string& transfer_encoding = client_data.request.get_transfer_encoding();
-  if (!(transfer_encoding == "chunked" || transfer_encoding == "")) 
+
+  if (!(transfer_encoding == "chunked" || transfer_encoding == ""))
     client_data.status = BAD_REQUEST;
 }
 
+  // todo?: make Util::eraseWS
 void ws::Validator::check_session_id(client_value_type &client_data) {
   const std::string& method = client_data.request.get_method();
   const unsigned int& session_id = client_data.request.get_session_id();
@@ -138,11 +158,6 @@ void ws::Validator::check_session_id(client_value_type &client_data) {
       client_data.status = UNAUTHORIZED;
   }
 }
-
-//void ws::Validator::check_name(client_value_type &client_data) {
-//
-//  client_data.status = UNAUTHORIZED;
-//}
 
 void ws::Validator::check_secret_key(client_value_type &client_data) {
   const std::string& method = client_data.request.get_method();

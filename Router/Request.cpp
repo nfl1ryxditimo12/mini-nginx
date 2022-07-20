@@ -30,7 +30,7 @@ ws::Request::Request(const Request& cls) {
   _request_body = cls._request_body;
 
   _content_length = cls._content_length;
-//  _content_type = cls._content_type;
+  _content_type = cls._content_type;
   _server_name = cls._server_name;
   _port = cls._port;
   _connection = cls._connection;
@@ -326,12 +326,12 @@ void  ws::Request::parse_content_length(const std::string& value) {
   _content_length = content_length;
 }
 
-//void  ws::Request::parse_content_type(const std::string& value) {
-//  //text/html; charset=utf-8
-//  std::string::size_type pos = value.find(';');
-//
-//  _content_type = value.substr(0, pos);
-//}
+void  ws::Request::parse_content_type(const std::string& value) {
+  //text/html; charset=utf-8
+  std::string::size_type pos = value.find(';');
+
+  _content_type = value.substr(0, pos);
+}
 
 void  ws::Request::parse_transfer_encoding(const std::string& value) {
   _transfer_encoding = value;
@@ -362,7 +362,7 @@ void  ws::Request::insert_require_header_field() {
   _header_parser.insert(header_parse_map_type::value_type("Host", &Request::parse_host));
   _header_parser.insert(header_parse_map_type::value_type("Connection", &Request::parse_connection));
   _header_parser.insert(header_parse_map_type::value_type("Content-Length", &Request::parse_content_length));
-//  _header_parser.insert(header_parse_map_type::value_type("Content-Type", &Request::parse_content_type));
+  _header_parser.insert(header_parse_map_type::value_type("Content-Type", &Request::parse_content_type));
   _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding", &Request::parse_transfer_encoding));
   _header_parser.insert(header_parse_map_type::value_type("Cookie", &Request::parse_session_id));
   _header_parser.insert(header_parse_map_type::value_type("Name", &Request::parse_name));
@@ -433,9 +433,9 @@ const std::string::size_type& ws::Request::get_content_length() const throw() {
   return _content_length;
 }
 
-//const std::string& ws::Request::get_content_type() const throw() {
-//  return _content_type;
-//}
+const std::string& ws::Request::get_content_type() const throw() {
+  return _content_type;
+}
 
 const std::string& ws::Request::get_server_name() const throw() {
   return _server_name;
@@ -473,7 +473,7 @@ void ws::Request::test() {
   }
   std::cout << "http version: " << _http_version << std::endl;
   std::cout << "content length: " << _content_length << std::endl;
-//  std::cout << "content type: " << _content_type << std::endl;
+  std::cout << "content type: " << _content_type << std::endl;
   std::cout << "server name: " << _server_name << std::endl;
   std::cout << "run_server: " << _connection << std::endl;
   std::cout << "transfer encoding: " << _transfer_encoding << std::endl;
