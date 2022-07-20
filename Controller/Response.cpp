@@ -21,13 +21,13 @@ void ws::Response::set_kernel(Kernel *kernel) {
 // todo: need to add HEAD method
 void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) {
   //4-2. cgi
-  if (client_data.repository.get_cgi().first != "") {
+  if (!client_data.repository.get_cgi_set().empty()) {
     close(client_data.repository.get_fd());
     std::string temp("/goinfre/jaham/webserv");
     if (!client_data.cgi_handler.run_cgi(
       client_data.repository.get_method().c_str(),
       temp.c_str(),
-      (temp + client_data.repository.get_location()->get_cgi()).c_str(),
+      client_data.repository.get_location()->get_cgi_path().c_str(),
       _kernel
     )) {
       client_data.status = INTERNAL_SERVER_ERROR;

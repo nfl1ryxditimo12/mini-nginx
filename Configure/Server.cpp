@@ -5,11 +5,7 @@
 
 #include "Util.hpp"
 
-ws::Server::Server() {
-  // this->_server_names.push_back("_");
-  // this->_location_map.insert(std::pair<std::string, ws::Location>("/", ws::Location()));
-  // this->_listen_vec.insert(std::pair<int, std::string>(8000, LOCALHOST));
-}
+ws::Server::Server() {}
 
 ws::Server::Server(const Server& other)
   : _listen_vec(other._listen_vec),

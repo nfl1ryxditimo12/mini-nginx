@@ -36,7 +36,8 @@ namespace ws {
     typedef ws::Server::location_map_type location_map_type;
     typedef ws::Location::limit_except_vec_type limit_except_vec_type;
     typedef ws::Location::return_type redirect_type;
-    typedef ws::Location::cgi_type cgi_string_type;
+    typedef ws::Location::cgi_set_type cgi_set_type;
+    typedef ws::Location::cgi_path_type cgi_path_type;
     typedef ws::InnerOption::autoindex_type autoindex_bool_type;
     typedef ws::InnerOption::root_type root_type;
     typedef ws::InnerOption::index_set_type index_set_type;
@@ -51,7 +52,8 @@ namespace ws {
     /*location*/
       limit_except_vec_type limit_except_vec;
       redirect_type redirect;
-      cgi_string_type cgi;
+      cgi_set_type cgi_set;
+      cgi_path_type cgi_path;
     /*option*/
       autoindex_bool_type autoindex;
       root_type root;
@@ -105,7 +107,9 @@ namespace ws {
 
     autoindex_type _autoindex; // get_autoindex();
 
-    cgi_type _cgi; // get_cgi();
+    cgi_set_type _cgi_set; // get_cgi();
+
+    cgi_path_type _cgi_path;
 
     std::string _content_type; // get_conent_type();
 
@@ -166,10 +170,10 @@ namespace ws {
     const std::string&    get_file_path() const throw();
     const std::string&    get_request_body() const throw();
     const autoindex_type& get_autoindex() const throw();
-    const cgi_type&       get_cgi() const throw();
+    const cgi_set_type&       get_cgi_set() const throw();
     const std::string&    get_content_type() const throw();
     const redirect_type&  get_redirect() const throw();
-    const std::string&    get_cgi_path() const throw(); // todo
+    const cgi_path_type&    get_cgi_path() const throw();
 
     // clear for keep-alive
     void clear() throw();
