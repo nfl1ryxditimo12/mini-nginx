@@ -364,7 +364,7 @@ void  ws::Request::insert_require_header_field() {
   _header_parser.insert(header_parse_map_type::value_type("Connection", &Request::parse_connection));
   _header_parser.insert(header_parse_map_type::value_type("Content-Length", &Request::parse_content_length));
 //  _header_parser.insert(header_parse_map_type::value_type("Content-Type", &Request::parse_content_type));
-  _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding", &Request::parse_trwansfer_encoding));
+  _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding", &Request::parse_transfer_encoding));
   _header_parser.insert(header_parse_map_type::value_type("Cookie", &Request::parse_session_id));
   _header_parser.insert(header_parse_map_type::value_type("Name", &Request::parse_name));
   _header_parser.insert(header_parse_map_type::value_type("Secret-Key", &Request::parse_secret_key));
