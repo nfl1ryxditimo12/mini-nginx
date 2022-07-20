@@ -64,7 +64,7 @@ void	ws::Request::parse_request_chunked_body() {
     if (_token.length() < 2 || _token.compare(_token.length() - 2, 2, "\r\n")) {
       _buffer->clear();
       *_buffer << _token;
-      // todo
+      // todo: optimize here?
 //      for (size_t i = 0; i < _token.length(); ++i)
 //        _buffer.put(_token[i]);
       return;
@@ -75,12 +75,15 @@ void	ws::Request::parse_request_chunked_body() {
     if (!_chunked_line_type) {
       _chunked_byte = ws::Util::stoul(_token, std::numeric_limits<unsigned long>::max(), 0, "0123456789ABCDEF");
       _chunked_line_type = true;
-      if (_chunked_byte == std::string::npos)
+
+      if (_chunked_byte == std::string::npos) {
         _status = BAD_REQUEST;
+        std::cout << "80" << std::endl;
+      }
     }
     else {
       _chunked_byte -= _token.length();
-      _request_body += _token;
+      _request_body += _token; // todo: binary
       if (_chunked_byte == 0)
           _chunked_line_type = 0;
       // todo
@@ -178,7 +181,7 @@ void	ws::Request::parse_request_header() {
   std::string value;
   std::string::size_type pos;
 
-  while (!(_buffer->eof() || _status)) {
+  while (!_status) { // todo: _buffer->eof()?
     rd_http_line();
 
     if (_token.length() < 2 || _token.compare(_token.length() - 2, 2, "\r\n")) {
@@ -194,8 +197,10 @@ void	ws::Request::parse_request_header() {
 
     pos = _token.find(":");
     if (pos == std::string::npos) {
-      if (!parse_request_start_line())
+      if (!parse_request_start_line()) {
         _status = BAD_REQUEST;
+        std::cout << "201" << std::endl;
+      }
       continue;
     }
 
@@ -210,8 +215,10 @@ void	ws::Request::parse_request_header() {
       _request_header.insert(header_type::value_type(key, value));
   }
 
-  if (_token != "\r\n")
+  if (_token != "\r\n") {
     _status = BAD_REQUEST;
+    std::cout << "220" << std::endl;
+  }
   if (_content_length == std::numeric_limits<std::size_t>::max() && !_chunked)
     _eof = true;
 
@@ -293,6 +300,7 @@ void  ws::Request::parse_host(const std::string& value) {
 
   if (!_server_name.empty()) {
     _status = BAD_REQUEST;
+    std::cout << "302" << std::endl;
     return;
   }
 
@@ -313,6 +321,7 @@ void  ws::Request::parse_content_length(const std::string& value) {
 
   if (content_length == std::string::npos) {
     _status = BAD_REQUEST;
+    std::cout << "323" << std::endl;
     return;
   }
 

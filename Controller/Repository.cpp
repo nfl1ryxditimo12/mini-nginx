@@ -175,12 +175,8 @@ void ws::Repository::open_file(std::string filename) {
   
   if (_method == "GET")
     open_flag = O_RDONLY;
-  else if (_method == "POST")
-    open_flag = O_WRONLY | O_TRUNC | O_CREAT;
-  else if (_method == "PUT")
-    open_flag = O_WRONLY | O_APPEND | O_CREAT;
   else
-    open_flag = O_WRONLY | O_APPEND;
+    open_flag = O_WRONLY | O_TRUNC | O_CREAT;
 
   if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1)
     this->set_status(INTERNAL_SERVER_ERROR);

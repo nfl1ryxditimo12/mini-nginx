@@ -218,12 +218,8 @@ ws::Token &ws::Token::rdall(ws::Buffer &buffer) {
 }
 
 ws::Buffer &ws::operator<<(ws::Buffer &buffer, ws::Token &token) {
-  std::size_t offset = buffer.get_offset();
-
   for (std::string::size_type i = 0; i < token.length(); ++i)
-    buffer[offset + i] = token[i];
-
-  buffer.advance(token.length());
+    buffer.put(token[i]);
 
   return buffer;
 }

@@ -11,7 +11,7 @@ namespace ws {
   class Buffer {
   private:
     // 1MB
-    static const std::size_t _kBufferSize = 1024 * 1024 * 1024;
+    static const std::size_t _kBufferSize = 1024 * 1024;
 
     char* _buf;
     std::size_t _offset;
@@ -27,6 +27,7 @@ namespace ws {
     char& operator[](std::size_t n);
     char& operator[](std::size_t n) const;
     char& get();
+    void  put(char c);
     char* operator+(std::size_t n);
 
     void advance(std::size_t n = std::numeric_limits<std::size_t>::max());

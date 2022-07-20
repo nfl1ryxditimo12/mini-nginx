@@ -208,6 +208,8 @@ void ws::Socket::process_request(struct kevent event) {
   client_data.status = client_data.repository.get_status();
   client_data.fatal = client_data.repository.is_fatal();
 
+  std::cout << client_data.request.get_request_body().length() << std::endl;
+
   if (client_data.fatal) {
     close(client_data.repository.get_fd());
     disconnect_client(event.ident);
@@ -383,6 +385,7 @@ void ws::Socket::send_response(struct kevent event) {
   offset += n;
 
   if (offset == response_data.length()) {
+    std::cout << client_data.status << std::endl;
     clock_t end = clock(); // todo
     std::cout << "send_response(): " << get_time(end - client_data.start_time) << CYN << "µs" << NC << std::endl;
     std::cout << YLW << "\n=========================================================\n" << NC << std::endl;

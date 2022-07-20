@@ -36,6 +36,13 @@ char& ws::Buffer::get() {
   return _buf[_offset - 1];
 }
 
+void ws::Buffer::put(char c) {
+  if (!_buf)
+    throw std::out_of_range("access after delete");
+
+  _buf[_size++] = c;
+}
+
 char* ws::Buffer::operator+(std::size_t n) {
   if (!_buf)
     throw std::out_of_range("access after delete");
@@ -121,7 +128,7 @@ ssize_t ws::Buffer::read_file(int fd) {
   if (!_buf)
     throw std::out_of_range("access after delete");
 
-  ssize_t ret = read(fd + _offset, _buf, _kBufferSize - _offset);
+  ssize_t ret = read(fd, _buf + _size, _kBufferSize - _size);
 
   if (ret < 0)
     _size = -1;
