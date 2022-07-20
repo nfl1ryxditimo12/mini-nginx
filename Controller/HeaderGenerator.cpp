@@ -34,9 +34,7 @@ void ws::HeaderGenerator::generate_representation(
 ) {
   if (client_data.repository.get_method() == "HEAD")
     return;
-
-  generate_content_type_line(data); // todo
-  (void)client_data;
+  generate_content_type_line(data, client_data); // todo
   (void) content_length; // todo: maybe not required
 //  if (!((100 <= client_data.status && client_data.status < 200) || client_data.status == NO_CONTENT))
 //    generate_content_length_line(data, content_length);
@@ -44,8 +42,10 @@ void ws::HeaderGenerator::generate_representation(
 //  generate_transfer_encoding_line(data, client_data);
 }
 
-void ws::HeaderGenerator::generate_content_type_line(std::string& data) {
-  data += "Content-Type: text/html; charset=UTF-8\r\n"; // todo
+void ws::HeaderGenerator::generate_content_type_line(std::string& data, const client_value_type& client_data) {
+  const std::string& content_type = client_data.request.get_content_type();
+
+  data += "Content-Type: " + content_type + "\r\n"; // todo
 }
 
 void ws::HeaderGenerator::generate_content_length_line(std::string& data, std::string::size_type content_length) {
@@ -53,7 +53,8 @@ void ws::HeaderGenerator::generate_content_length_line(std::string& data, std::s
 } //header -> body -> content-lenght
 
 void ws::HeaderGenerator::generate_transfer_encoding_line(std::string& data, const client_value_type& client_data) {
-  const std::string transfer_encoding = client_data.request.get_transfer_encoding();
+  const std::string& transfer_encoding = client_data.request.get_transfer_encoding();
+
   if (transfer_encoding == "chunked")
     data += "Transfer-Encoding: " + transfer_encoding + "\r\n";
 }
