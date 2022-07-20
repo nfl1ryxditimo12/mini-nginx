@@ -20,6 +20,36 @@ void ws::Response::set_kernel(Kernel *kernel) {
 // todo: can remove client_data arg
 // todo: need to add HEAD method
 void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) {
+  //4-2. cgi
+  if (client_data.repository.get_cgi().first != "") {
+    close(client_data.repository.get_fd());
+    std::string temp("/goinfre/jaham/webserv");
+    if (!client_data.cgi_handler.run_cgi(
+      client_data.repository.get_method().c_str(),
+      temp.c_str(),
+      (temp + client_data.repository.get_location()->get_cgi()).c_str(),
+      _kernel
+    )) {
+      client_data.status = INTERNAL_SERVER_ERROR;
+      close(client_data.repository.get_fd());
+      client_data.repository.set_fd(open((Util::get_root_dir() + "/www/500.html").c_str(), O_RDONLY));
+      _kernel->add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(ws::Socket::read_data));
+    }
+//    if (!client_data.cgi_handler.run_cgi(
+//      client_data.repository.get_method().c_str(),
+//      client_data.repository.get_cgi_path().c_str(),
+//      (client_data.repository.get_cgi_path() + client_data.repository.get_location()->get_cgi()).c_str(),
+//      _kernel
+//    )) {
+//      client_data.status = INTERNAL_SERVER_ERROR;
+//      close(client_data.repository.get_fd());
+//      client_data.repository.set_fd(open((Util::get_root_dir() + "/www/500.html").c_str(), O_RDONLY));
+//      _kernel->add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(ws::Socket::read_data));
+//    }
+
+    return;
+  }
+
 //0. set_data
   set_data(client_data, client_fd);
   ws::Repository::redirect_type redirect = client_data.repository.get_redirect();
@@ -35,7 +65,7 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
     if (redirect.first < 300 && client_data.repository.get_method() != "HEAD")
       client_data.response = redirect.second;
 
-    _kernel->process_event(client_fd, reinterpret_cast<void*>(&Socket::generate_response));
+    _kernel->add_process_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
     return;
   }
 
@@ -48,34 +78,28 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
       client_data.response += ("<li><a href=\"" + *it + "\">" + *it + "</a></li>\n");
     }
     client_data.response += "</ul>\n</body>\n</html>";
-    _kernel->process_event(client_fd, reinterpret_cast<void*>(&Socket::generate_response));
+    _kernel->add_process_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
     return;
   }
   
 //4. delete method
   if (client_data.repository.get_method() == "DELETE") {
     remove(client_data.repository.get_file_path().c_str());
-    _kernel->process_event(client_fd, reinterpret_cast<void*>(&Socket::generate_response));
+    _kernel->add_process_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
     return;
   }
 
 //4. head method
   if (client_data.repository.get_method() == "HEAD") {
-    _kernel->process_event(client_fd, reinterpret_cast<void*>(&Socket::generate_response));
+    _kernel->add_process_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
   } else if (client_data.repository.get_method() == "GET") {
     if (Util::is_eof(client_data.repository.get_fd())) {
       close(client_data.repository.get_fd());
-      _kernel->process_event(client_fd, reinterpret_cast<void*>(Socket::generate_response));
+      _kernel->add_process_event(client_fd, reinterpret_cast<void *>(Socket::generate_response), EV_ONESHOT);
     } else
       _kernel->add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(&Socket::read_data));
   } else {
     _kernel->add_write_event(client_data.repository.get_fd(), reinterpret_cast<void*>(&Socket::write_data));
-  }
-
-//4-2. cgi
-  if (client_data.repository.get_cgi().first != "") {
-    (void)redirect;
-    /* 알아서 cgi 처리해야함 */
   }
 }
 

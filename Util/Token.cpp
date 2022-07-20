@@ -1,139 +1,227 @@
 #include "Token.hpp"
 
-namespace ws {
-  ws::Token::Token() : std::string() {}
+ws::Token::Token() : std::string() {}
 
-  ws::Token::Token(const char* str) : std::string(str) {}
+ws::Token::Token(const char* str) : std::string(str) {}
 
-  ws::Token::Token(const std::string& str) : std::string(str) {}
+ws::Token::Token(const std::string& str) : std::string(str) {}
 
-  ws::Token::~Token() {}
+ws::Token::~Token() {}
 
-  char& ws::Token::back() throw() {
-    return this->operator[]((this->length() - 1) * (this->length() != 0));
+char& ws::Token::back() throw() {
+  return this->operator[]((this->length() - 1) * (this->length() != 0));
+}
+
+/*
+param: input stream to read
+return: *this
+exception: thorws if an error occured while reading buffer
+description: reads buffer ignoring whitespaces
+*/
+ws::Token& ws::Token::rdword(std::istream& buffer) {
+  this->clear();
+
+  char c = buffer.peek();
+
+  if (buffer.eof())
+    return *this;
+
+  while (c == ' ' || c == '\t') {
+    buffer.get();
+    c = buffer.peek();
   }
 
-  /*
-  param: input stream to read
-  return: *this
-  exception: thorws if an error occured while reading buffer
-  description: reads buffer ignoring whitespaces
-  */
-  ws::Token& ws::Token::rdword(std::istream& buffer) {
-    this->clear();
+  while (c != ' ' && c != '\t' && c != '\n' && c != '\r') {
+    this->push_back(buffer.get());
+    c = buffer.peek();
+  }
 
-    char c = buffer.peek();
+  if (!this->length() && (c == '\r')) {
+    this->push_back(buffer.get());
+    c = buffer.peek();
+  }
 
-    if (buffer.eof())
+  if (((*this)[0] == '\r' || !this->length()) && (c == '\n'))
+    this->push_back(buffer.get());
+
+  return *this;
+}
+
+/*
+param: input stream to read, delimeter to end reading
+return: *this
+exception: thorws if an error occured while reading buffer
+description: reads buffer include whitespaces until delim occured
+*/
+ws::Token& ws::Token::rdline(std::istream& buffer, char delim) {
+  this->clear();
+
+  for (char c = buffer.get(); !buffer.eof(); c = buffer.get()) {
+    if (c == delim)
       return *this;
 
-    while (c == ' ' || c == '\t') {
-      buffer.get();
-      c = buffer.peek();
-    }
-
-    while (c != ' ' && c != '\t' && c != '\n' && c != '\r') {
-      this->push_back(buffer.get());
-      c = buffer.peek();
-    }
-
-    if (!this->length() && (c == '\r')) {
-      this->push_back(buffer.get());
-      c = buffer.peek();
-    }
-
-    if (((*this)[0] == '\r' || !this->length()) && (c == '\n'))
-      this->push_back(buffer.get());
-
-    return *this;
+    this->push_back(c);
   }
 
-  /*
-  param: input stream to read, delimeter to end reading
-  return: *this
-  exception: thorws if an error occured while reading buffer
-  description: reads buffer include whitespaces until delim occured
-  */
-  ws::Token& ws::Token::rdline(std::istream& buffer, char delim) {
-    this->clear();
+  return *this;
+}
 
-    for (char c = buffer.get(); !buffer.eof(); c = buffer.get()) {
-      if (c == delim)
+/*
+param: input stream to read
+return: *this
+exception: thorws if an error occured while reading buffer
+description: reads buffer includ whitespaces until "\r\n" occured
+*/
+ws::Token& ws::Token::rd_http_line(std::istream& buffer) {
+  this->clear();
+
+  while (true) {
+    if (buffer.peek() != ' ')
+      break;
+
+    buffer.get();
+  }
+
+  for (char c = buffer.get(), prev = 0; ; prev = c, c = buffer.get()) {
+    if (buffer.eof()) {
+      return *this;
+    }
+
+    this->push_back(c);
+
+    if ((c == '\n') && (prev == '\r'))
         return *this;
+  }
+}
 
-      this->push_back(c);
-    }
+/*
+param: input stream to read
+return: *this
+exception: thorws if an error occured while reading buffer
+description: reads buffer until buffer's eof bit is set or c is NUL
+note: all char in buffer is valid, therefore, should accept all byte
+*/
+ws::Token& ws::Token::rdall(std::istream& buffer) {
+  this->clear();
 
+  for (char c = buffer.get(); ; c = buffer.get()) {
+    if (buffer.eof())
+      break;
+
+    this->push_back(c);
+  }
+
+  return *this;
+}
+
+/* TODO
+
+param: void
+return: true if token is "\n"
+exception: none
+description: returns true if Token string is "\n"
+
+bool ws::Token::is_endl() const throw() {
+  return _data == "\n" || !_data.length();
+}
+
+
+param: void
+return: true if token is "\r\n"
+exception: none
+description: returns true if Token string is "\r\n"
+
+bool ws::Token::is_http_endl() const throw() {
+  return _data == "\r\n";
+}
+*/
+
+ws::Token &ws::Token::rdword(ws::Buffer &buffer) {
+  this->clear();
+
+  if (buffer.eof())
     return *this;
+
+
+  std::size_t i = buffer.get_offset();
+  while (buffer[i] == ' ' || buffer[i] == '\t')
+    ++i;
+
+
+  while (buffer[i] != ' ' && buffer[i] != '\t' && buffer[i] != '\n' && buffer[i] != '\r') {
+    this->push_back(buffer[i]);
+    ++i;
   }
 
-  /*
-  param: input stream to read
-  return: *this
-  exception: thorws if an error occured while reading buffer
-  description: reads buffer includ whitespaces until "\r\n" occured
-  */
-  ws::Token& ws::Token::rd_http_line(std::istream& buffer) {
-    this->clear();
+  if (!this->length() && (buffer[i] == '\r')) {
+    this->push_back(buffer[i]);
+  }
 
-    while (true) {
-      if (buffer.peek() != ' ')
-        break;
+  if (((*this)[0] == '\r' || !this->length()) && (buffer[i] == '\n'))
+    this->push_back(buffer[i]);
 
-      buffer.get();
+  buffer.advance(i - buffer.get_offset());
+
+  return *this;
+}
+
+ws::Token &ws::Token::rdline(ws::Buffer &buffer, char delim) {
+  this->clear();
+
+  std::size_t i = buffer.get_offset();
+  for (; !buffer.eof(); ++i) {
+    if (buffer[i] == delim) {
+      ++i;
+      break;
     }
 
-    for (char c = buffer.get(), prev = 0; ; prev = c, c = buffer.get()) {
-      if (buffer.eof()) {
-        return *this;
-      }
+    this->push_back(buffer[i]);
+  }
 
-      this->push_back(c);
+  buffer.advance(i - buffer.get_offset());
 
-      if ((c == '\n') && (prev == '\r'))
-          return *this;
+  return *this;
+}
+
+ws::Token &ws::Token::rd_http_line(ws::Buffer &buffer) {
+  this->clear();
+
+  char* const data = buffer.data();
+
+  std::size_t i = buffer.get_offset();
+  while (data[i] == ' ')
+    ++i;
+
+  buffer.advance(i - buffer.get_offset());
+
+  for (; i < buffer.size(); ++i) {
+    if (data[i] == '\n' && i > 0 && data[i - 1] == '\r') {
+      ++i;
+      break;
     }
   }
 
-  /*
-  param: input stream to read
-  return: *this
-  exception: thorws if an error occured while reading buffer
-  description: reads buffer until buffer's eof bit is set or c is NUL
-  note: all char in buffer is valid, therefore, should accept all byte
-  */
-  ws::Token& ws::Token::rdall(std::istream& buffer) {
-    this->clear();
+  insert(0, data + buffer.get_offset(), i - buffer.get_offset());
+  buffer.advance(i - buffer.get_offset());
 
-    for (char c = buffer.get(); ; c = buffer.get()) {
-      if (buffer.eof())
-        break;
+  return *this;
+}
 
-      this->push_back(c);
-    }
+ws::Token &ws::Token::rdall(ws::Buffer &buffer) {
+  this->clear();
 
-    return *this;
-  }
+  std::size_t i = buffer.get_offset();
+  for (; !buffer.eof(); ++i)
+    this->push_back(buffer[i]);
 
-  /* TODO
-  
-  param: void
-  return: true if token is "\n"
-  exception: none
-  description: returns true if Token string is "\n"
-  
-  bool ws::Token::is_endl() const throw() {
-    return _data == "\n" || !_data.length();
-  }
+  buffer.advance(i - buffer.get_offset());
 
+  return *this;
+}
 
-  param: void
-  return: true if token is "\r\n"
-  exception: none
-  description: returns true if Token string is "\r\n"
+ws::Buffer &ws::operator<<(ws::Buffer &buffer, ws::Token &token) {
+  for (std::string::size_type i = 0; i < token.length(); ++i)
+    buffer.put(token[i]);
 
-  bool ws::Token::is_http_endl() const throw() {
-    return _data == "\r\n";
-  }
-  */
+  return buffer;
 }

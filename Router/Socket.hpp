@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include "Configure.hpp"
+#include "CgiHandler.hpp"
 #include "Kernel.hpp"
 #include "Request.hpp"
 #include "Repository.hpp"
@@ -22,7 +23,8 @@ namespace ws {
     struct client_data {
 
       client_data(ws::Configure::listen_type listen)
-      : fatal(false), status(0), repository(ws::Repository(fatal, status)), request(ws::Request(listen)), response(""), write_offset(0), start_time(clock()) {};
+        : fatal(false), status(0), repository(ws::Repository(fatal, status)), request(ws::Request(listen)),
+          response(""), write_offset(0), pipe_offset(), cgi_handler(), start_time(clock()) {};
 
 //      client_data(const client_data& cls)
 //      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request), response(cls.response), write_offset(cls.write_offset), start_time(cls.start_time), session_iter(cls.session_iter) {};
@@ -33,6 +35,9 @@ namespace ws {
       ws::Request             request;
       std::string             response;
       std::string::size_type  write_offset;
+      std::string::size_type  pipe_offset;
+      ws::CgiHandler          cgi_handler;
+      ws::Buffer              buffer;
       clock_t                 start_time;
     };
 
@@ -110,6 +115,8 @@ namespace ws {
     static void recv_request(struct kevent event);
     static void process_request(struct kevent event);
     static ws::Socket::client_map_type::iterator find_client_by_file(int file) throw();
+    static ws::Socket::client_map_type::iterator find_client_by_fpipe(int fpipe) throw();
+    static ws::Socket::client_map_type::iterator find_client_by_bpipe(int bpipe) throw();
 
   public:
 
@@ -130,6 +137,9 @@ namespace ws {
     /* control data to kenel event */
     static void read_data(struct kevent event);
     static void write_data(struct kevent event);
+    static void read_pipe(struct kevent event);
+    static void write_pipe(struct kevent event);
+    static void wait_child(struct kevent event);
 
     static void generate_response(struct kevent event);
 

@@ -1,7 +1,9 @@
 #include "Kernel.hpp"
 
 #include <cstdlib>
+#include <cstdio>
 #include <cstring>
+
 
 //extern bool webserv_fatal;
 
@@ -22,13 +24,13 @@ ws::Kernel::~Kernel() {
 /*
   커널에서 이벤트 핸들링 하고 싶은 kevent 구조체 등록
 */
-#include <stdio.h>
+
 void  ws::Kernel::kevent_ctl(uintptr_t ident, int16_t filter,
         uint16_t flags, uint32_t fflags, intptr_t data, void *udata) {
   struct kevent event;
   EV_SET(&event, ident, filter, flags, fflags, data, udata);
   if (kevent(_kq, &event, 1, NULL, 0, NULL) == -1) {
-    perror(NULL);
+    perror("kevent");
     throw; // require custom exception
   }
 }
@@ -52,14 +54,18 @@ void ws::Kernel::add_write_event(int fd, void *udata, uint16_t flags, uint32_t f
   kevent_ctl(fd, EVFILT_WRITE, EV_ADD | flags, fflags, data, udata);
 }
 
-void ws::Kernel::delete_read_event(int fd, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
-  kevent_ctl(fd, EVFILT_READ, EV_DELETE | flags, fflags, data, udata);
+void ws::Kernel::add_process_event(int fd, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
+  kevent_ctl(fd, EVFILT_USER, EV_ADD | flags, NOTE_TRIGGER | fflags, data, udata);
 }
 
-void ws::Kernel::delete_write_event(int fd, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
-  kevent_ctl(fd, EVFILT_WRITE, EV_DELETE | flags, fflags, data, udata);
+void ws::Kernel::delete_read_event(int fd) {
+  kevent_ctl(fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 }
 
-void ws::Kernel::process_event(int fd, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
-  kevent_ctl(fd, EVFILT_USER, EV_ADD | EV_ONESHOT | flags, NOTE_TRIGGER | fflags, data, udata);
+void ws::Kernel::delete_write_event(int fd) {
+  kevent_ctl(fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+}
+
+void ws::Kernel::delete_process_event(int fd) {
+  kevent_ctl(fd, EVFILT_USER, EV_DELETE, 0, 0, NULL);
 }

@@ -8,6 +8,9 @@
 
 #include <unistd.h>
 
+ws::Util::Util() {}
+ws::Util::~Util() {}
+
 // hash for checking executed directory
 const std::string ws::Util::_hash = "Seunkim123rootjaham456projectyeju789dir";
 
@@ -149,12 +152,4 @@ bool ws::Util::is_eof(int fd) throw() {
   lseek(fd, curr, SEEK_SET);
 
   return curr == end || curr < 0 || end < 0;
-}
-
-//todo: delete: test time
-#include <sys/time.h>
-std::string ws::Util::getTime() throw() {
-    timeval t;
-    gettimeofday(&t, NULL);
-    return (ultos(t.tv_sec * 1000000 + t.tv_usec));
 }

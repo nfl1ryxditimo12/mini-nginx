@@ -36,10 +36,10 @@ namespace ws {
 
     void  add_read_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
     void  add_write_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
+    void  add_process_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
 
-    void  delete_read_event(int fd, void* udata = NULL, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
-    void  delete_write_event(int fd, void* udata = NULL, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
-
-    void  process_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
+    void  delete_read_event(int fd);
+    void  delete_write_event(int fd);
+    void  delete_process_event(int fd);
   };
 }

@@ -120,6 +120,10 @@ void ws::Repository::set_fatal() {
   _fatal = true;
 }
 
+void ws::Repository::set_fd(int value) {
+  _fd = value;
+}
+
 void ws::Repository::set_autoindex() {
 
   if (!(_method == "GET" || _method == "HEAD")) {
@@ -171,10 +175,8 @@ void ws::Repository::open_file(std::string filename) {
   
   if (_method == "GET")
     open_flag = O_RDONLY;
-  else if (_method == "POST" || _method == "PUT")
-    open_flag = O_WRONLY | O_TRUNC | O_CREAT;
   else
-    open_flag = O_WRONLY | O_APPEND;
+    open_flag = O_WRONLY | O_TRUNC | O_CREAT;
 
   if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1)
     this->set_status(INTERNAL_SERVER_ERROR);

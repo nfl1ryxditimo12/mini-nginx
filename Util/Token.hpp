@@ -3,6 +3,8 @@
 #include <istream>
 #include <string>
 
+#include "Buffer.hpp"
+
 namespace ws {
   /*
   Token class for parsing
@@ -29,5 +31,12 @@ namespace ws {
     ws::Token& rdline(std::istream& buffer, char delim = '\n');
     ws::Token& rd_http_line(std::istream& buffer);
     ws::Token& rdall(std::istream& buffer);
+
+    ws::Token& rdword(ws::Buffer& buffer);
+    ws::Token& rdline(ws::Buffer& buffer, char delim = '\n');
+    ws::Token& rd_http_line(ws::Buffer& buffer);
+    ws::Token& rdall(ws::Buffer& buffer);
   };
+
+  ws::Buffer& operator<<(ws::Buffer& buffer, ws::Token& token);
 }

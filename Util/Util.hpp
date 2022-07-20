@@ -11,6 +11,11 @@ namespace ws {
 
     static std::string set_curr_dir();
 
+    Util();
+    Util(const Util& other);
+    Util& operator=(const Util& other);
+    ~Util();
+
   public:
     static const std::string& get_root_dir();
     static void check_executed_dir();
@@ -29,7 +34,5 @@ namespace ws {
     static std::string parse_relative_path(const std::string& str);
 
     static bool is_eof(int fd) throw();
-
-    static std::string getTime() throw();
   };
 }
