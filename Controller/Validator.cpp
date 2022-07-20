@@ -135,12 +135,15 @@ void ws::Validator::check_content_length(client_value_type& client_data) {
 }
 
 void ws::Validator::check_content_type(client_value_type &client_data) {
-  const std::string& content_type = client_data.request.get_content_type();
+  header_type request_header = client_data.request.get_request_header();
+  header_type::const_iterator header_iter = request_header.find("Content-Type");
 
-  if (
-    !(client_data.request.get_request_body().empty())
-    && _content_type_parser.find(content_type) == _content_type_parser.end()
-  )
+  if (header_iter == request_header.end())
+    return;
+
+  const std::string& content_type = header_iter->second;
+
+  if (_content_type_parser.find(content_type) == _content_type_parser.end())
     client_data.status = UNSUPPORTED_MEDIA_TYPE;
 }
 

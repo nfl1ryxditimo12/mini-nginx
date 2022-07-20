@@ -43,9 +43,9 @@ void ws::HeaderGenerator::generate_representation(
 }
 
 void ws::HeaderGenerator::generate_content_type_line(std::string& data, const client_value_type& client_data) {
-  const std::string& content_type = client_data.request.get_content_type();
+  const std::string& content_type = client_data.request.get_content_type();// todo
 
-  data += "Content-Type: " + content_type + "\r\n"; // todo
+  data += "Content-Type: " + content_type + "\r\n";
 }
 
 void ws::HeaderGenerator::generate_content_length_line(std::string& data, std::string::size_type content_length) {

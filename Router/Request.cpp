@@ -12,7 +12,7 @@
 
 ws::Request::Request(const ws::Configure::listen_type& listen)
   : _listen(listen), _eof(false), _content_length(std::numeric_limits<std::size_t>::max()), _port(), _session_id(0),
-    _status(0), _chunked(false), _chunked_line_type(false), _chunked_byte(std::string::npos), _client_max_body_size(0), _is_header(true),
+    _status(0), _chunked(false), _chunked_line_type(false), _chunked_eof(false), _chunked_byte(std::string::npos), _client_max_body_size(0), _is_header(true),
     _token(), _buffer() {
   insert_require_header_field();
 }
@@ -43,6 +43,7 @@ ws::Request::Request(const Request& cls) {
   _status = cls._status;
   _chunked = cls._chunked;
   _chunked_line_type = cls._chunked_line_type;
+  _chunked_eof = cls._chunked_eof;
   _chunked_byte = cls._chunked_byte;
   _client_max_body_size = cls._client_max_body_size;
   _is_header = cls._is_header;
@@ -362,8 +363,8 @@ void  ws::Request::insert_require_header_field() {
   _header_parser.insert(header_parse_map_type::value_type("Host", &Request::parse_host));
   _header_parser.insert(header_parse_map_type::value_type("Connection", &Request::parse_connection));
   _header_parser.insert(header_parse_map_type::value_type("Content-Length", &Request::parse_content_length));
-  _header_parser.insert(header_parse_map_type::value_type("Content-Type", &Request::parse_content_type));
-  _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding", &Request::parse_transfer_encoding));
+//  _header_parser.insert(header_parse_map_type::value_type("Content-Type", &Request::parse_content_type));
+  _header_parser.insert(header_parse_map_type::value_type("Transfer-Encoding", &Request::parse_trwansfer_encoding));
   _header_parser.insert(header_parse_map_type::value_type("Cookie", &Request::parse_session_id));
   _header_parser.insert(header_parse_map_type::value_type("Name", &Request::parse_name));
   _header_parser.insert(header_parse_map_type::value_type("Secret-Key", &Request::parse_secret_key));
