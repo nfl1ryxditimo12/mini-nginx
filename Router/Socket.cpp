@@ -324,7 +324,25 @@ ws::Socket::client_map_type::iterator ws::Socket::find_client_by_bpipe(int bpipe
 void ws::Socket::read_pipe(struct kevent event) {
   const client_map_type::iterator& client = find_client_by_bpipe(event.ident);
   std::string::size_type& offset = client->second.write_offset;
-  (void) offset;
+
+  char buffer[kBUFFER_SIZE];
+
+  ssize_t read_size = read(event.ident, buffer, kBUFFER_SIZE);
+
+  if (read_size <= 0) {
+    std::cerr << "Socket: read error occurred" << std::endl;
+    _kernel.delete_read_event(event.ident);
+    disconnect_client(client->first);
+    return;
+  }
+
+  offset += read_size;
+
+  if (offset == client->second.request.get_request_body().length()) {
+//    close(event.ident); todo
+    _kernel.delete_read_event(event.ident);
+    _kernel.add_process_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response), EV_ONESHOT);
+  }
 }
 
 void ws::Socket::write_pipe(struct kevent event) { // todo: when refactoring is done, call read and write both
@@ -334,7 +352,7 @@ void ws::Socket::write_pipe(struct kevent event) { // todo: when refactoring is 
 
   ssize_t write_size = write(event.ident, request_body.c_str() + offset, request_body.length() - offset);
 
-  if (write_size == -1) {
+  if (write_size <= 0) {
     std::cerr << "Socket: write error occurred" << std::endl;
     _kernel.delete_write_event(event.ident);
     disconnect_client(client->first);
@@ -344,11 +362,11 @@ void ws::Socket::write_pipe(struct kevent event) { // todo: when refactoring is 
   offset += write_size;
 
   if (offset == request_body.length()) {
-    close(client->second.repository.get_fd());
     offset = 0;
+//    close(event.ident); todo
     _kernel.delete_write_event(event.ident);
     _kernel.add_read_event(client->second.cgi_handler.get_bpipe()[0], reinterpret_cast<void*>(ws::Socket::read_pipe));
-    _kernel.add_process_event(client->first, reinterpret_cast<void *>(ws::Socket::wait_child));
+    _kernel.add_process_event(client->first, reinterpret_cast<void*>(ws::Socket::wait_child));
   }
 }
 
@@ -374,6 +392,9 @@ void ws::Socket::send_response(struct kevent event) {
   client_value_type& client_data = _client.find(event.ident)->second;
   const std::string& response_data = client_data.response;
   std::string::size_type& offset = client_data.write_offset;
+
+  if (!client_data.cgi_handler.get_eof())
+    return;
 
   ssize_t n;
   if ((n = write(event.ident, response_data.c_str() + offset, response_data.length() - offset)) == -1) {
