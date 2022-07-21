@@ -50,9 +50,12 @@ void ws::Validator::operator()(const session_map_type& session, client_value_typ
   }
 }
 
+// todo: fatal: content-type 정상이여도 비정상 status 찍히는거 수정해야함
 void ws::Validator::init_content_type_parser(client_value_type&) {
   _content_type_parser.insert("text/plain");
   _content_type_parser.insert("text/html");
+  _content_type_parser.insert("text");
+  _content_type_parser.insert("test/file");
   _content_type_parser.insert("image/jpeg");
   _content_type_parser.insert("image/png");
   _content_type_parser.insert("application/octet-stream");
