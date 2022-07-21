@@ -60,7 +60,13 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
     return;
   }
 
-//2. redirect
+//2. session
+  if (_repo->is_session()) {
+    _kernel->add_process_event(client_fd, reinterpret_cast<void *>(&Socket::process_session), EV_ONESHOT);
+    return;
+  }
+
+//3. redirect
   if (redirect.first > 0) {
     if (redirect.first < 300 && client_data.repository.get_method() != "HEAD")
       client_data.response = redirect.second;
@@ -69,7 +75,7 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
     return;
   }
 
-//3. autoindex
+//4. autoindex
   if (!client_data.repository.get_autoindex().empty()) {
     ws::Repository::autoindex_type autoindex = client_data.repository.get_autoindex();
 
@@ -82,14 +88,14 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
     return;
   }
   
-//4. delete method
+//5. delete method
   if (client_data.repository.get_method() == "DELETE") {
     remove(client_data.repository.get_file_path().c_str());
     _kernel->add_process_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
     return;
   }
 
-//4. head method
+//6. head method
   if (client_data.repository.get_method() == "HEAD") {
     _kernel->add_process_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
   } else if (client_data.repository.get_method() == "GET") {
