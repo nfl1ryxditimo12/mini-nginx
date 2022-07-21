@@ -44,6 +44,10 @@ int ws::Kernel::kevent_wait(struct kevent* event_list, size_t event_size) {
   return new_event;
 }
 
+void  ws::Kernel::add_signal_event(int fd, void* udata, uint16_t flags, uint32_t fflags, intptr_t data) {
+  kevent_ctl(fd, EVFILT_SIGNAL, EV_ADD | flags, fflags, data, udata);
+}
+
 void ws::Kernel::add_read_event(int fd, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
   kevent_ctl(fd, EVFILT_READ, EV_ADD | flags, fflags, data, udata);
 }

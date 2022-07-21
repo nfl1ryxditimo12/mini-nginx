@@ -74,6 +74,8 @@ namespace ws {
     static ws::Response  _response;
     const static std::size_t kBUFFER_SIZE;
 
+    static sig_atomic_t _signal;
+
     /* ====================================== */
     /*                  OCCF                  */
     /* ====================================== */
@@ -91,6 +93,7 @@ namespace ws {
     static void exit_socket();
 
     /* control socket to kenel event */
+    static void accecpt_signal(struct kevent event);
     static void connect_client(struct kevent event);
     static void recv_request(struct kevent event);
     static void process_request(struct kevent event);

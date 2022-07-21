@@ -34,6 +34,8 @@ namespace ws {
 
     int   kevent_wait(struct kevent* event_list, size_t event_size);
 
+    void  add_signal_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
+
     void  add_read_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
     void  add_write_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
 
