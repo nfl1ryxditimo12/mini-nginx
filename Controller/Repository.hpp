@@ -36,8 +36,6 @@ namespace ws {
     typedef ws::Server::location_map_type location_map_type;
     typedef ws::Location::limit_except_vec_type limit_except_vec_type;
     typedef ws::Location::return_type redirect_type;
-    typedef ws::Location::cgi_set_type cgi_set_type;
-    typedef ws::Location::cgi_path_type cgi_path_type;
     typedef ws::InnerOption::autoindex_type autoindex_bool_type;
     typedef ws::InnerOption::root_type root_type;
     typedef ws::InnerOption::index_set_type index_set_type;
@@ -52,14 +50,26 @@ namespace ws {
     /*location*/
       limit_except_vec_type limit_except_vec;
       redirect_type redirect;
-      cgi_set_type cgi_set;
-      cgi_path_type cgi_path;
     /*option*/
       autoindex_bool_type autoindex;
       root_type root;
       index_set_type index;
       client_max_body_size_type client_max_body_size;
       error_page_map_type error_page_map;
+
+      config_data() {}
+
+      config_data(const config_data& other)
+        : listen(other.listen), server_name(other.server_name), limit_except_vec(other.limit_except_vec),
+          redirect(other.redirect), autoindex(other.autoindex),
+          root(other.root), index(other.index), client_max_body_size(other.client_max_body_size),
+          error_page_map(other.error_page_map) {}
+
+      config_data& operator=(const config_data& other) {
+        config_data temp(other);
+        std::swap(*this, temp);
+        return *this;
+      }
     };
 
   public:
@@ -67,7 +77,6 @@ namespace ws {
     typedef struct ws::Repository::config_data      config_type;
 
     typedef std::vector<std::string>                autoindex_type;
-    typedef std::pair<std::string, char**>          cgi_type;
   
   private:
 
@@ -106,10 +115,6 @@ namespace ws {
     std::string _request_body;
 
     autoindex_type _autoindex; // get_autoindex();
-
-    cgi_set_type _cgi_set; // get_cgi();
-
-    cgi_path_type _cgi_path;
 
     std::string _content_type; // get_conent_type();
 
@@ -170,10 +175,8 @@ namespace ws {
     const std::string&    get_file_path() const throw();
     const std::string&    get_request_body() const throw();
     const autoindex_type& get_autoindex() const throw();
-    const cgi_set_type&       get_cgi_set() const throw();
     const std::string&    get_content_type() const throw();
     const redirect_type&  get_redirect() const throw();
-    const cgi_path_type&    get_cgi_path() const throw();
 
     // clear for keep-alive
     void clear() throw();

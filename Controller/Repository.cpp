@@ -32,8 +32,6 @@ ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(c
   _method = cls._method;
   _request_body = cls._request_body;
   _autoindex = cls._autoindex;
-  _cgi_set = cls._cgi_set;
-  _cgi_path = cls._cgi_path;
   _content_type = cls._content_type;
   _server = cls._server;
   _location = cls._location;
@@ -60,8 +58,6 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   if (_location != NULL) {
     _config.limit_except_vec = _location->get_limit_except_vec();
     _config.redirect = _location->get_return();
-    _config.cgi_set = _location->get_cgi_set();
-    _config.cgi_path = _location->get_cgi_path();
 /*set option*/
     ws::Repository::set_option(_location->get_option());
   } else
@@ -256,14 +252,6 @@ const ws::Repository::autoindex_type&  ws::Repository::get_autoindex() const thr
   return _autoindex;
 }
 
-const ws::Repository::cgi_set_type&  ws::Repository::get_cgi_set() const throw() {
-  return _cgi_set;
-}
-
-const ws::Repository::cgi_path_type& ws::Repository::get_cgi_path() const throw() {
-  return _cgi_path;
-}
-
 const std::string&  ws::Repository::get_content_type() const throw() {
   return _content_type;
 }
@@ -284,8 +272,6 @@ void ws::Repository::clear() throw() {
   _method.clear();
   _request_body.clear();
   _autoindex.clear();
-  _cgi_set.clear();
-  // todo: cgi second
   _content_type.clear();
   _server = NULL;
   _location = NULL;
@@ -310,7 +296,6 @@ void ws::Repository::test() {
     std::cout << " " << *it;
   std::cout << std::endl;
   std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "redirect: " << NC << _config.redirect.first << ", " << _config.redirect.second << std::endl;
-//  std::cout << CYN << "[Type: set] " << NC << "- " << RED << "cgi: " << NC;
   std::cout << CYN << "[Type: bool]   " << NC << "- " << RED << "autoindex: " << NC << _config.autoindex << std::endl;
   std::cout << CYN << "[Type: string] " << NC << "- " << RED << "root: " << NC << _config.root << std::endl;
   std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "index:" << NC;
@@ -335,7 +320,6 @@ void ws::Repository::test() {
   for (autoindex_type::iterator it = _autoindex.begin(); it != _autoindex.end(); ++it)
     std::cout << " " << *it;
   std::cout << std::endl;
-//  std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "_cgi: " << NC << _cgi.first << ", " << _cgi.second << std::endl;
   std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_content_type: " << NC << _content_type << std::endl;
   std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_index_root: " << NC << _index_root << std::endl;
 
