@@ -42,7 +42,7 @@ namespace ws {
     Validator() throw();
     ~Validator();
 
-    void operator()(const session_map_type& session, client_value_type& client_data, bool is_session);
+    void operator()(const session_map_type& session, client_value_type& client_data);
 
     void init_content_type_parser(client_value_type&);
     void check_method(client_value_type& client_data);

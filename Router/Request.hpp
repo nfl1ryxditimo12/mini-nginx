@@ -188,5 +188,7 @@ namespace ws {
     const unsigned int& get_session_id() const throw();
     const std::string& get_name() const throw();
     const std::string& get_secret_key() const throw();
+
+    void set_session_id(unsigned int session_id) throw();
   };
 }

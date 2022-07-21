@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <vector>
 #include <time.h>
+#include <cmath>
 
 #include "Configure.hpp"
 #include "CgiHandler.hpp"
@@ -108,7 +109,6 @@ namespace ws {
     /* ====================================== */
 
     static void init_client(unsigned int fd, listen_type listen);
-    static void run_session(client_value_type& client_data);
     static void disconnect_client(int fd);
     static void exit_socket();
 
@@ -138,6 +138,7 @@ namespace ws {
 
     static void send_response(struct kevent event);
     /* control data to kenel event */
+    static void process_session(struct kevent event);
     static void read_data(struct kevent event);
     static void write_data(struct kevent event);
     static void read_pipe(struct kevent event);
@@ -145,7 +146,5 @@ namespace ws {
     static void wait_child(struct kevent event);
 
     static void generate_response(struct kevent event);
-
-    static session_map_type get_session() throw();
   };
 }

@@ -65,11 +65,11 @@ namespace ws {
 
     void parse_server_name(ws::Server& server);
 
+    void parse_session(ws::Location& location);
     void parse_limit_except(ws::Location& location);
     limit_except_type get_method(const std::string& method) const;
     void parse_return(ws::Location& location);
     void parse_cgi(ws::Location& location);
-    void parse_cgi_path(ws::Location& location);
 
     void parse_autoindex(ws::InnerOption& inner);
     void parse_root(ws::InnerOption& inner);

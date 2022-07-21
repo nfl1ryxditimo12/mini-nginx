@@ -19,12 +19,13 @@
   권한 없을 때 파일 열기 어떻게 처리할지
 */
 
-ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _status(status), _fd(FD_DEFAULT) {
+ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _status(status), _session(0), _fd(FD_DEFAULT) {
   memset(&_file_stat, 0, sizeof(struct stat));
   _index_root = ws::Util::get_root_dir() + "/www";
 }
 
 ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(cls._status) {
+  _session = cls._session;
   _fd = cls._fd;
   _uri = cls._uri;
   _file_path = cls._file_path;
@@ -56,6 +57,8 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   _config.server_name = request.get_server_name();
 
   if (_location != NULL) {
+    if (_location->get_block_name() == "/session" && _request->get_uri() == "/session")
+      _session = _location->get_session();
     _config.limit_except_vec = _location->get_limit_except_vec();
     _config.redirect = _location->get_return();
 /*set option*/
@@ -90,7 +93,7 @@ void ws::Repository::set_repository(unsigned int value)  {
   if (_config.redirect.first > 0)
     this->set_status(_config.redirect.first); // todo
 
-  if (_status == 0) {
+  if (_status == 0 && !_session) {
     if (S_ISDIR(_file_stat.st_mode))
       this->set_autoindex();
     else
@@ -214,6 +217,10 @@ const int&  ws::Repository::get_fd() const throw() {
 
 const unsigned int&  ws::Repository::get_status() const throw() {
   return _status;
+}
+
+const int& ws::Repository::is_session() const throw() {
+  return _session;
 }
 
 const struct stat&  ws::Repository::get_file_stat() const throw() {

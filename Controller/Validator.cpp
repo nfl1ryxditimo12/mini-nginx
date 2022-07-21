@@ -25,15 +25,23 @@ ws::Validator::Validator() throw() : _session(NULL) {
 
 ws::Validator::~Validator() {}
 
-void ws::Validator::operator()(const session_map_type& session, client_value_type& client_data, bool is_session) {
-  _session = &session;
+void ws::Validator::operator()(const session_map_type& session, client_value_type& client_data) {
+  bool request_is_session = (client_data.request.get_uri() == "/session" ? true : false);
+
+  if (request_is_session && !client_data.repository.is_session()) {
+    client_data.status = 401;
+    return;
+  }
 
   for (check_func_vec::iterator it = _check_func_vec.begin(); it != _check_func_vec.end(); ++it) {
     (this->**it)(client_data);
     if (client_data.status != 0) //todo: < 300
       break;
   }
-  if (is_session) {
+
+  if (request_is_session) {
+    _session = &session;
+
     for (check_session_func_vec::iterator it = _check_session_func_vec.begin(); it != _check_session_func_vec.end(); ++it) {
       (this->**it)(client_data);
       if (client_data.status != 0)
@@ -42,9 +50,12 @@ void ws::Validator::operator()(const session_map_type& session, client_value_typ
   }
 }
 
+// todo: fatal: content-type 정상이여도 비정상 status 찍히는거 수정해야함
 void ws::Validator::init_content_type_parser(client_value_type&) {
   _content_type_parser.insert("text/plain");
   _content_type_parser.insert("text/html");
+  _content_type_parser.insert("text");
+  _content_type_parser.insert("test/file");
   _content_type_parser.insert("image/jpeg");
   _content_type_parser.insert("image/png");
   _content_type_parser.insert("application/octet-stream");

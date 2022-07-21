@@ -48,7 +48,10 @@ void ws::HeaderGenerator::generate_representation(
 void ws::HeaderGenerator::generate_content_type_line(std::string& data, const client_value_type& client_data) {
   const std::string& content_type = client_data.request.get_content_type();// todo
 
-  data += "Content-Type: " + content_type + "\r\n";
+  if (content_type.empty())
+    data += "Content-Type: text/html\r\n";
+  else
+    data += "Content-Type: " + content_type + "\r\n";
 }
 
 void ws::HeaderGenerator::generate_content_length_line(std::string& data, std::string::size_type content_length) {
@@ -76,11 +79,11 @@ void ws::HeaderGenerator::generate_response(std::string& data, const client_valu
 }
 
 void ws::HeaderGenerator::generate_date_line(std::string& data) {
-  std::time_t curr_time = std::time(NULL);
-  std::string curr_time_str = std::asctime(std::gmtime(&curr_time));
-  curr_time_str.erase(curr_time_str.end() - 1);
+//  std::time_t curr_time = std::time(NULL);
+//  std::string curr_time_str = std::asctime(std::gmtime(&curr_time));
+//  curr_time_str.erase(curr_time_str.end() - 1);
 
-  data += "Date: " + curr_time_str + "\r\n";
+  data += (std::string)"Date: " + "Thu Jul 21 05:27:18 2022" + "\r\n";
 }
 
 void ws::HeaderGenerator::generate_server_line(std::string& data) {

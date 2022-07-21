@@ -153,3 +153,24 @@ bool ws::Util::is_eof(int fd) throw() {
 
   return curr == end || curr < 0 || end < 0;
 }
+
+std::string ws::Util::format_number(size_t num) {
+  std::string ret = "";
+
+  for (int digit = ultos(num).length(); digit > 0;) {
+    int div = static_cast<int>(std::pow(10, digit - 1));
+    ret += ultos(static_cast<int>(num / div));
+    --digit;
+    if (digit % 3 == 0 && digit != 0)
+      ret += ",";
+    num = num % div;
+  }
+  return ret;
+}
+
+void ws::Util::print_running_time(const std::string& target, clock_t& time) {
+  clock_t now = clock();
+
+  std::cout << RED << target << NC << ": " << format_number(now - time) << CYN << "µs" << NC << std::endl;
+  time = clock();
+}

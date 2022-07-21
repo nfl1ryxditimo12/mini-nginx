@@ -108,64 +108,8 @@ void ws::Socket::run_server() {
 
 /* Private function */
 
-// todo
-#include <cmath>
-std::string get_time(clock_t time) {
-  std::string ret = "";
-
-  for (int digit = ws::Util::ultos(time).length(); digit > 0;) {
-    int div = static_cast<int>(std::pow(10, digit - 1));
-    ret += ws::Util::ultos(static_cast<int>(time / div));
-    --digit;
-    if (digit % 3 == 0 && digit != 0)
-      ret += ",";
-    time = time % div;
-  }
-  return ret;
-}
-
 void ws::Socket::init_client(unsigned int fd, listen_type listen) {
   _client.insert(client_map_type::value_type(fd, client_value_type(listen)));
-}
-
-void ws::Socket::run_session(client_value_type& client_data) {
-  const std::string& method = client_data.request.get_method();
-  session_map_type::iterator it = _session.find(client_data.request.get_session_id());
-  /* todo:
-   * - GET일때 세션아이디 검색해서 존재하면 html에 추가해서 띄워주기
-   * - POST일때 세션아이디 ++해서 insert 해주기
-   * - DELETE일때 세션아이디 검색해서 지우기
-   */
-  if (client_data.status == 401)
-    return;
-  if (method == "GET") {
-    if (it != _session.end()) {
-      it->second.hit_count++;
-        // todo: response
-        client_data.response += "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<title>session</title>\n</head>\n<body>\n<h4>hit point: ";
-        client_data.response += Util::ultos(it->second.hit_count);
-        client_data.response += "</h4>\n<h4>name: ";
-        client_data.response += it->second.name;
-        client_data.response += "</h4>\n<h4>id: ";
-        client_data.response += Util::ultos(it->first);
-        client_data.response +="</h4>\n</body>\n</html>";
-    } else {
-      client_data.status = UNAUTHORIZED;
-      return; //todo: set error status in socket
-    }
-  } else if (method == "POST") {
-    if (_session.size() > 3000) {
-      _session.clear();
-//      return; // todo
-    }
-    unsigned int session_index = 1;
-    while (_session.find(session_index) != _session.end())
-      session_index++;
-    _session.insert(session_map_type::value_type(session_index, session_value_type(client_data.request.get_name())));
-  } else if (method == "DELETE") {
-    if (it != _session.end())
-      _session.erase(it);
-  }
 }
 
 void ws::Socket::disconnect_client(int fd) {
@@ -235,22 +179,37 @@ void ws::Socket::recv_request(struct kevent event) {
     _kernel.add_process_event(event.ident, reinterpret_cast<void *>(&Socket::process_request), EV_ONESHOT);
     _kernel.delete_read_event(event.ident);
     client_data.buffer.delete_buf();
-    clock_t end = clock(); // todo: test print time
-    std::cout << "recv_request(): " << get_time(end - client_data.start_time) << CYN << "µs" << NC << std::endl;
-    client_data.start_time = clock();
+    ws::Util::print_running_time("recv_request()", client_data.start_time);
   }
 }
 
 void ws::Socket::process_request(struct kevent event) {
   client_value_type& client_data = _client.find(event.ident)->second;
-  bool is_session = (client_data.request.get_uri() == "/session");
 
   if (!client_data.status)
-    _validator(_session, client_data, is_session);
+    _validator(_session, client_data);
 
-  if (is_session) {
-    run_session(client_data);
-    _kernel.add_process_event(event.ident, reinterpret_cast<void*>(Socket::generate_response), EV_ONESHOT);
+  std::string::size_type extension_dot = client_data.request.get_uri().find_last_of('.');
+  const std::string& extension = client_data.request.get_uri().substr(extension_dot + 1);
+  const ws::Location::cgi_map_type& cgi_map = client_data.repository.get_location()->get_cgi_map();
+  const ws::Location::cgi_map_type::const_iterator& name = cgi_map.find(extension);
+
+  if (client_data.request.get_method() == "POST" && extension_dot != std::string::npos && name != cgi_map.end()) {
+    // cgi handling zz
+    close(client_data.repository.get_fd());
+
+    if (!client_data.cgi_handler.run_cgi(
+      client_data.repository.get_method().c_str(),
+      name->second.c_str(),
+      name->second.c_str(),
+      _kernel
+    )) {
+      client_data.status = INTERNAL_SERVER_ERROR;
+      client_data.repository.set_fd(open((Util::get_root_dir() + "/www/500.html").c_str(), O_RDONLY));
+      fcntl(client_data.repository.get_fd(), F_SETFD, O_NONBLOCK);
+      _kernel.add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(ws::Socket::read_data));
+    }
+
     return;
   }
 
@@ -272,9 +231,7 @@ void ws::Socket::process_request(struct kevent event) {
 //      client_data.response.push_back(static_cast<int>(std::toupper(client_data.request.get_request_body()[i])));
 
   _response.process(client_data, event.ident);
-  clock_t end = clock(); // todo
-  std::cout << "process_request(): " << get_time(end - client_data.start_time) << CYN << "µs" << NC << std::endl;
-  client_data.start_time = clock();
+  ws::Util::print_running_time("process_request()", client_data.start_time);
 }
 
 ws::Socket::client_map_type::iterator ws::Socket::find_client_by_file(int file) throw() {
@@ -285,6 +242,45 @@ ws::Socket::client_map_type::iterator ws::Socket::find_client_by_file(int file) 
     ++curr;
 
   return curr;
+}
+
+void ws::Socket::process_session(struct kevent event) {
+  client_value_type& client_data = _client.find(event.ident)->second;
+  const std::string& method = client_data.repository.get_method();
+  session_map_type::iterator it = _session.find(client_data.request.get_session_id());
+
+  /* todo:
+   * - GET일때 세션아이디 검색해서 존재하면 html에 추가해서 띄워주기
+   * - POST일때 세션아이디 ++해서 insert 해주기
+   * - DELETE일때 세션아이디 검색해서 지우기
+   */
+  if (it != _session.end())
+    client_data.request.set_session_id(it->first);
+
+  if (method == "GET") {
+    ++it->second.hit_count;
+    // todo: response
+    client_data.response += "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<title>session</title>\n</head>\n<body>\n<h4>hit point: ";
+    client_data.response += Util::ultos(it->second.hit_count);
+    client_data.response += "</h4>\n<h4>name: ";
+    client_data.response += it->second.name;
+    client_data.response += "</h4>\n<h4>id: ";
+    client_data.response += Util::ultos(it->first);
+    client_data.response +="</h4>\n</body>\n</html>";
+  }
+  else if (method == "POST") {
+    // todo 이 조건은 사라져도 될 듯?
+    if (_session.size() > 300)
+      _session.clear();
+    ++_session_index;
+    _session.insert(session_map_type::value_type(_session_index, session_value_type(client_data.request.get_name())));
+    client_data.request.set_session_id(_session_index);
+  }
+  else if (method == "DELETE")
+    _session.erase(it);
+
+  _kernel.add_process_event(event.ident, reinterpret_cast<void*>(ws::Socket::generate_response), EV_ONESHOT);
+  ws::Util::print_running_time("process_session()", client_data.start_time);
 }
 
 void ws::Socket::read_data(struct kevent event) {
@@ -302,16 +298,13 @@ void ws::Socket::read_data(struct kevent event) {
     return;
   }
 
-  for (int i = 0; i < read_size; ++i)
-    client->second.response.push_back(buffer[i]);
+  client->second.response.insert(client->second.response.length(), buffer, read_size);
 
   if (Util::is_eof(event.ident)) {
     close(client->second.repository.get_fd());
 //    _kernel.delete_read_event(event.ident);
     _kernel.add_process_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response), EV_ONESHOT);
-    clock_t end = clock(); // todo
-    std::cout << "read_data(): " << get_time(end - client->second.start_time) << CYN << "µs" << NC << std::endl;
-    client->second.start_time = clock();
+    ws::Util::print_running_time("read_data()", client->second.start_time);
   }
 }
 
@@ -324,8 +317,8 @@ void ws::Socket::write_data(struct kevent event) {
 
   if (write_size == -1) {
     std::cerr << "Socket: write error occurred" << std::endl;
-    close(event.ident);
-//    _kernel.delete_write_event(event.ident);
+//    close(event.ident);
+    _kernel.delete_write_event(event.ident);
     disconnect_client(event.ident);
     return;
   }
@@ -333,13 +326,10 @@ void ws::Socket::write_data(struct kevent event) {
   offset += write_size;
 
   if (offset == request_body.length()) {
-    close(client->second.repository.get_fd());
     offset = 0;
-//    _kernel.delete_write_event(event.ident);
+    _kernel.delete_write_event(event.ident); // todo?
     _kernel.add_process_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response), EV_ONESHOT);
-    clock_t end = clock(); // todo
-    std::cout << "write_data(): " << get_time(end - client->second.start_time) << CYN << "µs" << NC << std::endl;
-    client->second.start_time = clock();
+    ws::Util::print_running_time("write_data()", client->second.start_time);
   }
 }
 
@@ -380,9 +370,12 @@ void ws::Socket::read_pipe(struct kevent event) {
 
   offset += read_size;
 
-  if (offset == client->second.request.get_request_body().length()) {
-//    close(event.ident); todo
+  client->second.response.insert(client->second.response.length(), buffer, read_size);
+
+  // todo 조건 안걸림, 이유는 파이프로 1억바이트 송수신이 안되기 때문
+  if (offset == client->second.request.get_request_body().length() || (buffer[read_size -1 ] == '\n' && buffer[read_size - 2] == '\r' && buffer[read_size - 3] == '\n' && buffer[read_size - 4] == '\r')) { // todo
     _kernel.delete_read_event(event.ident);
+    close(event.ident);
     _kernel.add_process_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response), EV_ONESHOT);
   }
 }
@@ -395,7 +388,7 @@ void ws::Socket::write_pipe(struct kevent event) { // todo: when refactoring is 
   ssize_t write_size = write(event.ident, request_body.c_str() + offset, request_body.length() - offset);
 
   if (write_size <= 0) {
-    std::cerr << "Socket: write error occurred" << std::endl;
+    std::cerr << "Socket: pipe write error occurred" << std::endl;
     _kernel.delete_write_event(event.ident);
     disconnect_client(client->first);
     return;
@@ -405,8 +398,8 @@ void ws::Socket::write_pipe(struct kevent event) { // todo: when refactoring is 
 
   if (offset == request_body.length()) {
     offset = 0;
-//    close(event.ident); todo
     _kernel.delete_write_event(event.ident);
+    close(event.ident);
     _kernel.add_read_event(client->second.cgi_handler.get_bpipe()[0], reinterpret_cast<void*>(ws::Socket::read_pipe));
     _kernel.add_process_event(client->first, reinterpret_cast<void*>(ws::Socket::wait_child));
   }
@@ -425,9 +418,7 @@ void ws::Socket::generate_response(struct kevent event) {
   client_value_type& client_data = _client.find(event.ident)->second; // todo
   _response.generate(client_data, event.ident);
   _kernel.add_write_event(event.ident, reinterpret_cast<void*>(ws::Socket::send_response));
-  clock_t end = clock(); // todo
-  std::cout << "generate_response(): " << get_time(end - client_data.start_time) << CYN << "µs" << NC << std::endl;
-  client_data.start_time = clock();
+  ws::Util::print_running_time("generate_response()", client_data.start_time);
 }
 
 void ws::Socket::send_response(struct kevent event) {
@@ -448,15 +439,9 @@ void ws::Socket::send_response(struct kevent event) {
   offset += n;
 
   if (offset == response_data.length()) {
-    std::cout << client_data.status << std::endl;
-    clock_t end = clock(); // todo
-    std::cout << "send_response(): " << get_time(end - client_data.start_time) << CYN << "µs" << NC << std::endl;
+    ws::Util::print_running_time("send_response()", client_data.start_time);
     std::cout << YLW << "\n=========================================================\n" << NC << std::endl;
     _kernel.delete_write_event(event.ident);
     disconnect_client(event.ident);
   }
-}
-
-ws::Socket::session_map_type ws::Socket::get_session() throw() {
-  return _session;
 }
