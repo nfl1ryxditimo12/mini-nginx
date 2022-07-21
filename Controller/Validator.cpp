@@ -3,7 +3,7 @@
 #include <sys/stat.h>
 // #include <iostream>//@
 
-//extern bool webserv_fatal;
+extern bool webserv_fatal;
 
 ws::Validator::Validator() throw() : _session(NULL) {
   try {
@@ -19,7 +19,7 @@ ws::Validator::Validator() throw() : _session(NULL) {
     _check_session_func_vec.push_back(&Validator::check_session_id);
     _check_session_func_vec.push_back(&Validator::check_secret_key);
   } catch (...) {
-//    webserv_fatal = true;
+    webserv_fatal = true;
   }
 }
 
