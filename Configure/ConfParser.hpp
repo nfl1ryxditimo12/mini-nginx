@@ -53,7 +53,7 @@ namespace ws {
     void init_option_parser();
 
     void check_server_header();
-    void check_location_header(std::string& dir, ws::Location& location);
+    void check_location_header(std::string& dir);
     bool check_block_end();
 
     void parse_server(ws::Server& server);
@@ -65,9 +65,11 @@ namespace ws {
 
     void parse_server_name(ws::Server& server);
 
-    void parse_limit_except(ws::Location&);
+    void parse_limit_except(ws::Location& location);
     limit_except_type get_method(const std::string& method) const;
-    void parse_return(ws::Location&);
+    void parse_return(ws::Location& location);
+    void parse_cgi(ws::Location& location);
+    void parse_cgi_path(ws::Location& location);
 
     void parse_autoindex(ws::InnerOption& inner);
     void parse_root(ws::InnerOption& inner);

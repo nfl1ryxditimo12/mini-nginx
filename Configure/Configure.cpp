@@ -88,7 +88,7 @@ void ws::Configure::print_location_map(const location_map_type& location_map) co
 }
 
 void ws::Configure::print_location(const ws::Location& location) const throw() {
-  const limit_except_vec_type limit_except_vec = location.get_limit_except_vec();
+  const limit_except_vec_type& limit_except_vec = location.get_limit_except_vec();
   std::cout << "limit exception: ";
   for (limit_except_vec_type::const_iterator it = limit_except_vec.begin(); it != limit_except_vec.end(); ++it) {
     std::cout << *it << " ";
@@ -97,7 +97,13 @@ void ws::Configure::print_location(const ws::Location& location) const throw() {
 
   std::cout << "return status code: " << location.get_return().first << " value: " << location.get_return().second << "\n";
 
-  std::cout << "cgi: " << location.get_cgi() << "\n";
+  const cgi_set_type& cgi_set = location.get_cgi_set();
+  std::cout << "cgi: " << "\n";
+  for (cgi_set_type::const_iterator it = cgi_set.begin(); it != cgi_set.end(); ++it) {
+    std::cout << "  " << *it << std::endl;
+  }
+
+  std::cout << "cgi_path: " << location.get_cgi_path() << std::endl;
 
   std::cout << "\n----location option end----\n";
 

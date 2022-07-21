@@ -1,14 +1,12 @@
 #include "Location.hpp"
 
-ws::Location::Location() : _return(return_type(0, "")), _cgi("", "") {
-  // this->_return = std::pair<int, std::string>();  // 나중에 찍어봐야함
-  // this->_cgi = std::pair<std::string, std::string>();
-}
+ws::Location::Location() : _return(return_type(0, "")) {}
 
 ws::Location::Location(const ws::Location& other) 
   : _limit_except_vec(other._limit_except_vec),
   _return(other._return),
-  _cgi(other._cgi),
+  _cgi_set(other._cgi_set),
+  _cgi_path(other._cgi_path),
   _option(other._option),
   _block_name(other._block_name) {}
 
@@ -22,8 +20,12 @@ const ws::Location::return_type& ws::Location::get_return() const throw() {
   return _return;
 }
 
-const ws::Location::cgi_type& ws::Location::get_cgi() const throw() {
-  return _cgi;
+const ws::Location::cgi_set_type& ws::Location::get_cgi_set() const throw() {
+  return _cgi_set;
+}
+
+const ws::Location::cgi_path_type& ws::Location::get_cgi_path() const throw() {
+  return _cgi_path;
 }
 
 const ws::InnerOption& ws::Location::get_option() const throw() {
@@ -62,8 +64,16 @@ void ws::Location::set_return(const return_type& value) {
   _return = value;
 }
 
-void ws::Location::set_cgi(const cgi_type& value) {
-  _cgi = value;
+void ws::Location::set_cgi(const cgi_set_type& value) {
+  _cgi_set = value;
+}
+
+void ws::Location::add_cgi(const cgi_type& value) {
+  _cgi_set.insert(value);
+}
+
+void ws::Location::set_cgi_path(const cgi_path_type& value) {
+  _cgi_path = value;
 }
 
 void ws::Location::set_option(const ws::InnerOption& value) {

@@ -32,7 +32,6 @@ ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(c
   _method = cls._method;
   _request_body = cls._request_body;
   _autoindex = cls._autoindex;
-  _cgi = cls._cgi;
   _content_type = cls._content_type;
   _server = cls._server;
   _location = cls._location;
@@ -59,7 +58,6 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   if (_location != NULL) {
     _config.limit_except_vec = _location->get_limit_except_vec();
     _config.redirect = _location->get_return();
-    _config.cgi = _location->get_cgi();
 /*set option*/
     ws::Repository::set_option(_location->get_option());
   } else
@@ -74,9 +72,9 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   _host = server_name + ":" + ws::Util::ultos(ntohs(_config.listen.second));
   _method = _request->get_method();
 
-  // todo
-  std::cout << YLW << "\n=========================================================\n" << NC << std::endl;
-  std::cout << RED << _method << " " << _location->get_block_name() << NC << std::endl;
+  // todo: test print
+//  std::cout << YLW << "\n=========================================================\n" << NC << std::endl;
+//  std::cout << RED << _method << " " << _location->get_block_name() << NC << std::endl;
 }
 
 void ws::Repository::set_option(const ws::InnerOption& option) {
@@ -118,6 +116,10 @@ void ws::Repository::set_status(unsigned int status) {
 
 void ws::Repository::set_fatal() {
   _fatal = true;
+}
+
+void ws::Repository::set_fd(int value) {
+  _fd = value;
 }
 
 void ws::Repository::set_autoindex() {
@@ -171,12 +173,10 @@ void ws::Repository::open_file(std::string filename) {
   
   if (_method == "GET")
     open_flag = O_RDONLY;
-  else if (_method == "POST" || _method == "PUT")
-    open_flag = O_WRONLY | O_TRUNC | O_CREAT;
   else
-    open_flag = O_WRONLY | O_APPEND;
+    open_flag = O_WRONLY | O_TRUNC | O_CREAT;
 
-  if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1)
+  if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1 || fcntl(_fd, F_SETFL, O_NONBLOCK) == -1)
     this->set_status(INTERNAL_SERVER_ERROR);
 }
 
@@ -191,7 +191,7 @@ void ws::Repository::open_error_html() {
   else
     filename = _index_root + "/" + ws::Util::ultos(_status) + ".html"; // _defualt_root_path + status.html
 
-  if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1)
+  if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1 || fcntl(_fd, F_SETFL, O_NONBLOCK) == -1)
     this->set_fatal();
 }
 
@@ -252,10 +252,6 @@ const ws::Repository::autoindex_type&  ws::Repository::get_autoindex() const thr
   return _autoindex;
 }
 
-const ws::Repository::cgi_type&  ws::Repository::get_cgi() const throw() {
-  return _cgi;
-}
-
 const std::string&  ws::Repository::get_content_type() const throw() {
   return _content_type;
 }
@@ -276,8 +272,6 @@ void ws::Repository::clear() throw() {
   _method.clear();
   _request_body.clear();
   _autoindex.clear();
-  _cgi.first.clear();
-  // todo: cgi second
   _content_type.clear();
   _server = NULL;
   _location = NULL;
@@ -302,7 +296,6 @@ void ws::Repository::test() {
     std::cout << " " << *it;
   std::cout << std::endl;
   std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "redirect: " << NC << _config.redirect.first << ", " << _config.redirect.second << std::endl;
-  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "cgi: " << NC << _config.cgi << std::endl;
   std::cout << CYN << "[Type: bool]   " << NC << "- " << RED << "autoindex: " << NC << _config.autoindex << std::endl;
   std::cout << CYN << "[Type: string] " << NC << "- " << RED << "root: " << NC << _config.root << std::endl;
   std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "index:" << NC;
@@ -327,7 +320,6 @@ void ws::Repository::test() {
   for (autoindex_type::iterator it = _autoindex.begin(); it != _autoindex.end(); ++it)
     std::cout << " " << *it;
   std::cout << std::endl;
-  std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "_cgi: " << NC << _cgi.first << ", " << _cgi.second << std::endl;
   std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_content_type: " << NC << _content_type << std::endl;
   std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_index_root: " << NC << _index_root << std::endl;
 

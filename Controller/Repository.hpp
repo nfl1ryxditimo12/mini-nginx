@@ -36,7 +36,6 @@ namespace ws {
     typedef ws::Server::location_map_type location_map_type;
     typedef ws::Location::limit_except_vec_type limit_except_vec_type;
     typedef ws::Location::return_type redirect_type;
-    typedef ws::Location::cgi_type cgi_string_type;
     typedef ws::InnerOption::autoindex_type autoindex_bool_type;
     typedef ws::InnerOption::root_type root_type;
     typedef ws::InnerOption::index_set_type index_set_type;
@@ -51,13 +50,33 @@ namespace ws {
     /*location*/
       limit_except_vec_type limit_except_vec;
       redirect_type redirect;
-      cgi_string_type cgi;
     /*option*/
       autoindex_bool_type autoindex;
       root_type root;
       index_set_type index;
       client_max_body_size_type client_max_body_size;
       error_page_map_type error_page_map;
+
+      config_data() {}
+
+      config_data(const config_data& other)
+        : listen(other.listen), server_name(other.server_name), limit_except_vec(other.limit_except_vec),
+          redirect(other.redirect), autoindex(other.autoindex),
+          root(other.root), index(other.index), client_max_body_size(other.client_max_body_size),
+          error_page_map(other.error_page_map) {}
+
+      config_data& operator=(const config_data& other) {
+        listen = other.listen;
+        server_name = other.server_name;
+        limit_except_vec = other.limit_except_vec;
+        redirect = other.redirect;
+        autoindex = other.autoindex;
+        root = other.root;
+        index = other.index;
+        client_max_body_size = other.client_max_body_size;
+        error_page_map = other.error_page_map;
+        return *this;
+      }
     };
 
   public:
@@ -65,7 +84,6 @@ namespace ws {
     typedef struct ws::Repository::config_data      config_type;
 
     typedef std::vector<std::string>                autoindex_type;
-    typedef std::pair<std::string, char**>          cgi_type;
   
   private:
 
@@ -105,8 +123,6 @@ namespace ws {
 
     autoindex_type _autoindex; // get_autoindex();
 
-    cgi_type _cgi; // get_cgi();
-
     std::string _content_type; // get_conent_type();
 
     const ws::Server*   _server;
@@ -141,8 +157,9 @@ namespace ws {
     void operator()(const ws::Server& server, const ws::Request& request);
 
     void set_repository(unsigned int status);
-    void set_status(const unsigned int status);
+    void set_status(unsigned int status);
     void set_fatal(); // always set true
+    void set_fd(int value);
 
     void test();
 
@@ -165,7 +182,6 @@ namespace ws {
     const std::string&    get_file_path() const throw();
     const std::string&    get_request_body() const throw();
     const autoindex_type& get_autoindex() const throw();
-    const cgi_type&       get_cgi() const throw();
     const std::string&    get_content_type() const throw();
     const redirect_type&  get_redirect() const throw();
 

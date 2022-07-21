@@ -8,6 +8,9 @@
 
 #include <unistd.h>
 
+ws::Util::Util() {}
+ws::Util::~Util() {}
+
 // hash for checking executed directory
 const std::string ws::Util::_hash = "Seunkim123rootjaham456projectyeju789dir";
 

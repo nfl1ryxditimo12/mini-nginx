@@ -29,6 +29,8 @@ void ws::ConfParser::init_server_parser() {
 void ws::ConfParser::init_location_parser() {
   _location_parser.insert(location_parser_func_map::value_type("limit_except", &ConfParser::parse_limit_except));
   _location_parser.insert(location_parser_func_map::value_type("return", &ConfParser::parse_return));
+  _location_parser.insert(location_parser_func_map::value_type("cgi", &ConfParser::parse_cgi));
+  _location_parser.insert(location_parser_func_map::value_type("cgi_path", &ConfParser::parse_cgi_path));
 }
 
 void ws::ConfParser::init_option_parser() {
@@ -90,28 +92,18 @@ void ws::ConfParser::check_server_header() {
     throw std::invalid_argument("Configure: wrong server header");
 }
 
-void ws::ConfParser::check_location_header(std::string& dir, ws::Location& location) {
+void ws::ConfParser::check_location_header(std::string& dir) {
   if (_token != "location")
     throw std::invalid_argument("Configure: wrong location header");
 
   this->rdword();
 
-  std::string cgi;
-  std::string temp(_token);
-
-  this->rdword();
-
-  if (_token != "{") {
-    dir = _token;
-    cgi = temp;
-    this->rdword();
-  } else
-    dir = temp;
+  dir = _token;
 
   if (dir[0] != '/')
     throw std::invalid_argument("Configure: location header: location dir must start with `/'");
 
-  location.set_cgi(cgi);
+  this->rdword();
 
   if (_token != "{")
     throw std::invalid_argument("Configure: wrong location header");
@@ -122,8 +114,6 @@ bool ws::ConfParser::check_block_end() {
     throw std::invalid_argument("Configure: wrong block end");
   return true;
 }
-
-
 
 void ws::ConfParser::parse_server(ws::Server& server) {
   location_map_type location_map;
@@ -146,7 +136,7 @@ void ws::ConfParser::parse_server(ws::Server& server) {
       std::string dir;
       ws::Location location;
 
-      this->check_location_header(dir, location);
+      this->check_location_header(dir);
       location.set_block_name(dir);
       this->parse_location(location);
 
@@ -325,7 +315,7 @@ void ws::ConfParser::parse_limit_except(ws::Location& location) {
 
   std::string method;
 
-  while (1) {
+  while (true) {
     this->rdword();
     ws::Location::limit_except_vec_type::size_type pos = _token.find(";");
 
@@ -341,9 +331,46 @@ void ws::ConfParser::parse_limit_except(ws::Location& location) {
 
     location.add_limit_except(method);
 
-    if (pos != _token.npos)
+    if (pos != std::string::npos)
       break;
   }
+}
+
+void ws::ConfParser::parse_cgi(ws::Location &location) {
+  this->rdword();
+
+  for (
+    Token::size_type pos = _token.find(";");
+    !(_buffer.eof());
+    this->rdword(), pos = _token.find(";")
+    ) {
+    if (pos != _token.npos) {
+      if (pos != _token.length() - 1)
+        throw std::invalid_argument("Configure: cgi: `;' should appear at eol");
+      if (pos == 0)
+        throw std::invalid_argument("Configure: cgi: `;' should appear at eol");
+      location.add_cgi(_token.substr(0, pos));
+      break;
+    } else {
+      if (!_token.length())
+        throw std::invalid_argument("Configure: cgi: invalid format");
+      if (_token == "\n")
+        throw std::invalid_argument("Configure: cgi: invalid format");
+      location.add_cgi(_token);
+    }
+  }
+}
+
+void ws::ConfParser::parse_cgi_path(ws::Location &location) {
+  if (location.get_cgi_path().length())
+    throw std::invalid_argument("Configure: cgi_path: duplicated cgi_path");
+
+  this->rdword();
+
+  if ((_token.find(";") != _token.length() - 1) || (_token[0] == ';'))
+    throw std::invalid_argument("Configure: cgi_path: `;' should appear at eol");
+
+  location.set_cgi_path(Util::parse_relative_path(_root_dir + "/" + _token.substr(0, _token.length() - 1)));
 }
 
 ws::ConfParser::limit_except_type ws::ConfParser::get_method(const std::string& method) const {

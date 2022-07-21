@@ -6,6 +6,7 @@
 #include <sstream>
 #include <arpa/inet.h>
 
+#include "Buffer.hpp"
 #include "Configure.hpp"
 #include "Token.hpp"
 #include "Configure.hpp"
@@ -26,6 +27,7 @@ namespace ws {
     typedef std::map<std::string, std::string> query_type;
 
     typedef std::map<std::string, std::string> header_type;
+
 
   private:
 
@@ -66,6 +68,9 @@ namespace ws {
     u_int16_t   _port;
     std::string _connection;
     std::string _transfer_encoding;
+    unsigned int _session_id;
+    std::string _name;
+    std::string _secret_key;
 
     /* =================================== */
     /*         Non-getter variable         */
@@ -99,8 +104,7 @@ namespace ws {
     // token for read buffer
     ws::Token               _token;
 
-    // buffer to read
-    std::stringstream       _buffer;
+    ws::Buffer*             _buffer;
 
     /* =================================== */
     /*                 OCCF                */
@@ -138,6 +142,9 @@ namespace ws {
     void  parse_content_length(const std::string& value);
     void  parse_content_type(const std::string& value);
     void  parse_transfer_encoding(const std::string& value);
+    void  parse_session_id(const std::string& value);
+    void  parse_name(const std::string& value);
+    void  parse_secret_key(const std::string& value);
 
     /* =================================== */
     /*        Else private function        */
@@ -154,7 +161,7 @@ namespace ws {
     Request(const Request& cls);
     ~Request();
 
-    int   parse_request_message(const ws::Configure& conf, const char* message, const int& read_size, ws::Repository& repo);
+    int   parse_request_message(const ws::Configure& conf, ws::Buffer* buffer, ws::Repository& repo);
     void  clear();
     void  test();
 
@@ -178,5 +185,8 @@ namespace ws {
     const std::string& get_server_name() const throw();
     const std::string& get_connection() const throw();
     const std::string& get_transfer_encoding() const throw();
+    const unsigned int& get_session_id() const throw();
+    const std::string& get_name() const throw();
+    const std::string& get_secret_key() const throw();
   };
 }
