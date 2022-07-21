@@ -38,7 +38,13 @@ bool ws::CgiHandler::set_cgi_env(const char* method, const char* path) {
 }
 
 bool ws::CgiHandler::init_pipe() throw() {
-  return (!(pipe(_fpipe) || pipe(_bpipe)));
+  return (!
+    (
+      pipe(_fpipe)
+      || pipe(_bpipe)
+      || fcntl(_fpipe[1], F_SETFD, O_NONBLOCK)
+      || fcntl(_bpipe[0], F_SETFD, O_NONBLOCK))
+  );
 }
 
 pid_t ws::CgiHandler::init_child(const char* cgi_path) {
