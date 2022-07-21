@@ -10,9 +10,8 @@ namespace ws {
     typedef std::string limit_except_type;
     typedef std::vector<limit_except_type> limit_except_vec_type;
     typedef std::pair<unsigned int, std::string> return_type;
-    typedef std::set<std::string> cgi_set_type;
-    typedef std::string cgi_type;
-    typedef std::string cgi_path_type;
+    typedef std::pair<std::string, std::string> cgi_type;
+    typedef std::map<cgi_type::first_type, cgi_type::second_type> cgi_map_type;
     typedef std::string block_name_type;
     typedef ws::InnerOption::autoindex_type autoindex_type;
     typedef ws::InnerOption::root_type root_type;
@@ -25,8 +24,7 @@ namespace ws {
   private:
     limit_except_vec_type _limit_except_vec;
     return_type _return;
-    cgi_set_type _cgi_set;
-    cgi_path_type _cgi_path;
+    cgi_map_type _cgi_map;
     ws::InnerOption _option;
     block_name_type _block_name;
 
@@ -39,8 +37,7 @@ namespace ws {
 
     const limit_except_vec_type& get_limit_except_vec() const throw();
     const return_type& get_return() const throw();
-    const cgi_set_type& get_cgi_set() const throw();
-    const cgi_path_type& get_cgi_path() const throw();
+    const cgi_map_type& get_cgi_map() const throw();
     const ws::InnerOption& get_option() const throw();
     const block_name_type& get_block_name() const throw();
 
@@ -52,9 +49,8 @@ namespace ws {
 
     void add_limit_except(const limit_except_type& value);
     void set_return(const return_type& value);
-    void set_cgi(const cgi_set_type& value);
     void add_cgi(const cgi_type& value);
-    void set_cgi_path(const cgi_path_type& value);
+    void set_cgi_map(const cgi_map_type& value);
     void set_option(const ws::InnerOption& value);
     void set_block_name(const block_name_type& value);
 

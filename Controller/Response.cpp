@@ -20,36 +20,6 @@ void ws::Response::set_kernel(Kernel *kernel) {
 // todo: can remove client_data arg
 // todo: need to add HEAD method
 void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) {
-  //4-2. cgi
-  if (false) { // todo
-    close(client_data.repository.get_fd());
-    std::string temp("/goinfre/jaham/webserv");
-    if (!client_data.cgi_handler.run_cgi(
-      client_data.repository.get_method().c_str(),
-      temp.c_str(),
-      client_data.repository.get_location()->get_cgi_path().c_str(),
-      _kernel
-    )) {
-      client_data.status = INTERNAL_SERVER_ERROR;
-      close(client_data.repository.get_fd());
-      client_data.repository.set_fd(open((Util::get_root_dir() + "/www/500.html").c_str(), O_RDONLY));
-      _kernel->add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(ws::Socket::read_data));
-    }
-//    if (!client_data.cgi_handler.run_cgi(
-//      client_data.repository.get_method().c_str(),
-//      client_data.repository.get_cgi_path().c_str(),
-//      (client_data.repository.get_cgi_path() + client_data.repository.get_location()->get_cgi()).c_str(),
-//      _kernel
-//    )) {
-//      client_data.status = INTERNAL_SERVER_ERROR;
-//      close(client_data.repository.get_fd());
-//      client_data.repository.set_fd(open((Util::get_root_dir() + "/www/500.html").c_str(), O_RDONLY));
-//      _kernel->add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(ws::Socket::read_data));
-//    }
-
-    return;
-  }
-
 //0. set_data
   set_data(client_data, client_fd);
   ws::Repository::redirect_type redirect = client_data.repository.get_redirect();

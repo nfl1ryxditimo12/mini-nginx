@@ -5,8 +5,7 @@ ws::Location::Location() : _return(return_type(0, "")) {}
 ws::Location::Location(const ws::Location& other) 
   : _limit_except_vec(other._limit_except_vec),
   _return(other._return),
-  _cgi_set(other._cgi_set),
-  _cgi_path(other._cgi_path),
+  _cgi_map(other._cgi_map),
   _option(other._option),
   _block_name(other._block_name) {}
 
@@ -20,12 +19,8 @@ const ws::Location::return_type& ws::Location::get_return() const throw() {
   return _return;
 }
 
-const ws::Location::cgi_set_type& ws::Location::get_cgi_set() const throw() {
-  return _cgi_set;
-}
-
-const ws::Location::cgi_path_type& ws::Location::get_cgi_path() const throw() {
-  return _cgi_path;
+const ws::Location::cgi_map_type& ws::Location::get_cgi_map() const throw() {
+  return _cgi_map;
 }
 
 const ws::InnerOption& ws::Location::get_option() const throw() {
@@ -64,16 +59,12 @@ void ws::Location::set_return(const return_type& value) {
   _return = value;
 }
 
-void ws::Location::set_cgi(const cgi_set_type& value) {
-  _cgi_set = value;
-}
-
 void ws::Location::add_cgi(const cgi_type& value) {
-  _cgi_set.insert(value);
+  _cgi_map.insert(value);
 }
 
-void ws::Location::set_cgi_path(const cgi_path_type& value) {
-  _cgi_path = value;
+void ws::Location::set_cgi_map(const cgi_map_type& value) {
+  _cgi_map = value;
 }
 
 void ws::Location::set_option(const ws::InnerOption& value) {

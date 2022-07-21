@@ -28,6 +28,6 @@ namespace ws {
 
     void set_eof(bool value);
 
-    bool run_cgi(const char* method, const char* path_info, const char* cgi_path, ws::Kernel* kernel);
+    bool run_cgi(const char* method, const char* path_info, const char* cgi_path, ws::Kernel& kernel);
   };
 }

@@ -30,7 +30,6 @@ void ws::ConfParser::init_location_parser() {
   _location_parser.insert(location_parser_func_map::value_type("limit_except", &ConfParser::parse_limit_except));
   _location_parser.insert(location_parser_func_map::value_type("return", &ConfParser::parse_return));
   _location_parser.insert(location_parser_func_map::value_type("cgi", &ConfParser::parse_cgi));
-  _location_parser.insert(location_parser_func_map::value_type("cgi_path", &ConfParser::parse_cgi_path));
 }
 
 void ws::ConfParser::init_option_parser() {
@@ -339,38 +338,17 @@ void ws::ConfParser::parse_limit_except(ws::Location& location) {
 void ws::ConfParser::parse_cgi(ws::Location &location) {
   this->rdword();
 
-  for (
-    Token::size_type pos = _token.find(";");
-    !(_buffer.eof());
-    this->rdword(), pos = _token.find(";")
-    ) {
-    if (pos != _token.npos) {
-      if (pos != _token.length() - 1)
-        throw std::invalid_argument("Configure: cgi: `;' should appear at eol");
-      if (pos == 0)
-        throw std::invalid_argument("Configure: cgi: `;' should appear at eol");
-      location.add_cgi(_token.substr(0, pos));
-      break;
-    } else {
-      if (!_token.length())
-        throw std::invalid_argument("Configure: cgi: invalid format");
-      if (_token == "\n")
-        throw std::invalid_argument("Configure: cgi: invalid format");
-      location.add_cgi(_token);
-    }
-  }
-}
-
-void ws::ConfParser::parse_cgi_path(ws::Location &location) {
-  if (location.get_cgi_path().length())
-    throw std::invalid_argument("Configure: cgi_path: duplicated cgi_path");
+  ws::Location::cgi_type value;
+  value.first = _token;
 
   this->rdword();
 
-  if ((_token.find(";") != _token.length() - 1) || (_token[0] == ';'))
-    throw std::invalid_argument("Configure: cgi_path: `;' should appear at eol");
+  if (_token.back() != ';')
+    throw std::invalid_argument("Configure: location: cgi: `;' should appear at eol");
 
-  location.set_cgi_path(Util::parse_relative_path(_root_dir + "/" + _token.substr(0, _token.length() - 1)));
+  value.second = Util::get_root_dir() + _token.substr(0, _token.length() - 1);
+
+  location.add_cgi(value);
 }
 
 ws::ConfParser::limit_except_type ws::ConfParser::get_method(const std::string& method) const {
