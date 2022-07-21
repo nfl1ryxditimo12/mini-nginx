@@ -189,11 +189,6 @@ void ws::Socket::process_request(struct kevent event) {
   if (!client_data.status)
     _validator(_session, client_data);
 
-//  if (is_session) {
-//    run_session(client_data);
-//    _kernel.add_process_event(event.ident, reinterpret_cast<void*>(Socket::generate_response), EV_ONESHOT);
-//    return;
-//  }
   std::string::size_type extension_dot = client_data.request.get_uri().find_last_of('.');
   const std::string& extension = client_data.request.get_uri().substr(extension_dot + 1);
   const ws::Location::cgi_map_type& cgi_map = client_data.repository.get_location()->get_cgi_map();
@@ -215,12 +210,6 @@ void ws::Socket::process_request(struct kevent event) {
       _kernel.add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(ws::Socket::read_data));
     }
 
-    return;
-  }
-
-  if (is_session) {
-    run_session(client_data);
-    _kernel.add_process_event(event.ident, reinterpret_cast<void*>(Socket::generate_response), EV_ONESHOT);
     return;
   }
 
@@ -265,6 +254,8 @@ void ws::Socket::process_session(struct kevent event) {
    * - POST일때 세션아이디 ++해서 insert 해주기
    * - DELETE일때 세션아이디 검색해서 지우기
    */
+  if (it != _session.end())
+    client_data.request.set_session_id(it->first);
 
   if (method == "GET") {
     ++it->second.hit_count;
@@ -283,6 +274,7 @@ void ws::Socket::process_session(struct kevent event) {
       _session.clear();
     ++_session_index;
     _session.insert(session_map_type::value_type(_session_index, session_value_type(client_data.request.get_name())));
+    client_data.request.set_session_id(_session_index);
   }
   else if (method == "DELETE")
     _session.erase(it);
@@ -306,8 +298,7 @@ void ws::Socket::read_data(struct kevent event) {
     return;
   }
 
-  for (int i = 0; i < read_size; ++i)
-    client->second.response.push_back(buffer[i]);
+  client->second.response.insert(client->second.response.length(), buffer, read_size);
 
   if (Util::is_eof(event.ident)) {
     close(client->second.repository.get_fd());
@@ -379,6 +370,9 @@ void ws::Socket::read_pipe(struct kevent event) {
 
   offset += read_size;
 
+  client->second.response.insert(client->second.response.length(), buffer, read_size);
+
+  // todo 조건 안걸림, 이유는 파이프로 1억바이트 송수신이 안되기 때문
   if (offset == client->second.request.get_request_body().length() || (buffer[read_size -1 ] == '\n' && buffer[read_size - 2] == '\r' && buffer[read_size - 3] == '\n' && buffer[read_size - 4] == '\r')) { // todo
     _kernel.delete_read_event(event.ident);
     close(event.ident);

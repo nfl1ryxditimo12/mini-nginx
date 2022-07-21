@@ -19,13 +19,13 @@
   권한 없을 때 파일 열기 어떻게 처리할지
 */
 
-ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _status(status), _fd(FD_DEFAULT) {
+ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _status(status), _session(0), _fd(FD_DEFAULT) {
   memset(&_file_stat, 0, sizeof(struct stat));
   _index_root = ws::Util::get_root_dir() + "/www";
-  _session = false;
 }
 
 ws::Repository::Repository(const Repository& cls): _fatal(cls._fatal), _status(cls._status) {
+  _session = cls._session;
   _fd = cls._fd;
   _uri = cls._uri;
   _file_path = cls._file_path;
@@ -217,6 +217,10 @@ const int&  ws::Repository::get_fd() const throw() {
 
 const unsigned int&  ws::Repository::get_status() const throw() {
   return _status;
+}
+
+const int& ws::Repository::is_session() const throw() {
+  return _session;
 }
 
 const struct stat&  ws::Repository::get_file_stat() const throw() {
