@@ -66,8 +66,15 @@ namespace ws {
           error_page_map(other.error_page_map) {}
 
       config_data& operator=(const config_data& other) {
-        config_data temp(other);
-        std::swap(*this, temp);
+        listen = other.listen;
+        server_name = other.server_name;
+        limit_except_vec = other.limit_except_vec;
+        redirect = other.redirect;
+        autoindex = other.autoindex;
+        root = other.root;
+        index = other.index;
+        client_max_body_size = other.client_max_body_size;
+        error_page_map = other.error_page_map;
         return *this;
       }
     };
