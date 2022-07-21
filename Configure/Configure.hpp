@@ -19,8 +19,7 @@ namespace ws {
     typedef ws::Location::limit_except_vec_type limit_except_vec_type;
     typedef ws::Location::return_type return_type;
     typedef ws::Location::cgi_type cgi_type;
-    typedef ws::Location::cgi_set_type cgi_set_type;
-    typedef ws::Location::cgi_path_type cgi_path_type;
+    typedef ws::Location::cgi_map_type cgi_map_type;
 
     typedef ws::InnerOption::autoindex_type autoindex_type;
     typedef ws::InnerOption::root_type root_type;

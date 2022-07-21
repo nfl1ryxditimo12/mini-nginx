@@ -43,7 +43,8 @@ bool ws::CgiHandler::init_pipe() throw() {
       pipe(_fpipe)
       || pipe(_bpipe)
       || fcntl(_fpipe[1], F_SETFD, O_NONBLOCK)
-      || fcntl(_bpipe[0], F_SETFD, O_NONBLOCK))
+      || fcntl(_bpipe[0], F_SETFD, O_NONBLOCK)
+    )
   );
 }
 
@@ -54,11 +55,11 @@ pid_t ws::CgiHandler::init_child(const char* cgi_path) {
     int fatal = 0;
 
     close(_fpipe[1]);
-    fatal |= (!dup2(_fpipe[0], STDIN_FILENO));
+    fatal |= dup2(_fpipe[0], STDIN_FILENO) == -1;
     close(_fpipe[0]);
 
     close(_bpipe[0]);
-    fatal |= (!dup2(_bpipe[1], STDOUT_FILENO));
+    fatal |= dup2(_bpipe[1], STDOUT_FILENO) == -1;
     close(_bpipe[1]);
 
     char *argv[2];
@@ -95,13 +96,13 @@ void ws::CgiHandler::set_eof(bool value) {
   _eof = value;
 }
 
-bool ws::CgiHandler::run_cgi(const char *method, const char *path_info, const char *cgi_path, ws::Kernel* kernel) {
+bool ws::CgiHandler::run_cgi(const char *method, const char *path_info, const char *cgi_path, ws::Kernel& kernel) {
   if (!init_pipe() || !set_cgi_env(method, path_info) || init_child(cgi_path) == -1)
     return false;
 
   _eof = false;
 
-  kernel->add_write_event(_fpipe[1], reinterpret_cast<void*>(Socket::write_pipe));
+  kernel.add_write_event(_fpipe[1], reinterpret_cast<void*>(Socket::write_pipe));
 
   return true;
 }

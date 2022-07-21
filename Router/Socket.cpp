@@ -194,6 +194,35 @@ void ws::Socket::process_request(struct kevent event) {
 //    _kernel.add_process_event(event.ident, reinterpret_cast<void*>(Socket::generate_response), EV_ONESHOT);
 //    return;
 //  }
+  std::string::size_type extension_dot = client_data.request.get_uri().find_last_of('.');
+  const std::string& extension = client_data.request.get_uri().substr(extension_dot + 1);
+  const ws::Location::cgi_map_type& cgi_map = client_data.repository.get_location()->get_cgi_map();
+  const ws::Location::cgi_map_type::const_iterator& name = cgi_map.find(extension);
+
+  if (client_data.request.get_method() == "POST" && extension_dot != std::string::npos && name != cgi_map.end()) {
+    // cgi handling zz
+    close(client_data.repository.get_fd());
+
+    if (!client_data.cgi_handler.run_cgi(
+      client_data.repository.get_method().c_str(),
+      name->second.c_str(),
+      name->second.c_str(),
+      _kernel
+    )) {
+      client_data.status = INTERNAL_SERVER_ERROR;
+      client_data.repository.set_fd(open((Util::get_root_dir() + "/www/500.html").c_str(), O_RDONLY));
+      fcntl(client_data.repository.get_fd(), F_SETFD, O_NONBLOCK);
+      _kernel.add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(ws::Socket::read_data));
+    }
+
+    return;
+  }
+
+  if (is_session) {
+    run_session(client_data);
+    _kernel.add_process_event(event.ident, reinterpret_cast<void*>(Socket::generate_response), EV_ONESHOT);
+    return;
+  }
 
   client_data.repository.set_repository(client_data.status);
   client_data.status = client_data.repository.get_status();
@@ -297,8 +326,8 @@ void ws::Socket::write_data(struct kevent event) {
 
   if (write_size == -1) {
     std::cerr << "Socket: write error occurred" << std::endl;
-    close(event.ident);
-//    _kernel.delete_write_event(event.ident);
+//    close(event.ident);
+    _kernel.delete_write_event(event.ident);
     disconnect_client(event.ident);
     return;
   }
@@ -306,9 +335,8 @@ void ws::Socket::write_data(struct kevent event) {
   offset += write_size;
 
   if (offset == request_body.length()) {
-    close(client->second.repository.get_fd());
     offset = 0;
-//    _kernel.delete_write_event(event.ident);
+    _kernel.delete_write_event(event.ident); // todo?
     _kernel.add_process_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response), EV_ONESHOT);
     ws::Util::print_running_time("write_data()", client->second.start_time);
   }
@@ -351,9 +379,9 @@ void ws::Socket::read_pipe(struct kevent event) {
 
   offset += read_size;
 
-  if (offset == client->second.request.get_request_body().length()) {
-//    close(event.ident); todo
+  if (offset == client->second.request.get_request_body().length() || (buffer[read_size -1 ] == '\n' && buffer[read_size - 2] == '\r' && buffer[read_size - 3] == '\n' && buffer[read_size - 4] == '\r')) { // todo
     _kernel.delete_read_event(event.ident);
+    close(event.ident);
     _kernel.add_process_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response), EV_ONESHOT);
   }
 }
@@ -366,7 +394,7 @@ void ws::Socket::write_pipe(struct kevent event) { // todo: when refactoring is 
   ssize_t write_size = write(event.ident, request_body.c_str() + offset, request_body.length() - offset);
 
   if (write_size <= 0) {
-    std::cerr << "Socket: write error occurred" << std::endl;
+    std::cerr << "Socket: pipe write error occurred" << std::endl;
     _kernel.delete_write_event(event.ident);
     disconnect_client(client->first);
     return;
@@ -376,8 +404,8 @@ void ws::Socket::write_pipe(struct kevent event) { // todo: when refactoring is 
 
   if (offset == request_body.length()) {
     offset = 0;
-//    close(event.ident); todo
     _kernel.delete_write_event(event.ident);
+    close(event.ident);
     _kernel.add_read_event(client->second.cgi_handler.get_bpipe()[0], reinterpret_cast<void*>(ws::Socket::read_pipe));
     _kernel.add_process_event(client->first, reinterpret_cast<void*>(ws::Socket::wait_child));
   }

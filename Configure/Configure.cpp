@@ -100,13 +100,11 @@ void ws::Configure::print_location(const ws::Location& location) const throw() {
 
   std::cout << "return status code: " << location.get_return().first << " value: " << location.get_return().second << "\n";
 
-  const cgi_set_type& cgi_set = location.get_cgi_set();
+  const cgi_map_type& cgi_set = location.get_cgi_map();
   std::cout << "cgi: " << "\n";
-  for (cgi_set_type::const_iterator it = cgi_set.begin(); it != cgi_set.end(); ++it) {
-    std::cout << "  " << *it << std::endl;
+  for (cgi_map_type::const_iterator it = cgi_set.begin(); it != cgi_set.end(); ++it) {
+    std::cout << "  " << it->first << ", " << it->second << std::endl;
   }
-
-  std::cout << "cgi_path: " << location.get_cgi_path() << std::endl;
 
   std::cout << "\n----location option end----\n";
 
