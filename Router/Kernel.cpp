@@ -5,7 +5,7 @@
 #include <cstring>
 
 
-//extern bool webserv_fatal;
+extern bool webserv_fatal;
 
 ws::Kernel::Kernel() throw() {
   try {
@@ -13,7 +13,7 @@ ws::Kernel::Kernel() throw() {
     if (_kq == -1)
       throw; // require custom exception
   } catch (...) {
-//    webserv_fatal = true;
+    webserv_fatal = true;
   }
 }
 

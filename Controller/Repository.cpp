@@ -176,7 +176,7 @@ void ws::Repository::open_file(std::string filename) {
   else
     open_flag = O_WRONLY | O_TRUNC | O_CREAT;
 
-  if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1)
+  if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1 || fcntl(_fd, F_SETFL, O_NONBLOCK) == -1)
     this->set_status(INTERNAL_SERVER_ERROR);
 }
 
@@ -191,7 +191,7 @@ void ws::Repository::open_error_html() {
   else
     filename = _index_root + "/" + ws::Util::ultos(_status) + ".html"; // _defualt_root_path + status.html
 
-  if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1)
+  if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1 || fcntl(_fd, F_SETFL, O_NONBLOCK) == -1)
     this->set_fatal();
 }
 
