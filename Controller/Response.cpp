@@ -21,7 +21,7 @@ void ws::Response::set_kernel(Kernel *kernel) {
 // todo: need to add HEAD method
 void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) {
   //4-2. cgi
-  if (!client_data.repository.get_cgi_set().empty()) {
+  if (false) { // todo
     close(client_data.repository.get_fd());
     std::string temp("/goinfre/jaham/webserv");
     if (!client_data.cgi_handler.run_cgi(
