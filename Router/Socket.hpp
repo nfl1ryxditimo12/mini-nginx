@@ -93,6 +93,8 @@ namespace ws {
     static session_map_type _session;
     static unsigned int _session_index;
 
+    static sig_atomic_t _signal;
+
     /* ====================================== */
     /*                  OCCF                  */
     /* ====================================== */
@@ -111,6 +113,7 @@ namespace ws {
     static void exit_socket();
 
     /* control socket to kenel event */
+    static void accecpt_signal(struct kevent event);
     static void connect_client(struct kevent event);
     static void recv_request(struct kevent event);
     static void process_request(struct kevent event);

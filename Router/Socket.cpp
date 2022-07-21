@@ -21,6 +21,7 @@ ws::Socket::client_map_type ws::Socket::_client;
 ws::Socket::session_map_type ws::Socket::_session;
 ws::Validator ws::Socket::_validator;
 ws::Response ws::Socket::_response;
+sig_atomic_t ws::Socket::_signal = 0;
 unsigned int ws::Socket::_session_index = 0;
 
 const std::size_t ws::Socket::kBUFFER_SIZE = 1024 * 1024;
@@ -81,20 +82,19 @@ void ws::Socket::run_server() {
   struct kevent event_list[event_size];
   int new_event;
 
+  _kernel.add_signal_event(SIGINT, reinterpret_cast<void*>(&Socket::accecpt_signal));
+
+  signal(SIGINT, SIG_IGN);
+
   while (true) {
 
-    /*
-      - signal 처리 todo
-        프로세스 강제종료가 들어와도 기존 로직은 모두 수행 한 뒤 프로세스 종료되게 해야함
-    */
+    if (_signal == SIGINT && _client.empty())
+      exit(0);
 
     new_event = _kernel.kevent_wait(event_list, event_size);
 
     for (int i = 0; i < new_event; i++) {
-      /*
-        - timeout 처리 todo
-        - socket eof 처리 todo
-      */
+      // todo EOF 처리 깔끔하게
       if (event_list[i].flags & EV_EOF) {
         std::cout << "EOF" << std::endl; // todo: test print
         disconnect_client(event_list[i].ident);
@@ -183,7 +183,14 @@ void ws::Socket::exit_socket() {
   exit(1);
 }
 
+void ws::Socket::accecpt_signal(struct kevent event) {
+  if (event.ident == SIGINT)
+    _signal = SIGINT;
+}
+
 void ws::Socket::connect_client(struct kevent event) {
+  if (_signal == SIGINT)
+    return;
   listen_type& listen = _server.find(event.ident)->second;
   int client_socket_fd;
 
