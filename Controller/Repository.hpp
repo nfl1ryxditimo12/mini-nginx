@@ -34,6 +34,7 @@ namespace ws {
     typedef ws::Server::server_name_type server_name_type;
     typedef std::string location_dir_type;
     typedef ws::Server::location_map_type location_map_type;
+    typedef ws::Location::session_type session_type;
     typedef ws::Location::limit_except_vec_type limit_except_vec_type;
     typedef ws::Location::return_type redirect_type;
     typedef ws::InnerOption::autoindex_type autoindex_bool_type;
@@ -104,6 +105,8 @@ namespace ws {
 
     unsigned int _status; // get_status();
 
+    int _session;
+
     int _fd; // get_fd();
 
     struct stat _file_stat;
@@ -173,6 +176,7 @@ namespace ws {
     bool                  is_fatal() const throw();
     const int&            get_fd() const throw();
     const unsigned int&   get_status() const throw();
+    const int&            is_session() const throw();
     const struct stat&    get_file_stat() const throw();
     const std::string&    get_host() const throw();
     const std::string&    get_method() const throw();

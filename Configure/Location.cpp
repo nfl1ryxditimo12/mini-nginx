@@ -1,9 +1,10 @@
 #include "Location.hpp"
 
-ws::Location::Location() : _return(return_type(0, "")) {}
+ws::Location::Location() : _session(0), _return(return_type(0, "")) {}
 
 ws::Location::Location(const ws::Location& other) 
-  : _limit_except_vec(other._limit_except_vec),
+  : _session(other._session),
+  _limit_except_vec(other._limit_except_vec),
   _return(other._return),
   _cgi_set(other._cgi_set),
   _cgi_path(other._cgi_path),
@@ -11,6 +12,10 @@ ws::Location::Location(const ws::Location& other)
   _block_name(other._block_name) {}
 
 ws::Location::~Location() {}
+
+const ws::Location::session_type& ws::Location::get_session() const throw() {
+  return _session;
+}
 
 const ws::Location::limit_except_vec_type& ws::Location::get_limit_except_vec() const throw() {
   return _limit_except_vec;
@@ -54,6 +59,10 @@ const ws::Location::client_max_body_size_type& ws::Location::get_client_max_body
 
 const ws::Location::error_page_map_type& ws::Location::get_error_page_map() const throw() {
   return _option.get_error_page_map();
+}
+
+void ws::Location::set_session(const session_type &value) {
+  _session = value;
 }
 
 void ws::Location::add_limit_except(const limit_except_type& value) {

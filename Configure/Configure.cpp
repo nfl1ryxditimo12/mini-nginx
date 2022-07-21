@@ -89,6 +89,9 @@ void ws::Configure::print_location_map(const location_map_type& location_map) co
 
 void ws::Configure::print_location(const ws::Location& location) const throw() {
   const limit_except_vec_type& limit_except_vec = location.get_limit_except_vec();
+
+  std::cout << "session: " << (location.get_session() == true ? "on" : "off") << std::endl;
+
   std::cout << "limit exception: ";
   for (limit_except_vec_type::const_iterator it = limit_except_vec.begin(); it != limit_except_vec.end(); ++it) {
     std::cout << *it << " ";

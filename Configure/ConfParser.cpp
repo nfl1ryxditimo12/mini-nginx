@@ -27,6 +27,7 @@ void ws::ConfParser::init_server_parser() {
 }
 
 void ws::ConfParser::init_location_parser() {
+  _location_parser.insert(location_parser_func_map::value_type("session", &ConfParser::parse_session));
   _location_parser.insert(location_parser_func_map::value_type("limit_except", &ConfParser::parse_limit_except));
   _location_parser.insert(location_parser_func_map::value_type("return", &ConfParser::parse_return));
   _location_parser.insert(location_parser_func_map::value_type("cgi", &ConfParser::parse_cgi));
@@ -306,6 +307,23 @@ void ws::ConfParser::parse_client_max_body_size(ws::InnerOption& option) {
     throw std::out_of_range("Configure: client_max_body_size: too large value");
 
   option.set_client_max_body_size(size * 1024);
+}
+
+void ws::ConfParser::parse_session(ws::Location& location) {
+  if (location.get_block_name() != "/session")
+    throw std::invalid_argument("Configure: location: session: must be written in \"/session\" location block");
+
+  this->rdword();
+
+  if (_token.find(";") != _token.length() - 1)
+    throw std::invalid_argument("Configure: location: session: `;' should appear at eol");
+
+  if (!_token.compare(0, std::max(_token.length() - 1, 2UL), "on"))
+    location.set_session(true);
+  else if (!_token.compare(0, std::max(_token.length() - 1, 2UL), "off"))
+    location.set_session(false);
+  else
+    throw std::invalid_argument("Configure: location: session: wrong value");
 }
 
 void ws::ConfParser::parse_limit_except(ws::Location& location) {
