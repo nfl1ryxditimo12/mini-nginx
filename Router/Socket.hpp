@@ -38,6 +38,7 @@ namespace ws {
       std::string::size_type  write_offset;
       std::string::size_type  pipe_offset;
       ws::CgiHandler          cgi_handler;
+      pid_t                   cgi_pid;
       ws::Buffer              buffer;
       clock_t                 start_time;
     };
@@ -120,6 +121,7 @@ namespace ws {
     static ws::Socket::client_map_type::iterator find_client_by_file(int file) throw();
     static ws::Socket::client_map_type::iterator find_client_by_fpipe(int fpipe) throw();
     static ws::Socket::client_map_type::iterator find_client_by_bpipe(int bpipe) throw();
+    static ws::Socket::client_map_type::iterator find_client_by_pid(pid_t pid) throw();
 
   public:
 

@@ -95,13 +95,13 @@ void ws::Socket::run_server() {
 
     for (int i = 0; i < new_event; i++) {
       // todo EOF 처리 깔끔하게
-      if (event_list[i].flags & EV_EOF) {
-        std::cout << "EOF" << std::endl; // todo: test print
-        disconnect_client(event_list[i].ident);
-      } else {
+//      if (event_list[i].flags & EV_EOF) {
+//        std::cout << "EOF" << std::endl; // todo: test print
+//        disconnect_client(event_list[i].ident);
+//      } else {
         kevent_func func = reinterpret_cast<kevent_func>(event_list[i].udata);
         (*func)(event_list[i]);
-      }
+//      }
     }
   }
 }
@@ -176,7 +176,7 @@ void ws::Socket::recv_request(struct kevent event) {
   if (client_data.request.eof() || client_data.status || !read_size) {
 //    client_data.request.test(); // todo: test print
 //    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
-    _kernel.add_process_event(event.ident, reinterpret_cast<void *>(&Socket::process_request), EV_ONESHOT);
+    _kernel.add_user_event(event.ident, reinterpret_cast<void *>(&Socket::process_request), EV_ONESHOT);
     _kernel.delete_read_event(event.ident);
     client_data.buffer.delete_buf();
     ws::Util::print_running_time("recv_request()", client_data.start_time);
@@ -198,17 +198,23 @@ void ws::Socket::process_request(struct kevent event) {
     // cgi handling zz
     close(client_data.repository.get_fd());
 
-    if (!client_data.cgi_handler.run_cgi(
+    pid_t pid = client_data.cgi_handler.run_cgi(
       client_data.repository.get_method().c_str(),
       name->second.c_str(),
       name->second.c_str(),
       _kernel
-    )) {
+    );
+
+    if (pid == -1) {
       client_data.status = INTERNAL_SERVER_ERROR;
       client_data.repository.set_fd(open((Util::get_root_dir() + "/www/500.html").c_str(), O_RDONLY));
       fcntl(client_data.repository.get_fd(), F_SETFD, O_NONBLOCK);
       _kernel.add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(ws::Socket::read_data));
     }
+
+    client_data.cgi_pid = pid;
+
+    _kernel.add_process_event(pid, reinterpret_cast<void*>(ws::Socket::wait_child), 0, NOTE_EXIT | NOTE_SIGNAL);
 
     return;
   }
@@ -279,7 +285,7 @@ void ws::Socket::process_session(struct kevent event) {
   else if (method == "DELETE")
     _session.erase(it);
 
-  _kernel.add_process_event(event.ident, reinterpret_cast<void*>(ws::Socket::generate_response), EV_ONESHOT);
+  _kernel.add_user_event(event.ident, reinterpret_cast<void *>(ws::Socket::generate_response), EV_ONESHOT);
   ws::Util::print_running_time("process_session()", client_data.start_time);
 }
 
@@ -303,7 +309,7 @@ void ws::Socket::read_data(struct kevent event) {
   if (Util::is_eof(event.ident)) {
     close(client->second.repository.get_fd());
 //    _kernel.delete_read_event(event.ident);
-    _kernel.add_process_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response), EV_ONESHOT);
+    _kernel.add_user_event(client->first, reinterpret_cast<void *>(ws::Socket::generate_response), EV_ONESHOT);
     ws::Util::print_running_time("read_data()", client->second.start_time);
   }
 }
@@ -328,7 +334,7 @@ void ws::Socket::write_data(struct kevent event) {
   if (offset == request_body.length()) {
     offset = 0;
     _kernel.delete_write_event(event.ident); // todo?
-    _kernel.add_process_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response), EV_ONESHOT);
+    _kernel.add_user_event(client->first, reinterpret_cast<void *>(ws::Socket::generate_response), EV_ONESHOT);
     ws::Util::print_running_time("write_data()", client->second.start_time);
   }
 }
@@ -373,10 +379,12 @@ void ws::Socket::read_pipe(struct kevent event) {
   client->second.response.insert(client->second.response.length(), buffer, read_size);
 
   // todo 조건 안걸림, 이유는 파이프로 1억바이트 송수신이 안되기 때문
-  if (offset == client->second.request.get_request_body().length() || (buffer[read_size -1 ] == '\n' && buffer[read_size - 2] == '\r' && buffer[read_size - 3] == '\n' && buffer[read_size - 4] == '\r')) { // todo
+  if (true) {
+//  if (offset == client->second.request.get_request_body().length() || (buffer[read_size -1 ] == '\n' && buffer[read_size - 2] == '\r' && buffer[read_size - 3] == '\n' && buffer[read_size - 4] == '\r')) { // todo
     _kernel.delete_read_event(event.ident);
     close(event.ident);
-    _kernel.add_process_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response), EV_ONESHOT);
+    _kernel.add_write_event(client->first, reinterpret_cast<void*>(ws::Socket::send_response));
+//    _kernel.add_user_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response), EV_ONESHOT);
   }
 }
 
@@ -401,17 +409,23 @@ void ws::Socket::write_pipe(struct kevent event) { // todo: when refactoring is 
     _kernel.delete_write_event(event.ident);
     close(event.ident);
     _kernel.add_read_event(client->second.cgi_handler.get_bpipe()[0], reinterpret_cast<void*>(ws::Socket::read_pipe));
-    _kernel.add_process_event(client->first, reinterpret_cast<void*>(ws::Socket::wait_child));
   }
 }
 
-void ws::Socket::wait_child(struct kevent event) {
-  client_value_type& client = _client.find(event.ident)->second;
+ws::Socket::client_map_type::iterator ws::Socket::find_client_by_pid(pid_t pid) throw() {
+  client_map_type::iterator ret = _client.begin();
 
-  if (waitpid(0, NULL, WNOHANG)) {
+  while (ret != _client.end() && ret->second.cgi_pid != pid)
+    ++ret;
+
+  return ret;
+}
+
+void ws::Socket::wait_child(struct kevent event) {
+  client_value_type& client = find_client_by_pid(event.ident)->second;
+
+  if (waitpid(event.ident, NULL, 0))
     client.cgi_handler.set_eof(true);
-    _kernel.delete_process_event(event.ident);
-  }
 }
 
 void ws::Socket::generate_response(struct kevent event) {

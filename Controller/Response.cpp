@@ -32,7 +32,7 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
 
 //2. session
   if (_repo->is_session()) {
-    _kernel->add_process_event(client_fd, reinterpret_cast<void *>(&Socket::process_session), EV_ONESHOT);
+    _kernel->add_user_event(client_fd, reinterpret_cast<void *>(&Socket::process_session), EV_ONESHOT);
     return;
   }
 
@@ -41,7 +41,7 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
     if (redirect.first < 300 && client_data.repository.get_method() != "HEAD")
       client_data.response = redirect.second;
 
-    _kernel->add_process_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
+    _kernel->add_user_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
     return;
   }
 
@@ -54,24 +54,24 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
       client_data.response += ("<li><a href=\"" + *it + "\">" + *it + "</a></li>\n");
     }
     client_data.response += "</ul>\n</body>\n</html>";
-    _kernel->add_process_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
+    _kernel->add_user_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
     return;
   }
   
 //5. delete method
   if (client_data.repository.get_method() == "DELETE") {
     remove(client_data.repository.get_file_path().c_str());
-    _kernel->add_process_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
+    _kernel->add_user_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
     return;
   }
 
 //6. head method
   if (client_data.repository.get_method() == "HEAD") {
-    _kernel->add_process_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
+    _kernel->add_user_event(client_fd, reinterpret_cast<void *>(&Socket::generate_response), EV_ONESHOT);
   } else if (client_data.repository.get_method() == "GET") {
     if (Util::is_eof(client_data.repository.get_fd())) {
       close(client_data.repository.get_fd());
-      _kernel->add_process_event(client_fd, reinterpret_cast<void *>(Socket::generate_response), EV_ONESHOT);
+      _kernel->add_user_event(client_fd, reinterpret_cast<void *>(Socket::generate_response), EV_ONESHOT);
     } else
       _kernel->add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(&Socket::read_data));
   } else {

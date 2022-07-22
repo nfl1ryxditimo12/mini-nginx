@@ -13,7 +13,7 @@ namespace ws {
 
     bool init_pipe() throw();
     static bool set_cgi_env(const char* method, const char* path_info);
-    pid_t init_child(const char* cgi_path);
+    pid_t init_child(const char* cgi_path, pid_t& pid);
 
     CgiHandler& operator=(const CgiHandler& other);
 
@@ -28,6 +28,6 @@ namespace ws {
 
     void set_eof(bool value);
 
-    bool run_cgi(const char* method, const char* path_info, const char* cgi_path, ws::Kernel& kernel);
+    pid_t run_cgi(const char* method, const char* path_info, const char* cgi_path, ws::Kernel& kernel);
   };
 }

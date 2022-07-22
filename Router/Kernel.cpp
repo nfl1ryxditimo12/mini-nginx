@@ -46,30 +46,38 @@ int ws::Kernel::kevent_wait(struct kevent* event_list, size_t event_size) {
   return new_event;
 }
 
-void  ws::Kernel::add_signal_event(int fd, void* udata, uint16_t flags, uint32_t fflags, intptr_t data) {
-  kevent_ctl(fd, EVFILT_SIGNAL, EV_ADD | flags, fflags, data, udata);
+void  ws::Kernel::add_signal_event(int ident, void* udata, uint16_t flags, uint32_t fflags, intptr_t data) {
+  kevent_ctl(ident, EVFILT_SIGNAL, EV_ADD | flags, fflags, data, udata);
 }
 
-void ws::Kernel::add_read_event(int fd, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
-  kevent_ctl(fd, EVFILT_READ, EV_ADD | flags, fflags, data, udata);
+void ws::Kernel::add_read_event(int ident, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
+  kevent_ctl(ident, EVFILT_READ, EV_ADD | flags, fflags, data, udata);
 }
 
-void ws::Kernel::add_write_event(int fd, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
-  kevent_ctl(fd, EVFILT_WRITE, EV_ADD | flags, fflags, data, udata);
+void ws::Kernel::add_write_event(int ident, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
+  kevent_ctl(ident, EVFILT_WRITE, EV_ADD | flags, fflags, data, udata);
 }
 
-void ws::Kernel::add_process_event(int fd, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
-  kevent_ctl(fd, EVFILT_USER, EV_ADD | flags, NOTE_TRIGGER | fflags, data, udata);
+void ws::Kernel::add_process_event(int ident, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
+  kevent_ctl(ident, EVFILT_PROC, EV_ADD | EV_ONESHOT | flags, fflags, data, udata);
 }
 
-void ws::Kernel::delete_read_event(int fd) {
-  kevent_ctl(fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+void ws::Kernel::add_user_event(int ident, void *udata, uint16_t flags, uint32_t fflags, intptr_t data) {
+  kevent_ctl(ident, EVFILT_USER, EV_ADD | flags, NOTE_TRIGGER | fflags, data, udata);
 }
 
-void ws::Kernel::delete_write_event(int fd) {
-  kevent_ctl(fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+void ws::Kernel::delete_read_event(int ident) {
+  kevent_ctl(ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 }
 
-void ws::Kernel::delete_process_event(int fd) {
-  kevent_ctl(fd, EVFILT_USER, EV_DELETE, 0, 0, NULL);
+void ws::Kernel::delete_write_event(int ident) {
+  kevent_ctl(ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+}
+
+void ws::Kernel::delete_process_event(int ident) {
+  kevent_ctl(ident, EVFILT_PROC, EV_DELETE, 0, 0, NULL);
+}
+
+void ws::Kernel::delete_user_event(int ident) {
+  kevent_ctl(ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
 }

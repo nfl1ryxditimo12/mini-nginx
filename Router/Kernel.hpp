@@ -34,14 +34,16 @@ namespace ws {
 
     int   kevent_wait(struct kevent* event_list, size_t event_size);
 
-    void  add_signal_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
+    void  add_signal_event(int ident, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
 
-    void  add_read_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
-    void  add_write_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
-    void  add_process_event(int fd, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
+    void  add_read_event(int ident, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
+    void  add_write_event(int ident, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
+    void  add_process_event(int ident, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
+    void  add_user_event(int ident, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
 
-    void  delete_read_event(int fd);
-    void  delete_write_event(int fd);
-    void  delete_process_event(int fd);
+    void  delete_read_event(int ident);
+    void  delete_write_event(int ident);
+    void  delete_process_event(int ident);
+    void  delete_user_event(int ident);
   };
 }
