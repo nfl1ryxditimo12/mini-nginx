@@ -197,20 +197,25 @@ void ws::Socket::process_request(struct kevent event) {
   if (client_data.request.get_method() == "POST" && extension_dot != std::string::npos && name != cgi_map.end()) {
     close(client_data.repository.get_fd());
 
-    pid_t pid = client_data.cgi_handler.run_cgi(
-      client_data.repository.get_method().c_str(),
-      name->second.c_str(),
-      name->second.c_str(),
-      _kernel
-    );
+    ws::Request::header_type::const_iterator special = client_data.request.get_request_header().find("X-Secret-Header-For-Test");
+    if (special != client_data.request.get_request_header().end() && setenv(("HTTP_" + special->first).c_str(), special->second.c_str(), 1)) {
+      client_data.status = INTERNAL_SERVER_ERROR;
+    } else {
+      pid_t pid = client_data.cgi_handler.run_cgi(
+        client_data.repository.get_method().c_str(),
+        name->second.c_str(),
+        name->second.c_str(),
+        _kernel
+      );
 
-    if (pid != -1) {
-      client_data.cgi_pid = pid;
-      _kernel.add_process_event(pid, reinterpret_cast<void*>(ws::Socket::wait_child), 0, NOTE_EXIT | NOTE_SIGNAL);
-      return;
+      if (pid != -1) {
+        client_data.cgi_pid = pid;
+        _kernel.add_process_event(pid, reinterpret_cast<void*>(ws::Socket::wait_child), 0, NOTE_EXIT | NOTE_SIGNAL);
+        return;
+      }
+
+      client_data.status = INTERNAL_SERVER_ERROR;
     }
-
-    client_data.status = INTERNAL_SERVER_ERROR;
   }
 
   client_data.buffer.delete_buf();
@@ -287,6 +292,7 @@ void ws::Socket::process_session(struct kevent event) {
 
 void ws::Socket::read_data(struct kevent event) {
   const client_map_type::iterator& client = find_client_by_file(event.ident);
+
   char buffer[kBUFFER_SIZE + 1];
   ssize_t read_size = 0;
 
@@ -390,7 +396,6 @@ void ws::Socket::parse_cgi_return(client_value_type &client) {
 
 void ws::Socket::read_pipe(struct kevent event) {
   const client_map_type::iterator& client = find_client_by_bpipe(event.ident);
-
   ssize_t read_size = client->second.buffer.read_file(event.ident, event.data);
 
   if (read_size < 0) {
@@ -413,7 +418,6 @@ void ws::Socket::read_pipe(struct kevent event) {
   }
   parse_cgi_return(client->second);
 
-  // todo 조건 안걸림, 이유는 파이프로 1억바이트 송수신이 안되기 때문
   if (client->second.response_body.length() == client->second.request.get_request_body().length()) {
     client->second.buffer.delete_buf();
     _kernel.delete_read_event(event.ident);
@@ -463,6 +467,9 @@ void ws::Socket::wait_child(struct kevent event) {
 
 void ws::Socket::generate_response(struct kevent event) {
   client_value_type& client_data = _client.find(event.ident)->second; // todo
+  if (_client.find(event.ident) == _client.end()) {
+    std::cout << "asdfg" << std::endl;
+  }
   _response.generate(client_data);
   _kernel.add_write_event(event.ident, reinterpret_cast<void*>(ws::Socket::send_response));
   ws::Util::print_running_time("generate_response()", client_data.start_time);
@@ -472,7 +479,6 @@ void ws::Socket::send_response(struct kevent event) {
   client_value_type& client_data = _client.find(event.ident)->second;
   const std::string& response_data = client_data.response_total;
   std::string::size_type& offset = client_data.write_offset;
-
   if (!client_data.cgi_handler.get_eof())
     return;
 

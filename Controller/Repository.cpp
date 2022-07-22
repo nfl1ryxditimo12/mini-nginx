@@ -126,12 +126,6 @@ void ws::Repository::set_fd(int value) {
 }
 
 void ws::Repository::set_autoindex() {
-
-  if (!(_method == "GET" || _method == "HEAD")) {
-    this->set_status(METHOD_NOT_ALLOWED);
-    return;
-  }
-
   DIR* dir = opendir(_file_path.c_str());
   struct dirent *file    = NULL;
 
@@ -151,7 +145,10 @@ void ws::Repository::set_autoindex() {
       _autoindex.push_back(file->d_name);
   }
 
-  if (_fd == FD_DEFAULT && !_config.autoindex && !(_method == "HEAD" || _method == "DELETE"))
+  if (_fd == FD_DEFAULT && !(_method == "GET" || _method == "HEAD")) {
+    _autoindex.clear();
+    this->set_status(METHOD_NOT_ALLOWED);
+  } else if (_fd == FD_DEFAULT && !_config.autoindex && !(_method == "HEAD" || _method == "DELETE"))
     this->set_status(NOT_FOUND);
 
   closedir(dir);
@@ -265,6 +262,10 @@ const std::string&  ws::Repository::get_content_type() const throw() {
 
 const ws::Repository::redirect_type&  ws::Repository::get_redirect() const throw() {
   return _config.redirect;
+}
+
+const ws::Repository::client_max_body_size_type& ws::Repository::get_client_max_body_size() const throw() {
+  return _config.client_max_body_size;
 }
 
 void ws::Repository::clear() throw() {

@@ -128,5 +128,6 @@ void ws::HeaderGenerator::generate_connection_line(std::string& data) {
 
 void ws::HeaderGenerator::generate_cookie(std::string& data, const client_value_type& client_data) {
 //    data += "Set-Cookie: session_id=" + ws::Util::ultos(ws::Socket::get_session().find(client_data.request.get_session_id())->first) + "\r\n"; // todo
+  if (client_data.repository.is_session())
     data += "Set-Cookie: session_id=" + ws::Util::ultos(client_data.request.get_session_id()) + "\r\n";
 }

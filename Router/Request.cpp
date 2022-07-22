@@ -93,6 +93,8 @@ void	ws::Request::parse_request_chunked_body() {
     return;
   }
   _eof = true;
+`  if (_request_body.length() > _client_max_body_size)
+    _status = PAYLOAD_TOO_LARGE;
 }
 
 /*
@@ -221,10 +223,10 @@ int ws::Request::parse_request_message(const ws::Configure& conf, ws::Buffer* bu
       return _status;
 
     const ws::Server& curr_server = conf.find_server(this->get_listen(), this->get_server_name());
-    _client_max_body_size = curr_server.get_client_max_body_size();
     repo(curr_server, *this);
+    _client_max_body_size = repo.get_client_max_body_size();
     if (_content_length != std::string::npos && _content_length > _client_max_body_size)
-      _status = 413;
+      _status = PAYLOAD_TOO_LARGE;
   }
 
   /* body가 없거나 _status가 양수일 경우 eof 설정 */
