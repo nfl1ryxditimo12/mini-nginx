@@ -104,7 +104,7 @@ void ws::Repository::set_repository(unsigned int value)  {
     this->open_error_html();
 
   if (_status == 0)
-    this->set_status(_method == "POST" || _method == "PUT" ? 200 : 200);
+    this->set_status(_method == "POST" || _method == "PUT" ? OK : OK);
 
   this->set_content_type();
 
@@ -180,7 +180,8 @@ void ws::Repository::open_file(std::string filename) {
     open_flag = O_WRONLY | O_TRUNC | O_CREAT;
 
   if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1 || fcntl(_fd, F_SETFL, O_NONBLOCK) == -1)
-    this->set_status(INTERNAL_SERVER_ERROR);
+    this->set_status(NOT_FOUND);
+//    this->set_status(INTERNAL_SERVER_ERROR);
 }
 
 void ws::Repository::open_error_html() {

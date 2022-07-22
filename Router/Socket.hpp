@@ -24,31 +24,31 @@ namespace ws {
     struct client_data {
 
       client_data(ws::Configure::listen_type listen)
-        : fatal(false),
-        status(0),
-        repository(ws::Repository(fatal, status)),
-        request(ws::Request(listen)),
-        response(""),
-        write_offset(0),
-        pipe_offset(),
-        cgi_handler(),
-        cgi_pid(-1),
-        start_time(clock()) {};
+        : _fatal(false),
+        _status(0),
+        _repository(ws::Repository(_fatal, _status)),
+        _request(ws::Request(listen)),
+        _response(""),
+        _write_offset(0),
+        _pipe_offset(),
+        _cgi_handler(),
+        _cgi_pid(-1),
+        _start_time(clock()) {};
 
 //      client_data(const client_data& cls)
 //      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request), response(cls.response), write_offset(cls.write_offset), start_time(cls.start_time), session_iter(cls.session_iter) {};
 
-      bool                    fatal;
-      unsigned int            status;
-      ws::Repository          repository;
-      ws::Request             request;
-      std::string             response;
-      std::string::size_type  write_offset;
-      std::string::size_type  pipe_offset;
-      ws::CgiHandler          cgi_handler;
-      pid_t                   cgi_pid;
-      ws::Buffer              buffer;
-      clock_t                 start_time;
+      bool                    _fatal;
+      unsigned int            _status;
+      ws::Repository          _repository;
+      ws::Request             _request;
+      std::string             _response;
+      std::string::size_type  _write_offset;
+      std::string::size_type  _pipe_offset;
+      ws::CgiHandler          _cgi_handler;
+      pid_t                   _cgi_pid;
+      ws::Buffer              _buffer;
+      clock_t                 _start_time;
     };
 
     struct session_data {

@@ -9,7 +9,6 @@ namespace ws {
   enum Code {
     /* 200 Status Code */
     OK                      = 200,
-    CREATED                 = 201,
     NO_CONTENT              = 204,
 
     /* 300 Status Code */

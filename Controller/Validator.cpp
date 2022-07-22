@@ -26,16 +26,16 @@ ws::Validator::Validator() throw() : _session(NULL) {
 ws::Validator::~Validator() {}
 
 void ws::Validator::operator()(const session_map_type& session, client_value_type& client_data) {
-  _request_is_session = (client_data.request.get_uri() == "/session" ? true : false);
+  _request_is_session = (client_data._request.get_uri() == "/session" ? true : false);
 
-  if (_request_is_session && !client_data.repository.is_session()) {
-    client_data.status = 401;
+  if (_request_is_session && !client_data._repository.is_session()) {
+    client_data._status = UNAUTHORIZED;
     return;
   }
 
   for (check_func_vec::iterator it = _check_func_vec.begin(); it != _check_func_vec.end(); ++it) {
     (this->**it)(client_data);
-    if (client_data.status != 0) //todo: < 300
+    if (client_data._status != 0) //todo: < 300
       break;
   }
 
@@ -44,7 +44,7 @@ void ws::Validator::operator()(const session_map_type& session, client_value_typ
 
     for (check_session_func_vec::iterator it = _check_session_func_vec.begin(); it != _check_session_func_vec.end(); ++it) {
       (this->**it)(client_data);
-      if (client_data.status != 0)
+      if (client_data._status != 0)
         break;
     }
   }
@@ -62,8 +62,8 @@ void ws::Validator::init_content_type_parser(client_value_type&) {
 }
 
 void ws::Validator::check_method(client_value_type& client_data) {
-  const std::string& request_method = client_data.request.get_method();
-  const limit_except_vec_type& limit_except_vec = client_data.repository.get_location()->get_limit_except_vec();
+  const std::string& request_method = client_data._request.get_method();
+  const limit_except_vec_type& limit_except_vec = client_data._repository.get_location()->get_limit_except_vec();
 
   if (
     !(request_method == "GET" ||
@@ -72,7 +72,7 @@ void ws::Validator::check_method(client_value_type& client_data) {
     request_method == "DELETE" ||
     request_method == "PUT")
   )
-    client_data.status = METHOD_NOT_ALLOWED;
+    client_data._status = METHOD_NOT_ALLOWED;
 
   for (
     limit_except_vec_type::const_iterator limit_except = limit_except_vec.begin();
@@ -82,71 +82,71 @@ void ws::Validator::check_method(client_value_type& client_data) {
     if (request_method == *limit_except)
       return;
   }
-  client_data.status = METHOD_NOT_ALLOWED;
+  client_data._status = METHOD_NOT_ALLOWED;
 }
 
 void ws::Validator::check_uri(client_value_type& client_data) {
-  const struct stat& file_status = client_data.repository.get_file_stat();
-  const std::string& method = client_data.repository.get_method();
+  const struct stat& file_status = client_data._repository.get_file_stat();
+  const std::string& method = client_data._repository.get_method();
 
   if (!_request_is_session)
     return;
 
   if (S_ISREG(file_status.st_mode)) {
-      // client_data.status = NOT_MODIFIED; -> file download
+      // client_data._status = NOT_MODIFIED; -> file download
     if ((file_status.st_mode & S_IREAD) == 0)
-      client_data.status = FORBIDDEN;
+      client_data._status = FORBIDDEN;
   } else if (!((S_ISDIR(file_status.st_mode)) && method != "POST" && method != "PUT" && method != "DELETE"))
-    client_data.status = NOT_FOUND;
+    client_data._status = NOT_FOUND;
 }
 
 void ws::Validator::check_version(client_value_type& client_data) {
-  if (client_data.request.get_version() != "HTTP/1.1")
-    client_data.status = HTTP_VERSION_NOT_SUPPORTED;
+  if (client_data._request.get_version() != "HTTP/1.1")
+    client_data._status = HTTP_VERSION_NOT_SUPPORTED;
 }
 
 void ws::Validator::check_host(client_value_type& client_data) {
-  const std::string& host = client_data.request.get_server_name();
+  const std::string& host = client_data._request.get_server_name();
 
   if (host == "")
-    client_data.status = BAD_REQUEST;
+    client_data._status = BAD_REQUEST;
 
   //host가 잘못된 값 = 400 -> 공백같은거...?!
 }
 
 void ws::Validator::check_connection(client_value_type& client_data) {
-  const std::string& connection = client_data.request.get_connection();
+  const std::string& connection = client_data._request.get_connection();
 
   if (!(connection == "close" || connection == "keep-alive" || connection == ""))
-    client_data.status = BAD_REQUEST;
+    client_data._status = BAD_REQUEST;
 }
 
 void ws::Validator::check_content_length(client_value_type& client_data) {
-  const ws::Request* const request = &client_data.request;
+  const ws::Request* const request = &client_data._request;
 
   if (request->get_content_length() == std::numeric_limits<unsigned long>::max())
     return;
 
-  client_data.status = 0;
+  client_data._status = 0;
 
   if (!(request->get_transfer_encoding().empty()))
-    client_data.status = BAD_REQUEST;
+    client_data._status = BAD_REQUEST;
 
   if (request->get_method() == "POST") {
     if (request->get_content_length() != request->get_request_body().length())
-      client_data.status = BAD_REQUEST;
+      client_data._status = BAD_REQUEST;
   } else {
     if (request->get_request_body().empty())
-      client_data.status = BAD_REQUEST;
+      client_data._status = BAD_REQUEST;
     else {
       if (request->get_content_length() != request->get_request_body().length())
-        client_data.status = BAD_REQUEST;
+        client_data._status = BAD_REQUEST;
     }
   }
 }
 
 void ws::Validator::check_content_type(client_value_type &client_data) {
-  header_type request_header = client_data.request.get_request_header();
+  header_type request_header = client_data._request.get_request_header();
   header_type::const_iterator header_iter = request_header.find("Content-Type");
 
   if (header_iter == request_header.end())
@@ -155,32 +155,32 @@ void ws::Validator::check_content_type(client_value_type &client_data) {
   const std::string& content_type = header_iter->second;
 
   if (_content_type_parser.find(content_type) == _content_type_parser.end())
-    client_data.status = UNSUPPORTED_MEDIA_TYPE;
+    client_data._status = UNSUPPORTED_MEDIA_TYPE;
 }
 
 void ws::Validator::check_transfer_encoding(client_value_type& client_data) {
-  const std::string& transfer_encoding = client_data.request.get_transfer_encoding();
+  const std::string& transfer_encoding = client_data._request.get_transfer_encoding();
 
   if (!(transfer_encoding == "chunked" || transfer_encoding == ""))
-    client_data.status = BAD_REQUEST;
+    client_data._status = BAD_REQUEST;
 }
 
 void ws::Validator::check_session_id(client_value_type &client_data) {
-  const std::string& method = client_data.request.get_method();
-  const unsigned int& session_id = client_data.request.get_session_id();
+  const std::string& method = client_data._request.get_method();
+  const unsigned int& session_id = client_data._request.get_session_id();
 
   if (method == "GET" || method == "DELETE") {
     if (_session->find(session_id) == _session->end())
-      client_data.status = UNAUTHORIZED;
+      client_data._status = UNAUTHORIZED;
   }
 }
 
 void ws::Validator::check_secret_key(client_value_type &client_data) {
-  const std::string& method = client_data.request.get_method();
-  const std::string& secret_key = client_data.request.get_secret_key();
+  const std::string& method = client_data._request.get_method();
+  const std::string& secret_key = client_data._request.get_secret_key();
 
   if (method == "POST") {
     if (secret_key != "hellowebserv")
-      client_data.status = UNAUTHORIZED;
+      client_data._status = UNAUTHORIZED;
   }
 }
