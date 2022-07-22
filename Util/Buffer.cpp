@@ -123,7 +123,7 @@ std::string& ws::operator<<(std::string& str, ws::Buffer& buffer) {
     str.push_back(buffer[offset]);
   }
 
-  buffer.advance();
+  buffer.clear();
 
   return str;
 }
