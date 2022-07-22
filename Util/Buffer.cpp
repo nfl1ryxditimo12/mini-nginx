@@ -116,10 +116,14 @@ ssize_t ws::Buffer::read_file(int fd) {
   return ret;
 }
 
-ssize_t ws::Buffer::write_file(int fd, std::size_t n) {
-  if (!_buf)
-    throw std::out_of_range("access after delete");
+std::string& ws::operator<<(std::string& str, ws::Buffer& buffer) {
+  std::size_t offset = buffer.get_offset();
 
-  advance(n);
-  return write(fd, _buf, n);
+  for (; offset < buffer.size(); ++offset) {
+    str.push_back(buffer[offset]);
+  }
+
+  buffer.advance();
+
+  return str;
 }

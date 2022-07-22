@@ -366,6 +366,9 @@ void ws::ConfParser::parse_cgi(ws::Location &location) {
 
   value.second = Util::get_root_dir() + _token.substr(0, _token.length() - 1);
 
+  if (access(value.second.c_str(), X_OK) == -1)
+    throw std::invalid_argument("Configure: location: cgi: wrong cgi program path");
+
   location.add_cgi(value);
 }
 

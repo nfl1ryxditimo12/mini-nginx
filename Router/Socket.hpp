@@ -25,20 +25,23 @@ namespace ws {
 
       client_data(ws::Configure::listen_type listen)
         : fatal(false), status(0), repository(ws::Repository(fatal, status)), request(ws::Request(listen)),
-          response(""), write_offset(0), pipe_offset(), cgi_handler(), start_time(clock()) {};
+          response_header(), response_body(), write_offset(0), pipe_offset(), cgi_handler(), is_cgi_header(true), start_time(clock()) {};
 
-//      client_data(const client_data& cls)
+//      client_data(const client_data& cls) // todo: ???
 //      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request), response(cls.response), write_offset(cls.write_offset), start_time(cls.start_time), session_iter(cls.session_iter) {};
 
       bool                    fatal;
       unsigned int            status;
       ws::Repository          repository;
       ws::Request             request;
-      std::string             response;
+      std::string             response_total;
+      std::string             response_header;
+      std::string             response_body;
       std::string::size_type  write_offset;
       std::string::size_type  pipe_offset;
       ws::CgiHandler          cgi_handler;
       pid_t                   cgi_pid;
+      bool                    is_cgi_header;
       ws::Buffer              buffer;
       clock_t                 start_time;
     };
@@ -118,6 +121,7 @@ namespace ws {
     static void connect_client(struct kevent event);
     static void recv_request(struct kevent event);
     static void process_request(struct kevent event);
+    static void parse_cgi_return(client_value_type& client);
     static ws::Socket::client_map_type::iterator find_client_by_file(int file) throw();
     static ws::Socket::client_map_type::iterator find_client_by_fpipe(int fpipe) throw();
     static ws::Socket::client_map_type::iterator find_client_by_bpipe(int bpipe) throw();

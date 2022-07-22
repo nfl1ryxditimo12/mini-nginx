@@ -178,7 +178,7 @@ void ws::Socket::recv_request(struct kevent event) {
 //    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
     _kernel.add_user_event(event.ident, reinterpret_cast<void *>(&Socket::process_request), EV_ONESHOT);
     _kernel.delete_read_event(event.ident);
-    client_data.buffer.delete_buf();
+    client_data.buffer.clear();
     ws::Util::print_running_time("recv_request()", client_data.start_time);
   }
 }
@@ -194,30 +194,30 @@ void ws::Socket::process_request(struct kevent event) {
   const ws::Location::cgi_map_type& cgi_map = client_data.repository.get_location()->get_cgi_map();
   const ws::Location::cgi_map_type::const_iterator& name = cgi_map.find(extension);
 
-  if (client_data.request.get_method() == "POST" && extension_dot != std::string::npos && name != cgi_map.end()) {
-    // cgi handling zz
-    close(client_data.repository.get_fd());
+  if (extension_dot != std::string::npos && name != cgi_map.end()) {
+    if (client_data.request.get_method() == "POST") {
+      close(client_data.repository.get_fd());
 
-    pid_t pid = client_data.cgi_handler.run_cgi(
-      client_data.repository.get_method().c_str(),
-      name->second.c_str(),
-      name->second.c_str(),
-      _kernel
-    );
+      pid_t pid = client_data.cgi_handler.run_cgi(
+        client_data.repository.get_method().c_str(),
+        name->second.c_str(),
+        name->second.c_str(),
+        _kernel
+      );
 
-    if (pid == -1) {
+      if (pid != -1) {
+        client_data.cgi_pid = pid;
+        _kernel.add_process_event(pid, reinterpret_cast<void*>(ws::Socket::wait_child), 0, NOTE_EXIT | NOTE_SIGNAL);
+        return;
+      }
+
       client_data.status = INTERNAL_SERVER_ERROR;
-      client_data.repository.set_fd(open((Util::get_root_dir() + "/www/500.html").c_str(), O_RDONLY));
-      fcntl(client_data.repository.get_fd(), F_SETFD, O_NONBLOCK);
-      _kernel.add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(ws::Socket::read_data));
     }
 
-    client_data.cgi_pid = pid;
-
-    _kernel.add_process_event(pid, reinterpret_cast<void*>(ws::Socket::wait_child), 0, NOTE_EXIT | NOTE_SIGNAL);
-
-    return;
+    client_data.status = METHOD_NOT_ALLOWED;
   }
+
+  client_data.buffer.delete_buf();
 
   client_data.repository.set_repository(client_data.status);
   client_data.status = client_data.repository.get_status();
@@ -266,13 +266,13 @@ void ws::Socket::process_session(struct kevent event) {
   if (method == "GET") {
     ++it->second.hit_count;
     // todo: response
-    client_data.response += "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<title>session</title>\n</head>\n<body>\n<h4>hit point: ";
-    client_data.response += Util::ultos(it->second.hit_count);
-    client_data.response += "</h4>\n<h4>name: ";
-    client_data.response += it->second.name;
-    client_data.response += "</h4>\n<h4>id: ";
-    client_data.response += Util::ultos(it->first);
-    client_data.response +="</h4>\n</body>\n</html>";
+    client_data.response_body += "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<title>session</title>\n</head>\n<body>\n<h4>hit point: ";
+    client_data.response_body += Util::ultos(it->second.hit_count);
+    client_data.response_body += "</h4>\n<h4>name: ";
+    client_data.response_body += it->second.name;
+    client_data.response_body += "</h4>\n<h4>id: ";
+    client_data.response_body += Util::ultos(it->first);
+    client_data.response_body +="</h4>\n</body>\n</html>";
   }
   else if (method == "POST") {
     // todo 이 조건은 사라져도 될 듯?
@@ -304,7 +304,7 @@ void ws::Socket::read_data(struct kevent event) {
     return;
   }
 
-  client->second.response.insert(client->second.response.length(), buffer, read_size);
+  client->second.response_body.insert(client->second.response_body.length(), buffer, read_size);
 
   if (Util::is_eof(event.ident)) {
     close(client->second.repository.get_fd());
@@ -359,13 +359,43 @@ ws::Socket::client_map_type::iterator ws::Socket::find_client_by_bpipe(int bpipe
   return curr;
 }
 
+void ws::Socket::parse_cgi_return(client_value_type &client) {
+  while (client.is_cgi_header) {
+    ws::Token token;
+    token.rd_http_line(client.buffer);
+    ws::Token::size_type pos = token.find(':');
+
+    if (token == "\r\n") {
+      client.is_cgi_header = false;
+      break;
+    }
+
+    if (pos == ws::Token::npos) {
+      client.buffer << token;
+      return;
+    }
+
+    if (!token.compare(0, pos, "Status")) {
+      client.response_header =
+        "HTTP/1.1 "
+        + token.substr(pos + 2, token.find(' ', pos + 2) - (pos + 2))
+        + "\r\n"
+      ;
+    } else {
+      client.response_header += token;
+    }
+
+    if (client.buffer.eof())
+      return;
+  }
+
+  client.response_body << client.buffer;
+}
+
 void ws::Socket::read_pipe(struct kevent event) {
   const client_map_type::iterator& client = find_client_by_bpipe(event.ident);
-  std::string::size_type& offset = client->second.write_offset;
 
-  char buffer[kBUFFER_SIZE];
-
-  ssize_t read_size = read(event.ident, buffer, kBUFFER_SIZE);
+  ssize_t read_size = client->second.buffer.read_file(event.ident);
 
   if (read_size <= 0) {
     std::cerr << "Socket: read error occurred" << std::endl;
@@ -374,17 +404,15 @@ void ws::Socket::read_pipe(struct kevent event) {
     return;
   }
 
-  offset += read_size;
-
-  client->second.response.insert(client->second.response.length(), buffer, read_size);
+  parse_cgi_return(client->second);
 
   // todo 조건 안걸림, 이유는 파이프로 1억바이트 송수신이 안되기 때문
-  if (true) {
-//  if (offset == client->second.request.get_request_body().length() || (buffer[read_size -1 ] == '\n' && buffer[read_size - 2] == '\r' && buffer[read_size - 3] == '\n' && buffer[read_size - 4] == '\r')) { // todo
+  if (client->second.response_body.length() == client->second.request.get_request_body().length()) {
+    client->second.buffer.delete_buf();
     _kernel.delete_read_event(event.ident);
     close(event.ident);
+    client->second.response_total = client->second.response_header + "\r\n" + client->second.response_body;
     _kernel.add_write_event(client->first, reinterpret_cast<void*>(ws::Socket::send_response));
-//    _kernel.add_user_event(client->first, reinterpret_cast<void*>(ws::Socket::generate_response), EV_ONESHOT);
   }
 }
 
@@ -392,7 +420,6 @@ void ws::Socket::write_pipe(struct kevent event) { // todo: when refactoring is 
   const client_map_type::iterator& client = find_client_by_fpipe(event.ident);
   const std::string& request_body = client->second.request.get_request_body();
   std::string::size_type& offset = client->second.pipe_offset;
-
   ssize_t write_size = write(event.ident, request_body.c_str() + offset, request_body.length() - offset);
 
   if (write_size <= 0) {
@@ -430,14 +457,14 @@ void ws::Socket::wait_child(struct kevent event) {
 
 void ws::Socket::generate_response(struct kevent event) {
   client_value_type& client_data = _client.find(event.ident)->second; // todo
-  _response.generate(client_data, event.ident);
+  _response.generate(client_data);
   _kernel.add_write_event(event.ident, reinterpret_cast<void*>(ws::Socket::send_response));
   ws::Util::print_running_time("generate_response()", client_data.start_time);
 }
 
 void ws::Socket::send_response(struct kevent event) {
   client_value_type& client_data = _client.find(event.ident)->second;
-  const std::string& response_data = client_data.response;
+  const std::string& response_data = client_data.response_total;
   std::string::size_type& offset = client_data.write_offset;
 
   if (!client_data.cgi_handler.get_eof())

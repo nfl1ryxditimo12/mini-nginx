@@ -46,6 +46,7 @@ namespace ws {
 
     // should call with kevent
     ssize_t read_file(int fd);
-    ssize_t write_file(int fd, std::size_t n);
   };
+
+  std::string& operator<<(std::string& str, ws::Buffer& buffer);
 }
