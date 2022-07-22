@@ -5,7 +5,7 @@
 #include "Response.hpp"
 #include "Validator.hpp"
 
-/* console test code */ // todo: remove
+/* console test code */ // todo: remove: test print
 #include <iostream>
 #define NC "\e[0m"
 #define RED "\e[0;31m"
@@ -39,8 +39,8 @@ void ws::Socket::init_server(const ws::Configure& conf) {
     if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
       exit_socket();
 
-    int k = true;
-    setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &k, sizeof(k));
+    int optval = true;
+    setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
     memset(&addr_info, 0, sizeof(addr_info));
     addr_info.sin_family = AF_INET;
@@ -51,6 +51,7 @@ void ws::Socket::init_server(const ws::Configure& conf) {
       std::cout << strerror(errno) << std::endl;
         exit_socket();
     }
+
     if (listen(socket_fd, 2000) == -1)
       exit_socket();
     fcntl(socket_fd, F_SETFL, O_NONBLOCK);
@@ -58,22 +59,6 @@ void ws::Socket::init_server(const ws::Configure& conf) {
     _kernel.add_read_event(socket_fd, reinterpret_cast<void*>(&Socket::connect_client));
   }
 }
-
-/* 시그널 처리 알아보고 적용해야함 */
-// sig_atomic_t received_sig;
-
-// void handler(int sig) {
-//   received_sig = sig;
-// }
-
-// int main() {
-//   while (true) {
-//     process_event();
-//     if (received_sig) {
-//       return;
-//     }
-//   }
-// }
 
 ws::Socket::~Socket() {}
 
@@ -135,9 +120,10 @@ void ws::Socket::accecpt_signal(struct kevent event) {
 void ws::Socket::connect_client(struct kevent event) {
   if (_signal == SIGINT)
     return;
-  listen_type& listen = _server.find(event.ident)->second;
-  int client_socket_fd;
 
+  listen_type& listen = _server.find(event.ident)->second;
+
+  int client_socket_fd;
   if ((client_socket_fd = accept(event.ident, NULL, NULL)) == -1)
     return;
 
@@ -148,8 +134,8 @@ void ws::Socket::connect_client(struct kevent event) {
 
 void ws::Socket::recv_request(struct kevent event) {
   client_value_type& client_data = _client.find(event.ident)->second;
-
   client_data.buffer.init_buf();
+
   ssize_t read_size;
   read_size = client_data.buffer.read_file(event.ident);
 
@@ -159,7 +145,7 @@ void ws::Socket::recv_request(struct kevent event) {
     return;
   }
 
-  if (client_data.request.eof() && read_size > 0) // todo session
+  if (client_data.request.is_eof() && read_size > 0) // todo session
     client_data.request.clear();
 
   if (read_size > 0)
@@ -173,7 +159,7 @@ void ws::Socket::recv_request(struct kevent event) {
     return;
   }
 
-  if (client_data.request.eof() || client_data.status || !read_size) {
+  if (client_data.request.is_eof() || client_data.status || !read_size) {
 //    client_data.request.test(); // todo: test print
 //    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
     _kernel.add_user_event(event.ident, reinterpret_cast<void *>(&Socket::process_request), EV_ONESHOT);
@@ -255,17 +241,12 @@ void ws::Socket::process_session(struct kevent event) {
   const std::string& method = client_data.repository.get_method();
   session_map_type::iterator it = _session.find(client_data.request.get_session_id());
 
-  /* todo:
-   * - GET일때 세션아이디 검색해서 존재하면 html에 추가해서 띄워주기
-   * - POST일때 세션아이디 ++해서 insert 해주기
-   * - DELETE일때 세션아이디 검색해서 지우기
-   */
   if (it != _session.end())
     client_data.request.set_session_id(it->first);
 
   if (method == "GET") {
     ++it->second.hit_count;
-    // todo: response
+
     client_data.response += "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<title>session</title>\n</head>\n<body>\n<h4>hit point: ";
     client_data.response += Util::ultos(it->second.hit_count);
     client_data.response += "</h4>\n<h4>name: ";
@@ -292,9 +273,8 @@ void ws::Socket::process_session(struct kevent event) {
 void ws::Socket::read_data(struct kevent event) {
   const client_map_type::iterator& client = find_client_by_file(event.ident);
   char buffer[kBUFFER_SIZE + 1];
-  ssize_t read_size = 0;
-
-  read_size = read(client->second.repository.get_fd(), buffer, kBUFFER_SIZE);
+//  ssize_t read_size = 0;
+  ssize_t read_size = read(client->second.repository.get_fd(), buffer, kBUFFER_SIZE);
 
   if (read_size <= 0) { // todo: read 0 is an error?
     std::cerr << "Socket: read error occurred" << std::endl;
@@ -430,6 +410,7 @@ void ws::Socket::wait_child(struct kevent event) {
 
 void ws::Socket::generate_response(struct kevent event) {
   client_value_type& client_data = _client.find(event.ident)->second; // todo
+
   _response.generate(client_data, event.ident);
   _kernel.add_write_event(event.ident, reinterpret_cast<void*>(ws::Socket::send_response));
   ws::Util::print_running_time("generate_response()", client_data.start_time);

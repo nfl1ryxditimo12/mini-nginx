@@ -10,7 +10,7 @@ namespace ws {
 
   private:
     ws::Repository* _repo;
-    uintptr_t _client_fd;
+//    uintptr_t _client_fd;
     ws::Kernel* _kernel;
 
     static ws::HeaderGenerator _header_generator;
@@ -22,7 +22,7 @@ namespace ws {
     Response() throw();
     ~Response();
 
-    void set_data(client_value_type& client_data, uintptr_t client_fd);
+//    void set_data(client_value_type& client_data, uintptr_t client_fd);
     void set_kernel(Kernel* kernel);
 
     void process(client_value_type& client_data, uintptr_t client_fd);

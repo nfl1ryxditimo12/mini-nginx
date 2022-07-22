@@ -24,8 +24,16 @@ namespace ws {
     struct client_data {
 
       client_data(ws::Configure::listen_type listen)
-        : fatal(false), status(0), repository(ws::Repository(fatal, status)), request(ws::Request(listen)),
-          response(""), write_offset(0), pipe_offset(), cgi_handler(), start_time(clock()) {};
+        : fatal(false),
+        status(0),
+        repository(ws::Repository(fatal, status)),
+        request(ws::Request(listen)),
+        response(""),
+        write_offset(0),
+        pipe_offset(),
+        cgi_handler(),
+        cgi_pid(-1),
+        start_time(clock()) {};
 
 //      client_data(const client_data& cls)
 //      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request), response(cls.response), write_offset(cls.write_offset), start_time(cls.start_time), session_iter(cls.session_iter) {};
@@ -52,7 +60,6 @@ namespace ws {
 
   public:
     typedef ws::Configure::listen_type                                    listen_type;
-
     typedef std::pair<int, ws::Configure::listen_type>                    server_type;
     typedef std::map<server_type::first_type, server_type::second_type>   server_map_type;
 
@@ -88,14 +95,16 @@ namespace ws {
     */
     static client_map_type _client;
 
-    static ws::Validator _validator;
-    static ws::Response  _response;
-    const static std::size_t kBUFFER_SIZE;
-
     static session_map_type _session;
     static unsigned int _session_index;
 
+    static ws::Validator _validator;
+
+    static ws::Response  _response;
+
     static sig_atomic_t _signal;
+
+    const static std::size_t kBUFFER_SIZE;
 
     /* ====================================== */
     /*                  OCCF                  */

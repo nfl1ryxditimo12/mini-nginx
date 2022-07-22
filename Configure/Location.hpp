@@ -20,7 +20,7 @@ namespace ws {
     typedef ws::InnerOption::index_type index_type;
     typedef ws::InnerOption::client_max_body_size_type client_max_body_size_type;
     typedef ws::InnerOption::error_page_map_type error_page_map_type;
-    typedef ws::InnerOption::error_page_type error_page_type;
+//    typedef ws::InnerOption::error_page_type error_page_type;
   
   private:
     session_type _session;

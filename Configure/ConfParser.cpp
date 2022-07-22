@@ -43,13 +43,13 @@ void ws::ConfParser::init_option_parser() {
   _option_parser.insert(option_parser_func_map::value_type("error_page", &ConfParser::parse_error_page));
 }
 
-ws::Token& ws::ConfParser::get_token() throw() {
-  return _token;
-}
-
-std::stringstream& ws::ConfParser::get_buffer() throw() {
-  return _buffer;
-}
+//ws::Token& ws::ConfParser::get_token() throw() {
+//  return _token;
+//}
+//
+//std::stringstream& ws::ConfParser::get_buffer() throw() {
+//  return _buffer;
+//}
 
 std::string ws::ConfParser::read_file(const std::string& file) const {
   std::ifstream input;

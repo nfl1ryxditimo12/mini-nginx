@@ -8,10 +8,10 @@ ws::Response::Response() throw() {}
 
 ws::Response::~Response() {}
 
-void ws::Response::set_data(client_value_type& client_data, uintptr_t client_fd) {
-  _repo = &client_data.repository;
-  _client_fd = client_fd;
-}
+//void ws::Response::set_data(client_value_type& client_data, uintptr_t client_fd) {
+//  _repo = &client_data.repository;
+//  _client_fd = client_fd;
+//}
 
 void ws::Response::set_kernel(Kernel *kernel) {
   _kernel = kernel;
@@ -21,7 +21,8 @@ void ws::Response::set_kernel(Kernel *kernel) {
 // todo: need to add HEAD method
 void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) {
 //0. set_data
-  set_data(client_data, client_fd);
+//  set_data(client_data, client_fd);
+  _repo = &client_data.repository;
   ws::Repository::redirect_type redirect = client_data.repository.get_redirect();
 
 //1. 400error
@@ -80,12 +81,14 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
 }
 
 void ws::Response::generate(ws::Response::client_value_type &client_data, uintptr_t client_fd) {
-  set_data(client_data, client_fd);
+//  set_data(client_data, client_fd);
+  (void) client_fd;
+  _repo = &client_data.repository;
 
   std::string& response_data = client_data.response;
   std::string response_header = ws::HeaderGenerator::generate(client_data, response_data.length());
 
   response_data = response_header + "\r\n" + response_data;
 
-  // std::cout << "test\n" << response_data << "\ntest\n"; //todo: test print
+  // std::cout << "test\n" << response_data << "\ntest\n"; // todo: test print
 }
