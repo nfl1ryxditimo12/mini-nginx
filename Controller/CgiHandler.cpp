@@ -42,8 +42,8 @@ bool ws::CgiHandler::init_pipe() throw() {
     (
       pipe(_fpipe)
       || pipe(_bpipe)
-      || fcntl(_fpipe[1], F_SETFD, O_NONBLOCK)
-      || fcntl(_bpipe[0], F_SETFD, O_NONBLOCK)
+      || fcntl(_fpipe[1], F_SETFD, O_NONBLOCK) == -1
+      || fcntl(_bpipe[0], F_SETFD, O_NONBLOCK) == -1
     )
   );
 }
@@ -105,6 +105,7 @@ pid_t ws::CgiHandler::run_cgi(const char *method, const char *path_info, const c
   _eof = false;
 
   kernel.add_write_event(_fpipe[1], reinterpret_cast<void*>(Socket::write_pipe));
+  kernel.add_read_event(_bpipe[0], reinterpret_cast<void*>(ws::Socket::read_pipe));
 
   return pid;
 }

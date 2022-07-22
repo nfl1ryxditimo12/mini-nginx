@@ -102,11 +102,11 @@ std::size_t ws::Buffer::get_offset() const throw() {
 }
 
 // should call with kevent
-ssize_t ws::Buffer::read_file(int fd) {
+ssize_t ws::Buffer::read_file(int fd, size_t read_request_size) {
   if (!_buf)
     throw std::out_of_range("access after delete");
 
-  ssize_t ret = read(fd, _buf + _size, _kBufferSize - _size);
+  ssize_t ret = read(fd, _buf + _size, std::min(read_request_size, _kBufferSize - _size));
 
   if (ret < 0)
     _size = -1;

@@ -194,27 +194,23 @@ void ws::Socket::process_request(struct kevent event) {
   const ws::Location::cgi_map_type& cgi_map = client_data.repository.get_location()->get_cgi_map();
   const ws::Location::cgi_map_type::const_iterator& name = cgi_map.find(extension);
 
-  if (extension_dot != std::string::npos && name != cgi_map.end()) {
-    if (client_data.request.get_method() == "POST") {
-      close(client_data.repository.get_fd());
+  if (client_data.request.get_method() == "POST" && extension_dot != std::string::npos && name != cgi_map.end()) {
+    close(client_data.repository.get_fd());
 
-      pid_t pid = client_data.cgi_handler.run_cgi(
-        client_data.repository.get_method().c_str(),
-        name->second.c_str(),
-        name->second.c_str(),
-        _kernel
-      );
+    pid_t pid = client_data.cgi_handler.run_cgi(
+      client_data.repository.get_method().c_str(),
+      name->second.c_str(),
+      name->second.c_str(),
+      _kernel
+    );
 
-      if (pid != -1) {
-        client_data.cgi_pid = pid;
-        _kernel.add_process_event(pid, reinterpret_cast<void*>(ws::Socket::wait_child), 0, NOTE_EXIT | NOTE_SIGNAL);
-        return;
-      }
-
-      client_data.status = INTERNAL_SERVER_ERROR;
+    if (pid != -1) {
+      client_data.cgi_pid = pid;
+      _kernel.add_process_event(pid, reinterpret_cast<void*>(ws::Socket::wait_child), 0, NOTE_EXIT | NOTE_SIGNAL);
+      return;
     }
 
-    client_data.status = METHOD_NOT_ALLOWED;
+    client_data.status = INTERNAL_SERVER_ERROR;
   }
 
   client_data.buffer.delete_buf();
@@ -319,7 +315,7 @@ void ws::Socket::write_data(struct kevent event) {
   const std::string& request_body = client->second.request.get_request_body();
   std::size_t& offset = client->second.write_offset;
 
-  ssize_t write_size = write(client->second.repository.get_fd(), request_body.c_str() + offset, request_body.length() - offset);
+  ssize_t write_size = write(client->second.repository.get_fd(), request_body.c_str() + offset, request_body.length() - offset); // todo event.data
 
   if (write_size == -1) {
     std::cerr << "Socket: write error occurred" << std::endl;
@@ -395,15 +391,26 @@ void ws::Socket::parse_cgi_return(client_value_type &client) {
 void ws::Socket::read_pipe(struct kevent event) {
   const client_map_type::iterator& client = find_client_by_bpipe(event.ident);
 
-  ssize_t read_size = client->second.buffer.read_file(event.ident);
+  ssize_t read_size = client->second.buffer.read_file(event.ident, event.data);
 
-  if (read_size <= 0) {
-    std::cerr << "Socket: read error occurred" << std::endl;
+  if (read_size < 0) {
+    std::cerr << event.data << std::endl; // test print
+    std::cerr << read_size << std::endl; // test print
+    std::cerr << client->second.response_body.length() << std::endl; // test print
+
+    std::cerr << (event.flags & EV_EOF ? "EOF" : "NO") << std::endl;
+
+    std::cerr << "Socket: pipe read error occurred" << std::endl;
     _kernel.delete_read_event(event.ident);
     disconnect_client(client->first);
     return;
   }
-
+  if (read_size == 0) {
+    std::cerr << event.data << std::endl; // test print
+    std::cerr << read_size << std::endl; // test print
+    std::cerr << client->second.response_body.length() << std::endl; // test print
+    return;
+  }
   parse_cgi_return(client->second);
 
   // todo 조건 안걸림, 이유는 파이프로 1억바이트 송수신이 안되기 때문
@@ -420,7 +427,7 @@ void ws::Socket::write_pipe(struct kevent event) { // todo: when refactoring is 
   const client_map_type::iterator& client = find_client_by_fpipe(event.ident);
   const std::string& request_body = client->second.request.get_request_body();
   std::string::size_type& offset = client->second.pipe_offset;
-  ssize_t write_size = write(event.ident, request_body.c_str() + offset, request_body.length() - offset);
+  ssize_t write_size = write(event.ident, request_body.c_str() + offset, std::min(static_cast<std::size_t>(event.data), request_body.length() - offset));
 
   if (write_size <= 0) {
     std::cerr << "Socket: pipe write error occurred" << std::endl;
@@ -435,7 +442,6 @@ void ws::Socket::write_pipe(struct kevent event) { // todo: when refactoring is 
     offset = 0;
     _kernel.delete_write_event(event.ident);
     close(event.ident);
-    _kernel.add_read_event(client->second.cgi_handler.get_bpipe()[0], reinterpret_cast<void*>(ws::Socket::read_pipe));
   }
 }
 
@@ -471,7 +477,7 @@ void ws::Socket::send_response(struct kevent event) {
     return;
 
   ssize_t n;
-  if ((n = write(event.ident, response_data.c_str() + offset, response_data.length() - offset)) == -1) {
+  if ((n = write(event.ident, response_data.c_str() + offset, response_data.length() - offset)) == -1) { // todo: event.data
     _kernel.delete_write_event(event.ident);
     disconnect_client(event.ident); // todo: close
     return;
