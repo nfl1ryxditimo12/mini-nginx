@@ -151,6 +151,6 @@ namespace ws {
     static void write_pipe(struct kevent event);
     static void wait_child(struct kevent event);
 
-    static void generate_response(struct kevent event);
+    static void generate_response(int client_fd, client_value_type& client_data);
   };
 }
