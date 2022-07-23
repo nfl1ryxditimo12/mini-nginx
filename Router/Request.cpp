@@ -11,7 +11,7 @@
 #include "Repository.hpp"
 
 ws::Request::Request(const ws::Configure::listen_type& listen)
-  : _listen(listen), _eof(false), _content_length(std::numeric_limits<std::size_t>::max()), _port(), _session_id(0),
+  : _listen(listen), _eof(false), _content_length(std::numeric_limits<std::size_t>::max()), _port(), _session_id(UINT_MAX),
     _status(0), _chunked(false), _chunked_line_type(false), _chunked_eof(false), _chunked_byte(std::string::npos), _client_max_body_size(0), _is_header(true),
     _token() { // todo: added chunked eof initialize to false...
   insert_require_header_field();

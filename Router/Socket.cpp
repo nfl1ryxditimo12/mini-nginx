@@ -495,3 +495,8 @@ void ws::Socket::send_response(struct kevent event) {
     disconnect_client(event.ident);
   }
 }
+
+ws::Socket::session_map_type& ws::Socket::get_session() throw() {
+  return _session;
+}
+
