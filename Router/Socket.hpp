@@ -24,31 +24,26 @@ namespace ws {
     struct client_data {
 
       client_data(ws::Configure::listen_type listen)
-        : _fatal(false),
-        _status(0),
-        _repository(ws::Repository(_fatal, _status)),
-        _request(ws::Request(listen)),
-        _response(""),
-        _write_offset(0),
-        _pipe_offset(),
-        _cgi_handler(),
-        _cgi_pid(-1),
-        _start_time(clock()) {};
+        : fatal(false), status(0), repository(ws::Repository(fatal, status)), request(ws::Request(listen)),
+          response_header(), response_body(), write_offset(0), pipe_offset(), cgi_handler(), is_cgi_header(true), start_time(clock()) {};
 
-//      client_data(const client_data& cls)
+//      client_data(const client_data& cls) // todo: ???
 //      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request), response(cls.response), write_offset(cls.write_offset), start_time(cls.start_time), session_iter(cls.session_iter) {};
 
-      bool                    _fatal;
-      unsigned int            _status;
-      ws::Repository          _repository;
-      ws::Request             _request;
-      std::string             _response;
-      std::string::size_type  _write_offset;
-      std::string::size_type  _pipe_offset;
-      ws::CgiHandler          _cgi_handler;
-      pid_t                   _cgi_pid;
-      ws::Buffer              _buffer;
-      clock_t                 _start_time;
+      bool                    fatal;
+      unsigned int            status;
+      ws::Repository          repository;
+      ws::Request             request;
+      std::string             response_total;
+      std::string             response_header;
+      std::string             response_body;
+      std::string::size_type  write_offset;
+      std::string::size_type  pipe_offset;
+      ws::CgiHandler          cgi_handler;
+      pid_t                   cgi_pid;
+      bool                    is_cgi_header;
+      ws::Buffer              buffer;
+      clock_t                 start_time;
     };
 
     struct session_data {
@@ -60,6 +55,7 @@ namespace ws {
 
   public:
     typedef ws::Configure::listen_type                                    listen_type;
+
     typedef std::pair<int, ws::Configure::listen_type>                    server_type;
     typedef std::map<server_type::first_type, server_type::second_type>   server_map_type;
 
@@ -95,16 +91,14 @@ namespace ws {
     */
     static client_map_type _client;
 
+    static ws::Validator _validator;
+    static ws::Response  _response;
+    const static std::size_t kBUFFER_SIZE;
+
     static session_map_type _session;
     static unsigned int _session_index;
 
-    static ws::Validator _validator;
-
-    static ws::Response  _response;
-
     static sig_atomic_t _signal;
-
-    const static std::size_t kBUFFER_SIZE;
 
     /* ====================================== */
     /*                  OCCF                  */
@@ -127,6 +121,7 @@ namespace ws {
     static void connect_client(struct kevent event);
     static void recv_request(struct kevent event);
     static void process_request(struct kevent event);
+    static void parse_cgi_return(client_value_type& client);
     static ws::Socket::client_map_type::iterator find_client_by_file(int file) throw();
     static ws::Socket::client_map_type::iterator find_client_by_fpipe(int fpipe) throw();
     static ws::Socket::client_map_type::iterator find_client_by_bpipe(int bpipe) throw();

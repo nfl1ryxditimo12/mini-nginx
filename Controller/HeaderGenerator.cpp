@@ -13,7 +13,7 @@ ws::HeaderGenerator::~HeaderGenerator() {}
 std::string ws::HeaderGenerator::generate(const client_value_type& client_data, std::string::size_type content_length) {
   std::string data;
 
-  generate_start_line(data, client_data._status);
+  generate_start_line(data, client_data.status);
   generate_representation(data, client_data, content_length);
   //representation: content-type, content-length, transfer-encoding
   generate_response(data, client_data);
@@ -35,18 +35,18 @@ void ws::HeaderGenerator::generate_start_line(std::string& data, unsigned int st
 void ws::HeaderGenerator::generate_representation(
   std::string& data, const client_value_type& client_data, std::string::size_type content_length
 ) {
-  if (client_data._repository.get_method() == "HEAD")
+  if (client_data.repository.get_method() == "HEAD")
     return;
   generate_content_type_line(data, client_data); // todo
   (void) content_length; // todo: maybe not required
-//  if (!((100 <= client_data._status && client_data._status < 200) || client_data._status == NO_CONTENT))
+//  if (!((100 <= client_data.status && client_data.status < 200) || client_data.status == NO_CONTENT))
 //    generate_content_length_line(data, content_length);
 
 //  generate_transfer_encoding_line(data, client_data);
 }
 
 void ws::HeaderGenerator::generate_content_type_line(std::string& data, const client_value_type& client_data) {
-  const std::string& content_type = client_data._request.get_content_type();// todo
+  const std::string& content_type = client_data.request.get_content_type();// todo
 
   if (content_type.empty())
     data += "Content-Type: text/html\r\n";
@@ -59,7 +59,7 @@ void ws::HeaderGenerator::generate_content_length_line(std::string& data, std::s
 } //header -> body -> content-lenght
 
 void ws::HeaderGenerator::generate_transfer_encoding_line(std::string& data, const client_value_type& client_data) {
-  const std::string& transfer_encoding = client_data._request.get_transfer_encoding();
+  const std::string& transfer_encoding = client_data.request.get_transfer_encoding();
 
   if (transfer_encoding == "chunked")
     data += "Transfer-Encoding: " + transfer_encoding + "\r\n";
@@ -91,12 +91,12 @@ void ws::HeaderGenerator::generate_server_line(std::string& data) {
 }
 
 void ws::HeaderGenerator::generate_allow_line(std::string& data, const client_value_type& client_data) {
-  if (client_data._repository.get_status() != METHOD_NOT_ALLOWED)
+  if (client_data.repository.get_status() != METHOD_NOT_ALLOWED)
     return;
 
   data += "Allow: ";
 
-  const limit_except_vec_type& limit_except_vec = client_data._repository.get_location()->get_limit_except_vec();
+  const limit_except_vec_type& limit_except_vec = client_data.repository.get_location()->get_limit_except_vec();
   for (
     limit_except_vec_type::const_iterator it = limit_except_vec.begin();
     it != limit_except_vec.end();
@@ -109,14 +109,14 @@ void ws::HeaderGenerator::generate_allow_line(std::string& data, const client_va
 }
 
 void ws::HeaderGenerator::generate_location_line(std::string& data, const client_value_type& client_data) {
-if (client_data._status < 400 && client_data._status >= 300 && client_data._repository.get_redirect().first > 0)
-    data += ("Location: " + client_data._repository.get_redirect().second + "\r\n");
+if (client_data.status < 400 && client_data.status >= 300 && client_data.repository.get_redirect().first > 0)
+    data += ("Location: " + client_data.repository.get_redirect().second + "\r\n");
 }
 
 //connection field
   //connection header: connection
 void ws::HeaderGenerator::generate_connection(std::string& data, const client_value_type& client_data) {
-//  if (client_data._repository.get_connection) // todo
+//  if (client_data.repository.get_connection) // todo
     generate_connection_line(data);
   (void) client_data; // todo
 }
@@ -127,6 +127,7 @@ void ws::HeaderGenerator::generate_connection_line(std::string& data) {
 }
 
 void ws::HeaderGenerator::generate_cookie(std::string& data, const client_value_type& client_data) {
-//    data += "Set-Cookie: session_id=" + ws::Util::ultos(ws::Socket::get_session().find(client_data._request.get_session_id())->first) + "\r\n"; // todo
-    data += "Set-Cookie: session_id=" + ws::Util::ultos(client_data._request.get_session_id()) + "\r\n";
+//    data += "Set-Cookie: session_id=" + ws::Util::ultos(ws::Socket::get_session().find(client_data.request.get_session_id())->first) + "\r\n"; // todo
+  if (client_data.repository.is_session())
+    data += "Set-Cookie: session_id=" + ws::Util::ultos(client_data.request.get_session_id()) + "\r\n";
 }

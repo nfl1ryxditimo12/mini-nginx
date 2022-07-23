@@ -45,7 +45,8 @@ namespace ws {
     std::size_t get_offset() const throw();
 
     // should call with kevent
-    ssize_t read_file(int fd);
-    ssize_t write_file(int fd, std::size_t n);
+    ssize_t read_file(int fd, size_t read_request_size = _kBufferSize);
   };
+
+  std::string& operator<<(std::string& str, ws::Buffer& buffer);
 }

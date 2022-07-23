@@ -305,7 +305,7 @@ void ws::ConfParser::parse_client_max_body_size(ws::InnerOption& option) {
   if (size >= kCLIENT_MAX_BODY_SIZE_LIMIT / 1024)
     throw std::out_of_range("Configure: client_max_body_size: too large value");
 
-  option.set_client_max_body_size(size * 1024);
+  option.set_client_max_body_size(size);
 }
 
 void ws::ConfParser::parse_session(ws::Location& location) {
@@ -365,6 +365,9 @@ void ws::ConfParser::parse_cgi(ws::Location &location) {
     throw std::invalid_argument("Configure: location: cgi: `;' should appear at eol");
 
   value.second = Util::get_root_dir() + _token.substr(0, _token.length() - 1);
+
+  if (access(value.second.c_str(), X_OK) == -1)
+    throw std::invalid_argument("Configure: location: cgi: wrong cgi program path");
 
   location.add_cgi(value);
 }
@@ -509,7 +512,7 @@ void ws::ConfParser::set_default_server(ws::Server& server) const {
     if (server.get_listen_vec().empty())
       server.add_listen(listen_type(htonl(INADDR_ANY), htons(80)));
     if (server.get_client_max_body_size() == kCLIENT_MAX_BODY_SIZE_UNSET)
-      server.set_client_max_body_size(1024 * 1024);
+      server.set_client_max_body_size(1024 * 1024 * 1024);
     if (server.get_autoindex() == kAUTOINDEX_UNSET)
       server.set_autoindex(false);
     if (server.get_root().empty())

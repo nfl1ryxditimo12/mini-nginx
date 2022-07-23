@@ -11,34 +11,9 @@
 #include "Repository.hpp"
 
 ws::Request::Request(const ws::Configure::listen_type& listen)
-  : _listen(listen),
-  _eof(false),
-
-  _method(""),
-  _request_uri(""),
-  _http_version(""),
-
-  _request_body(""),
-
-  _content_length(std::numeric_limits<std::size_t>::max()),
-  _content_type(""),
-  _server_name(""),
-  _port(),
-  _connection(""),
-  _transfer_encoding(""),
-  _session_id(0),
-  _name(""),
-  _secret_key(""),
-
-  _status(0),
-  _chunked(false),
-  _chunked_line_type(false),
-  _chunked_eof(false),
-  _chunked_byte(std::string::npos),
-  _client_max_body_size(0),
-  _is_header(true),
-  _token() { // todo: added chunked eof initialize to false...
-
+  : _listen(listen), _eof(false), _content_length(std::numeric_limits<std::size_t>::max()), _port(), _session_id(0),
+    _status(0), _chunked(false), _chunked_line_type(false), _chunked_eof(false), _chunked_byte(std::string::npos), _client_max_body_size(0), _is_header(true),
+    _token() { // todo: added chunked eof initialize to false...
   insert_require_header_field();
 }
 
@@ -48,7 +23,7 @@ ws::Request::Request(const Request& cls) {
 
   _method = cls._method;
   _request_uri = cls._request_uri;
-//  _request_uri_query = cls._request_uri_query;
+  _request_uri_query = cls._request_uri_query;
   _http_version = cls._http_version;
 
   _request_header = cls._request_header;
@@ -58,6 +33,7 @@ ws::Request::Request(const Request& cls) {
   _content_type = cls._content_type;
   _server_name = cls._server_name;
   _port = cls._port;
+  _session_id = cls._session_id;
   _connection = cls._connection;
   _transfer_encoding = cls._transfer_encoding;
   _session_id = cls._session_id;
@@ -75,173 +51,6 @@ ws::Request::Request(const Request& cls) {
 }
 
 ws::Request::~Request() {}
-
-/*
-  repository를 header파싱 후 해줘서 client_max_body_size까지만 받아올 지 생각 해 봐야함
-*/
-int ws::Request::parse_request_message(const ws::Configure& conf, ws::Buffer* buffer, ws::Repository& repo) {
-  _buffer = buffer;
-  /*
-    buffer size 가 0 인 경우 어떻게 처리해야 할까?
-    case 1: kernel buffer가 모두 읽힌 뒤 발생한 kevent -> buffer size == 0 으로 들어옴
-    case 2: tcp 또는 application layer 오류 등등
-
-    아마 _eof 변수로 파싱을 관리해서 괜찮지 않을까 라는 뇌피셜
-  */
-
-  if (_is_header) {
-    parse_request_header();
-
-    if (_is_header) // chunked header
-      return _status;
-
-    const ws::Server& curr_server = conf.find_server(this->get_listen(), this->get_server_name());
-    _client_max_body_size = curr_server.get_client_max_body_size();
-    repo(curr_server, *this);
-    if (_content_length != std::string::npos && _content_length > _client_max_body_size)
-      _status = 413;
-  }
-
-  /* body가 없거나 _status가 양수일 경우 eof 설정 */
-  if (_status)
-    _eof = true;
-  if (_eof)
-    return _status;
-
-  if (!_chunked)
-    parse_request_body();
-  else
-    parse_request_chunked_body();
-
-  return _status;
-}
-
-void  ws::Request::clear() {
-  _eof = false;
-
-  _method.clear();
-  _request_uri.clear();
-//  _request_uri_query.clear();
-  _http_version.clear();
-
-  _request_header.clear();
-  _request_body.clear();
-
-  _content_length = std::numeric_limits<size_t>::max();
-  _server_name.clear();
-  _port = 0;
-  _connection.clear();
-  _transfer_encoding.clear();
-
-  _header_parser.clear();
-  _status = 0;
-  _chunked = false;
-  _chunked_line_type = false;
-  _chunked_byte = 0;
-  _client_max_body_size = 0;
-  _token.clear();
-  _buffer->clear();
-}
-
-void  ws::Request::parse_request_uri(const std::string& uri) {
-  std::string::size_type mark_pos = uri.find('?');
-
-  _request_uri = uri.substr(0, mark_pos);
-  return;
-}
-//  else {
-//    std::stringstream buffer;
-//    std::string key;
-//    std::string value;
-//
-//    _request_uri = uri.substr(0, mark_pos);
-//    buffer << uri.substr(mark_pos + 1);
-//
-//    while (!buffer.eof()) {
-//      key = rdline('=');
-//      value = rdline('&');
-//      _request_uri_query.insert(query_type::value_type(key, value));
-//    }
-//  }
-//}
-
-bool ws::Request::parse_request_start_line() {
-  std::string::size_type pos1 = _token.find(' ');
-
-  if (pos1 == std::string::npos)
-    return false;
-
-  std::string::size_type pos2 = _token.find(' ', pos1 + 1);
-
-  if (pos2 == std::string::npos)
-    return false;
-
-  _method = _token.substr(0, pos1);
-  parse_request_uri(_token.substr(pos1 + 1, pos2 - pos1 - 1));
-  _http_version = _token.substr(pos2 + 1);
-  return true;
-}
-
-void	ws::Request::parse_request_header() {
-  std::string key;
-  std::string value;
-  std::string::size_type pos;
-
-  while (!_status) {
-    rd_http_line();
-
-    if (_token.length() < 2 || _token.compare(_token.length() - 2, 2, "\r\n")) {
-      _buffer->clear();
-      *_buffer << _token;
-      return;
-    }
-
-    if (_token == "\r\n")
-      break;
-
-    _token.erase(_token.length() - 2, 2);
-
-    pos = _token.find(":");
-    if (pos == std::string::npos) {
-      if (!parse_request_start_line())
-        _status = BAD_REQUEST;
-      continue;
-    }
-
-    key = _token.substr(0, pos);
-    value = _token.substr(pos + 2, _token.length() - pos - 1);
-
-    header_parse_map_type::iterator header_iter = _header_parser.find(key);
-
-    if (header_iter != _header_parser.end())
-      (this->*header_iter->second)(value);
-    else
-      _request_header.insert(header_type::value_type(key, value));
-  }
-
-  if (_token != "\r\n")
-    _status = BAD_REQUEST;
-
-  if (_content_length == std::numeric_limits<std::size_t>::max() && !_chunked)
-    _eof = true;
-
-  _is_header = false;
-}
-
-/*
-  정의되어있는 Content-Length 값보다 적게 파싱해야 한다.
-  Content-Length 보다 buffer size가 넘어간다면 넘어간 값부터는 쓰레기 값이라고 판단 할 수 있다.
-  client_max_body_size 는 validator에서 판단해야 하나?
-*/
-void	ws::Request::parse_request_body() {
-  std::string::size_type i = _request_body.length();
-
-  for (; i < _content_length; ++i)
-    _request_body.push_back(static_cast<char>(_buffer->get()));
-
-  if (i == _content_length)
-    _eof = true;
-}
 
 void	ws::Request::parse_request_chunked_body() {
   while (!_status && !(_token == "0" && _chunked_line_type) && !_chunked_eof) {
@@ -284,6 +93,181 @@ void	ws::Request::parse_request_chunked_body() {
     return;
   }
   _eof = true;
+`  if (_request_body.length() > _client_max_body_size)
+    _status = PAYLOAD_TOO_LARGE;
+}
+
+/*
+  정의되어있는 Content-Length 값보다 적게 파싱해야 한다.
+  Content-Length 보다 buffer size가 넘어간다면 넘어간 값부터는 쓰레기 값이라고 판단 할 수 있다.
+  client_max_body_size 는 validator에서 판단해야 하나?
+*/
+void	ws::Request::parse_request_body() {
+
+  /* token 대입 시간 테스트 해야함 */
+  std::string::size_type i = _request_body.length();
+
+  for (; i < _content_length; ++i)
+    _request_body.push_back(static_cast<char>(_buffer->get()));
+
+  if (i == _content_length)
+    _eof = true;
+}
+
+void  ws::Request::parse_request_uri(const std::string& uri) {
+  std::string::size_type mark_pos = uri.find('?');
+
+    _request_uri = uri.substr(0, mark_pos);
+//  _request_uri = "/"; // todo: enabled while merging
+  return;
+
+  if (mark_pos == std::string::npos)
+    _request_uri = uri;
+  else {
+    std::stringstream buffer;
+    std::string key;
+    std::string value;
+
+//    _request_uri = uri.substr(0, mark_pos); // todo: disabled while merging
+    buffer << uri.substr(mark_pos + 1);
+
+    while (!buffer.eof()) {
+      key = rdline('=');
+      value = rdline('&');
+      _request_uri_query.insert(query_type::value_type(key, value));
+    }
+  }
+}
+
+bool ws::Request::parse_request_start_line() {
+  std::string::size_type pos1 = _token.find(' ');
+
+  if (pos1 == std::string::npos)
+    return false;
+
+  std::string::size_type pos2 = _token.find(' ', pos1 + 1);
+
+  if (pos2 == std::string::npos)
+    return false;
+
+  _method = _token.substr(0, pos1);
+  parse_request_uri(_token.substr(pos1 + 1, pos2 - pos1 - 1));
+  _http_version = _token.substr(pos2 + 1); // todo?
+
+  return true;
+}
+
+void	ws::Request::parse_request_header() {
+  std::string key;
+  std::string value;
+  std::string::size_type pos;
+
+  while (!_status) {
+    rd_http_line();
+
+    if (_token.length() < 2 || _token.compare(_token.length() - 2, 2, "\r\n")) {
+      _buffer->clear();
+      *_buffer << _token;
+      return;
+    }
+
+    if (_token == "\r\n")
+        break;
+
+    _token.erase(_token.length() - 2, 2);
+
+    pos = _token.find(":");
+    if (pos == std::string::npos) {
+      if (!parse_request_start_line())
+        _status = BAD_REQUEST;
+      continue;
+    }
+
+    key = _token.substr(0, pos);
+    value = _token.substr(pos + 2, _token.length() - pos - 1);
+
+    header_parse_map_type::iterator header_iter = _header_parser.find(key);
+
+    if (header_iter != _header_parser.end())
+      (this->*header_iter->second)(value);
+    else
+      _request_header.insert(header_type::value_type(key, value));
+  }
+
+  if (_token != "\r\n")
+    _status = BAD_REQUEST;
+
+  if (_content_length == std::numeric_limits<std::size_t>::max() && !_chunked)
+    _eof = true;
+
+  _is_header = false;
+}
+
+/*
+  repository를 header파싱 후 해줘서 client_max_body_size까지만 받아올 지 생각 해 봐야함
+*/
+int ws::Request::parse_request_message(const ws::Configure& conf, ws::Buffer* buffer, ws::Repository& repo) {
+  _buffer = buffer;
+  /*
+    buffer size 가 0 인 경우 어떻게 처리해야 할까?
+    case 1: kernel buffer가 모두 읽힌 뒤 발생한 kevent -> buffer size == 0 으로 들어옴
+    case 2: tcp 또는 application layer 오류 등등
+
+    아마 _eof 변수로 파싱을 관리해서 괜찮지 않을까 라는 뇌피셜
+  */
+
+  if (_is_header) {
+    parse_request_header();
+
+    if (_is_header) // chunked header
+      return _status;
+
+    const ws::Server& curr_server = conf.find_server(this->get_listen(), this->get_server_name());
+    repo(curr_server, *this);
+    _client_max_body_size = repo.get_client_max_body_size();
+    if (_content_length != std::string::npos && _content_length > _client_max_body_size)
+      _status = PAYLOAD_TOO_LARGE;
+  }
+
+  /* body가 없거나 _status가 양수일 경우 eof 설정 */
+  if (_status)
+    _eof = true;
+  if (_eof)
+    return _status;
+
+  if (!_chunked)
+    parse_request_body();
+  else
+    parse_request_chunked_body();
+
+  return _status;
+}
+
+void  ws::Request::clear() {
+  _eof = false;
+
+  _method.clear();
+  _request_uri.clear();
+  _request_uri_query.clear();
+  _http_version.clear();
+
+  _request_header.clear();
+  _request_body.clear();
+
+  _content_length = std::numeric_limits<size_t>::max();
+  _server_name.clear();
+  _port = 0;
+  _connection.clear();
+  _transfer_encoding.clear();
+
+  _header_parser.clear();
+  _status = 0;
+  _chunked = false;
+  _chunked_line_type = false;
+  _chunked_byte = 0;
+  _client_max_body_size = 0;
+  _token.clear();
+  _buffer->clear();
 }
 
 /* parser function */
@@ -320,6 +304,7 @@ void  ws::Request::parse_content_length(const std::string& value) {
 }
 
 void  ws::Request::parse_content_type(const std::string& value) {
+  //text/html; charset=utf-8
   std::string::size_type pos = value.find(';');
 
   _content_type = value.substr(0, pos);
@@ -348,6 +333,8 @@ void ws::Request::parse_secret_key(const std::string &value) {
   _secret_key = value;
 }
 
+/* Else private function */
+
 void  ws::Request::insert_require_header_field() {
   _header_parser.insert(header_parse_map_type::value_type("Host", &Request::parse_host));
   _header_parser.insert(header_parse_map_type::value_type("Connection", &Request::parse_connection));
@@ -357,6 +344,7 @@ void  ws::Request::insert_require_header_field() {
   _header_parser.insert(header_parse_map_type::value_type("Cookie", &Request::parse_session_id));
   _header_parser.insert(header_parse_map_type::value_type("Name", &Request::parse_name));
   _header_parser.insert(header_parse_map_type::value_type("Secret-Key", &Request::parse_secret_key));
+
 }
 
 ws::Token&  ws::Request::rdword() {
@@ -379,12 +367,14 @@ ws::Token& ws::Request::rdall() {
   return _token;
 }
 
+/* getter */
+
 /*
   _eof
   case false: In progress request message parsing
   case  true: Request message parsing is done
 */
-bool ws::Request::is_eof() const throw() {
+bool ws::Request::eof() const throw() {
   return _eof;
 }
 
@@ -396,9 +386,9 @@ const std::string& ws::Request::get_uri() const throw() {
 	return _request_uri;
 }
 
-//const ws::Request::query_type& ws::Request::get_uri_query() const throw() {
-//	return _request_uri_query;
-//}
+const ws::Request::query_type& ws::Request::get_uri_query() const throw() {
+	return _request_uri_query;
+}
 
 const std::string& ws::Request::get_version() const throw() {
 	return _http_version;
@@ -452,16 +442,16 @@ void ws::Request::set_session_id(unsigned int session_id) throw() {
   _session_id = session_id;
 }
 
-#include <iostream> //todo: print test
+//todo: print test
 void ws::Request::test() {
   std::cout << "host: _: " << _listen.first << ", port: " << _listen.second << std::endl;
   std::cout << "eof: " << _eof << std::endl;
   std::cout << "method: " << _method << std::endl;
   std::cout << "request_uri: " << _request_uri << std::endl;
   std::cout << "request_uri_query:" << std::endl;
-//  for (query_type::iterator it = _request_uri_query.begin(); it != _request_uri_query.end(); ++it) {
-//    std::cout << "  Key: " << it->first << ", Value: " << it->second << std::endl;
-//  }
+  for (query_type::iterator it = _request_uri_query.begin(); it != _request_uri_query.end(); ++it) {
+    std::cout << "  Key: " << it->first << ", Value: " << it->second << std::endl;
+  }
   std::cout << "http version: " << _http_version << std::endl;
   std::cout << "content length: " << _content_length << std::endl;
   std::cout << "content type: " << _content_type << std::endl;
