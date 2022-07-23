@@ -163,7 +163,7 @@ namespace ws {
     /* =================================== */
 
     /* Getter 더 필요함 변수 확인 필요 */
-    bool is_eof() const throw();
+    bool  eof() const throw();
     const std::string& get_method() const throw();
     const std::string& get_uri() const throw();
 //    const query_type& get_uri_query() const throw();

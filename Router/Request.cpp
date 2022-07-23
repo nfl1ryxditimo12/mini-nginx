@@ -23,7 +23,7 @@ ws::Request::Request(const Request& cls) {
 
   _method = cls._method;
   _request_uri = cls._request_uri;
-  _request_uri_query = cls._request_uri_query;
+//  _request_uri_query = cls._request_uri_query;
   _http_version = cls._http_version;
 
   _request_header = cls._request_header;
@@ -117,26 +117,23 @@ void	ws::Request::parse_request_body() {
 void  ws::Request::parse_request_uri(const std::string& uri) {
   std::string::size_type mark_pos = uri.find('?');
 
-    _request_uri = uri.substr(0, mark_pos);
-//  _request_uri = "/"; // todo: enabled while merging
+  _request_uri = uri.substr(0, mark_pos);
   return;
 
-  if (mark_pos == std::string::npos)
-    _request_uri = uri;
-  else {
-    std::stringstream buffer;
-    std::string key;
-    std::string value;
-
+//  else {
+//    std::stringstream buffer;
+//    std::string key;
+//    std::string value;
+//
 //    _request_uri = uri.substr(0, mark_pos); // todo: disabled while merging
-    buffer << uri.substr(mark_pos + 1);
-
-    while (!buffer.eof()) {
-      key = rdline('=');
-      value = rdline('&');
-      _request_uri_query.insert(query_type::value_type(key, value));
-    }
-  }
+//    buffer << uri.substr(mark_pos + 1);
+//
+//    while (!buffer.eof()) {
+//      key = rdline('=');
+//      value = rdline('&');
+//      _request_uri_query.insert(query_type::value_type(key, value));
+//    }
+//  }
 }
 
 bool ws::Request::parse_request_start_line() {
@@ -248,7 +245,7 @@ void  ws::Request::clear() {
 
   _method.clear();
   _request_uri.clear();
-  _request_uri_query.clear();
+//  _request_uri_query.clear();
   _http_version.clear();
 
   _request_header.clear();
@@ -386,9 +383,9 @@ const std::string& ws::Request::get_uri() const throw() {
 	return _request_uri;
 }
 
-const ws::Request::query_type& ws::Request::get_uri_query() const throw() {
-	return _request_uri_query;
-}
+//const ws::Request::query_type& ws::Request::get_uri_query() const throw() {
+//	return _request_uri_query;
+//}
 
 const std::string& ws::Request::get_version() const throw() {
 	return _http_version;
@@ -448,10 +445,10 @@ void ws::Request::test() {
   std::cout << "eof: " << _eof << std::endl;
   std::cout << "method: " << _method << std::endl;
   std::cout << "request_uri: " << _request_uri << std::endl;
-  std::cout << "request_uri_query:" << std::endl;
-  for (query_type::iterator it = _request_uri_query.begin(); it != _request_uri_query.end(); ++it) {
-    std::cout << "  Key: " << it->first << ", Value: " << it->second << std::endl;
-  }
+//  std::cout << "request_uri_query:" << std::endl;
+//  for (query_type::iterator it = _request_uri_query.begin(); it != _request_uri_query.end(); ++it) {
+//    std::cout << "  Key: " << it->first << ", Value: " << it->second << std::endl;
+//  }
   std::cout << "http version: " << _http_version << std::endl;
   std::cout << "content length: " << _content_length << std::endl;
   std::cout << "content type: " << _content_type << std::endl;
