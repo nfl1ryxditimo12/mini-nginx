@@ -1,8 +1,8 @@
 NAME        :=  webserv
 
 CXX         :=  clang++
-CXXFLAGS    :=  -std=c++98 -Wall -Wextra -Werror -g -fsanitize=undefined -fsanitize=address
-LDFLAGS		:=	-g -fsanitize=undefined -fsanitize=address
+CXXFLAGS    :=  -std=c++98 -Wall -Wextra -Werror #-g -fsanitize=undefined -fsanitize=address
+LDFLAGS		:=	#-g -fsanitize=undefined -fsanitize=address
 
 UTIL_DIR            :=  Util
 UTIL_SRCS           :=  Util.cpp Token.cpp Buffer.cpp
@@ -37,7 +37,7 @@ RM          :=  rm -f
 
 .PHONY      :    all
 all         :
-	$(MAKE) -j8  $(NAME)
+	$(MAKE)  $(NAME)
 
 $(NAME)     :    $(OBJS) $(INCLUDES)
 	$(CXX) $(LDFLAGS) $(OBJS) -o $@
@@ -55,5 +55,5 @@ fclean      :    clean
 
 .PHONY      :    re
 re          :
-	$(MAKE) -j8  fclean
-	$(MAKE) -j8  all
+	$(MAKE)  fclean
+	$(MAKE)  all

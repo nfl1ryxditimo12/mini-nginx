@@ -83,7 +83,7 @@ void ws::HeaderGenerator::generate_date_line(std::string& data) {
 //  std::string curr_time_str = std::asctime(std::gmtime(&curr_time));
 //  curr_time_str.erase(curr_time_str.end() - 1);
 
-  data += (std::string)"Date: " + "Thu Jul 21 05:27:18 2022" + "\r\n";
+  data += (std::string)"Date: " + "Thu Jul 21 05:27:18 2022" + "\r\n"; // todo
 }
 
 void ws::HeaderGenerator::generate_server_line(std::string& data) {

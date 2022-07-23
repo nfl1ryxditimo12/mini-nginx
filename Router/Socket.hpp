@@ -27,8 +27,11 @@ namespace ws {
         : fatal(false), status(0), repository(ws::Repository(fatal, status)), request(ws::Request(listen)),
           response_header(), response_body(), write_offset(0), pipe_offset(), cgi_handler(), is_cgi_header(true), start_time(clock()) {};
 
-//      client_data(const client_data& cls) // todo: ???
-//      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request), response(cls.response), write_offset(cls.write_offset), start_time(cls.start_time), session_iter(cls.session_iter) {};
+      client_data(const client_data& cls) // todo: ???
+      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request),
+        response_total(cls.response_total), response_header(cls.response_header), response_body(cls.response_body),
+        write_offset(cls.write_offset), pipe_offset(cls.pipe_offset), cgi_handler(cls.cgi_handler),
+        cgi_pid(cls.cgi_pid), is_cgi_header(cls.is_cgi_header), start_time(cls.start_time) {};
 
       bool                    fatal;
       unsigned int            status;
