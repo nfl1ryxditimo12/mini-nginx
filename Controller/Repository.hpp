@@ -110,6 +110,7 @@ namespace ws {
     int _fd; // get_fd();
 
     struct stat _file_stat;
+    bool        _file_exist_stat;
 
     std::string _index_root;
 
@@ -178,6 +179,7 @@ namespace ws {
     const unsigned int&   get_status() const throw();
     const int&            is_session() const throw();
     const struct stat&    get_file_stat() const throw();
+    bool                  get_file_exist_stat() const throw();
     const std::string&    get_host() const throw();
     const std::string&    get_method() const throw();
     const std::string&    get_root() const throw();

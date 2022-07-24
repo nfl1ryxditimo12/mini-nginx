@@ -68,9 +68,9 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
 
   _file_path = _config.root + (_uri[0] == '/' || !_uri.length() ? "" : "/") + _uri;
 
-  lstat(_file_path.c_str(), &_file_stat);
+  _file_exist_stat = lstat(_file_path.c_str(), &_file_stat) != -1;
 
-    std::string server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
+  std::string server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
 
   _host = server_name + ":" + ws::Util::ultos(ntohs(_config.listen.second));
   _method = _request->get_method();
@@ -94,12 +94,15 @@ void ws::Repository::set_repository(unsigned int value)  {
     this->set_status(_config.redirect.first); // todo
 
   if (_status == 0 && !_session) {
-    if (S_ISDIR(_file_stat.st_mode))
+    if (_file_exist_stat && S_ISDIR(_file_stat.st_mode))
       this->set_autoindex();
+    else if (!_file_exist_stat)
+      _status = NOT_FOUND;
     else
       this->open_file(_file_path);
   }
-  
+
+
   if (_status >= BAD_REQUEST)
     this->open_error_html();
 
@@ -151,7 +154,8 @@ void ws::Repository::set_autoindex() {
   } else if (_fd == FD_DEFAULT && !_config.autoindex && !(_method == "HEAD" || _method == "DELETE"))
     this->set_status(NOT_FOUND);
 
-  closedir(dir);
+  if (dir)
+    closedir(dir);
 }
 
 void ws::Repository::set_content_type() {
@@ -222,6 +226,10 @@ const int& ws::Repository::is_session() const throw() {
 
 const struct stat&  ws::Repository::get_file_stat() const throw() {
   return _file_stat;
+}
+
+bool ws::Repository::get_file_exist_stat() const throw() {
+  return _file_exist_stat;
 }
 
 const std::string&  ws::Repository::get_host() const throw() {
