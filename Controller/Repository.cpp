@@ -68,9 +68,9 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
 
   _file_path = _config.root + (_uri[0] == '/' || !_uri.length() ? "" : "/") + _uri;
 
-  lstat(_file_path.c_str(), &_file_stat);
+  _file_exist_stat = lstat(_file_path.c_str(), &_file_stat) != -1;
 
-    std::string server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
+  std::string server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
 
   _host = server_name + ":" + ws::Util::ultos(ntohs(_config.listen.second));
   _method = _request->get_method();
@@ -94,8 +94,10 @@ void ws::Repository::set_repository(unsigned int value)  {
     this->set_status(_config.redirect.first); // todo
 
   if (_status == 0 && !_session) {
-    if (S_ISDIR(_file_stat.st_mode))
+    if (_file_exist_stat && S_ISDIR(_file_stat.st_mode))
       this->set_autoindex();
+    else if (!_file_exist_stat)
+      _status = NOT_FOUND;
     else
       this->open_file(_file_path);
   }
@@ -104,7 +106,7 @@ void ws::Repository::set_repository(unsigned int value)  {
     this->open_error_html();
 
   if (_status == 0)
-    this->set_status(_method == "POST" || _method == "PUT" ? OK : OK);
+    this->set_status(OK); // todo: Put, Post status is originally 201
 
   this->set_content_type();
 
@@ -151,7 +153,8 @@ void ws::Repository::set_autoindex() {
   } else if (_fd == FD_DEFAULT && !_config.autoindex && !(_method == "HEAD" || _method == "DELETE"))
     this->set_status(NOT_FOUND);
 
-  closedir(dir);
+  if (dir)
+    closedir(dir);
 }
 
 void ws::Repository::set_content_type() {
@@ -177,8 +180,7 @@ void ws::Repository::open_file(std::string filename) {
     open_flag = O_WRONLY | O_TRUNC | O_CREAT;
 
   if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1 || fcntl(_fd, F_SETFL, O_NONBLOCK) == -1)
-    this->set_status(NOT_FOUND);
-//    this->set_status(INTERNAL_SERVER_ERROR);
+    this->set_status(INTERNAL_SERVER_ERROR);
 }
 
 void ws::Repository::open_error_html() {
@@ -225,41 +227,21 @@ const struct stat&  ws::Repository::get_file_stat() const throw() {
   return _file_stat;
 }
 
-//const std::string&  ws::Repository::get_host() const throw() {
-//  return _host;
-//}
+bool ws::Repository::get_file_exist_stat() const throw() {
+  return _file_exist_stat;
+}
 
 const std::string&  ws::Repository::get_method() const throw() {
   return _method;
 }
 
-//const std::string&  ws::Repository::get_root() const throw() {
-//  return _config.root;
-//}
-//
-//const std::string&  ws::Repository::get_uri() const throw() {
-//  return _uri;
-//}
-//
-//const std::string&  ws::Repository::get_index_root() const throw() {
-//  return _index_root;
-//}
-
 const std::string&  ws::Repository::get_file_path() const throw() {
   return _file_path;
 }
 
-//const std::string&  ws::Repository::get_request_body() const throw() {
-//  return _request_body;
-//}
-
 const ws::Repository::autoindex_type&  ws::Repository::get_autoindex() const throw() {
   return _autoindex;
 }
-
-//const std::string&  ws::Repository::get_content_type() const throw() {
-//  return _content_type;
-//}
 
 const ws::Repository::redirect_type&  ws::Repository::get_redirect() const throw() {
   return _config.redirect;

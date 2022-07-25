@@ -110,6 +110,7 @@ namespace ws {
     int _fd; // get_fd();
 
     struct stat _file_stat;
+    bool        _file_exist_stat;
 
     std::string _index_root;
 
@@ -178,15 +179,10 @@ namespace ws {
     const unsigned int&   get_status() const throw();
     bool                  is_session() const throw();
     const struct stat&    get_file_stat() const throw();
-//    const std::string&    get_host() const throw();
+    bool                  get_file_exist_stat() const throw();
     const std::string&    get_method() const throw();
-//    const std::string&    get_root() const throw();
-//    const std::string&    get_index_root() const throw();
-//    const std::string&    get_uri() const throw();
     const std::string&    get_file_path() const throw();
-//    const std::string&    get_request_body() const throw();
     const autoindex_type& get_autoindex() const throw();
-//    const std::string&    get_content_type() const throw();
     const redirect_type&  get_redirect() const throw();
     const client_max_body_size_type& get_client_max_body_size() const throw();
 

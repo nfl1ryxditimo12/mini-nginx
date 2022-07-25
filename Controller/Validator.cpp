@@ -89,15 +89,13 @@ void ws::Validator::check_uri(client_value_type& client_data) {
   const struct stat& file_status = client_data.repository.get_file_stat();
   const std::string& method = client_data.repository.get_method();
 
-  if (!_request_is_session)
+  if (_request_is_session || !client_data.repository.get_file_exist_stat() || !S_ISREG(file_status.st_mode))
     return;
 
-  if (S_ISREG(file_status.st_mode)) {
-      // client_data.status = NOT_MODIFIED; -> file download
-    if ((file_status.st_mode & S_IREAD) == 0)
-      client_data.status = FORBIDDEN;
-  } else if (!((S_ISDIR(file_status.st_mode)) && method != "POST" && method != "PUT" && method != "DELETE"))
-    client_data.status = NOT_FOUND;
+  if ((method == "GET" || method == "HEAD") && !(file_status.st_mode & S_IREAD))
+    client_data.status = FORBIDDEN;
+  else if (!(file_status.st_mode & S_IWRITE))
+    client_data.status = FORBIDDEN;
 }
 
 void ws::Validator::check_version(client_value_type& client_data) {

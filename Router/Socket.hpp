@@ -5,7 +5,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <vector>
-#include <time.h>
+#include <sys/time.h>
 #include <cmath>
 
 #include "Configure.hpp"
@@ -25,10 +25,15 @@ namespace ws {
 
       client_data(ws::Configure::listen_type listen)
         : fatal(false), status(0), repository(ws::Repository(fatal, status)), request(ws::Request(listen)),
-          response_header(), response_body(), write_offset(0), pipe_offset(), cgi_handler(), is_cgi_header(true), start_time(clock()) {};
+          response_header(), response_body(), write_offset(0), pipe_offset(), cgi_handler(), is_cgi_header(true), start_time(clock()) {
+        gettimeofday(&connect_time, NULL);
+      };
 
-//      client_data(const client_data& cls) // todo: ???
-//      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request), response(cls.response), write_offset(cls.write_offset), start_time(cls.start_time), session_iter(cls.session_iter) {};
+      client_data(const client_data& cls)
+      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request),
+        response_total(cls.response_total), response_header(cls.response_header), response_body(cls.response_body),
+        write_offset(cls.write_offset), pipe_offset(cls.pipe_offset), cgi_handler(cls.cgi_handler),
+        cgi_pid(cls.cgi_pid), is_cgi_header(cls.is_cgi_header), buffer(cls.buffer), start_time(cls.start_time) {};
 
       bool                    fatal;
       unsigned int            status;
@@ -43,7 +48,8 @@ namespace ws {
       pid_t                   cgi_pid;
       bool                    is_cgi_header;
       ws::Buffer              buffer;
-      clock_t                 start_time;
+      clock_t                 start_time; // todo: function start time
+      struct timeval          connect_time; // todo: socket connect time
     };
 
     struct session_data {
