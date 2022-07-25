@@ -70,7 +70,7 @@ namespace ws {
     typedef std::pair<unsigned int, session_value_type>                   session_type;
     typedef std::map<session_type::first_type, session_type::second_type> session_map_type;
 
-    typedef void (*kevent_func)(struct kevent event);
+    typedef void (*kevent_func)(const struct kevent& event, client_map_type::iterator& client);
 
   private:
 
@@ -120,10 +120,10 @@ namespace ws {
     static void exit_socket();
 
     /* control socket to kenel event */
-    static void accecpt_signal(struct kevent event);
-    static void connect_client(struct kevent event);
-    static void recv_request(struct kevent event);
-    static void process_request(struct kevent event);
+    static void accecpt_signal(const struct kevent& event, client_map_type::iterator& client);
+    static void connect_client(struct kevent event, client_map_type::iterator& client);
+    static void recv_request(const struct kevent& event, client_map_type::iterator& client);
+    static void process_request(const struct kevent& event, client_map_type::iterator& client);
     static void parse_cgi_return(client_value_type& client);
     static ws::Socket::client_map_type::iterator find_client_by_file(int file) throw();
     static ws::Socket::client_map_type::iterator find_client_by_fpipe(int fpipe) throw();
@@ -145,14 +145,14 @@ namespace ws {
     static void init_server(const ws::Configure& conf);
     static void run_server();
 
-    static void send_response(struct kevent event);
+    static void send_response(const struct kevent& event, client_map_type::iterator& client);
     /* control data to kenel event */
-    static void process_session(struct kevent event);
-    static void read_data(struct kevent event);
-    static void write_data(struct kevent event);
-    static void read_pipe(struct kevent event);
-    static void write_pipe(struct kevent event);
-    static void wait_child(struct kevent event);
+    static void process_session(const struct kevent& event, client_map_type::iterator& client);
+    static void read_data(const struct kevent& event, client_map_type::iterator& client);
+    static void write_data(const struct kevent& event, client_map_type::iterator& client);
+    static void read_pipe(const struct kevent& event, client_map_type::iterator& client);
+    static void write_pipe(const struct kevent& event, client_map_type::iterator& client);
+    static void wait_child(const struct kevent& event, client_map_type::iterator& client);
 
     static void generate_response(int client_fd, client_value_type& client_data);
   };
