@@ -136,6 +136,7 @@ void ws::Socket::accecpt_signal(struct kevent event) {
 void ws::Socket::connect_client(struct kevent event) {
   if (_signal == SIGINT)
     return;
+
   listen_type& listen = _server.find(event.ident)->second;
   int client_socket_fd;
 
@@ -145,8 +146,9 @@ void ws::Socket::connect_client(struct kevent event) {
     if (client_socket_fd != -1) {
       fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
       init_client(client_socket_fd, listen);
-      _kernel.add_read_event(client_socket_fd, reinterpret_cast<void*>(&Socket::recv_request));
+      _kernel.add_read_event(client_socket_fd, reinterpret_cast<void *>(&Socket::recv_request));
     }
+  }
 }
 
 void ws::Socket::recv_request(struct kevent event) {
