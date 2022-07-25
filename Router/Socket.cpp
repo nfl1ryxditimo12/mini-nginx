@@ -270,7 +270,7 @@ void ws::Socket::process_session(struct kevent event) {
     client_data.response_body += it->second.name;
     client_data.response_body += "</h4>\n<h4>id: ";
     client_data.response_body += Util::ultos(it->first);
-    client_data.response_body +="</h4>\n</body>\n</html>";
+    client_data.response_body +="</h4>\n</body>\n</html>\n";
   }
   else if (method == "POST") {
     // todo 이 조건은 사라져도 될 듯?
