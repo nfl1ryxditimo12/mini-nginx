@@ -15,3 +15,5 @@ a.out.dSYM
 
 # webserv tester
 file_should_exist_after
+post_body
+multiple_same
