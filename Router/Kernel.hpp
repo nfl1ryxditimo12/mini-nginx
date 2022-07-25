@@ -27,8 +27,14 @@ namespace ws {
     Kernel() throw();
     ~Kernel();
 
-    // todo: 삭제 예정. 아마?
-    void  kevent_ctl();
+    void  kevent_ctl(
+            uintptr_t ident,
+            int16_t filter,
+            uint16_t flags,
+            uint32_t fflags,
+            intptr_t data,
+            void *udata
+    );
     int   kevent_wait(struct kevent* event_list, size_t event_size);
 
     void  add_signal_event(int ident, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);

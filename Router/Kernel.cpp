@@ -24,16 +24,15 @@ ws::Kernel::~Kernel() {
   커널에서 이벤트 핸들링 하고 싶은 kevent 구조체 등록
 */
 
-// todo: 이제 불필요한 함수 삭제 예정
-void  ws::Kernel::kevent_ctl() {
-  if (!_change_list.size())
-    return;
-
-  if (kevent(_kq, &_change_list[0], _change_list.size(), NULL, 0, NULL) == -1) {
+경
+void  ws::Kernel::kevent_ctl(uintptr_t ident, int16_t filter,
+                             uint16_t flags, uint32_t fflags, intptr_t data, void *udata) {
+  struct kevent event;
+  EV_SET(&event, ident, filter, flags, fflags, data, udata);
+  if (kevent(_kq, &event, 1, NULL, 0, NULL) == -1) {
     perror("kevent");
     throw; // require custom exception
   }
-  _change_list.clear();
 }
 /*
   커널에서 발생한 이벤트 리턴해주는 함수
@@ -80,26 +79,18 @@ void ws::Kernel::add_user_event(int ident, void *udata, uint16_t flags, uint32_t
   _change_list.push_back(event);
 }
 
-void ws::Kernel::delete_read_event(int ident) {
-  struct kevent event;
-  EV_SET(&event, ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-  _change_list.push_back(event);
+void ws::Kernel::delete_read_event(int fd) {
+  kevent_ctl(fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 }
 
-void ws::Kernel::delete_write_event(int ident) {
-  struct kevent event;
-  EV_SET(&event, ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-  _change_list.push_back(event);
+void ws::Kernel::delete_write_event(int fd) {
+  kevent_ctl(fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 }
 
-void ws::Kernel::delete_process_event(int ident) {
-  struct kevent event;
-  EV_SET(&event, ident, EVFILT_PROC, EV_DELETE, 0, 0, NULL);
-  _change_list.push_back(event);
+void ws::Kernel::delete_process_event(int fd) {
+  kevent_ctl(fd, EVFILT_PROC, EV_DELETE, 0, 0, NULL);
 }
 
-void ws::Kernel::delete_user_event(int ident) {
-  struct kevent event;
-  EV_SET(&event, ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
-  _change_list.push_back(event);
+void ws::Kernel::delete_user_event(int fd) {
+  kevent_ctl(fd, EVFILT_USER, EV_DELETE, 0, 0, NULL);
 }
