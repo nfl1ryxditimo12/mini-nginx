@@ -101,13 +101,12 @@ void ws::Repository::set_repository(unsigned int value)  {
     else
       this->open_file(_file_path);
   }
-
-
+  
   if (_status >= BAD_REQUEST)
     this->open_error_html();
 
   if (_status == 0)
-    this->set_status(_method == "POST" || _method == "PUT" ? 200 : 200);
+    this->set_status(OK); // todo: Put, Post status is originally 201
 
   this->set_content_type();
 
@@ -232,40 +231,16 @@ bool ws::Repository::get_file_exist_stat() const throw() {
   return _file_exist_stat;
 }
 
-const std::string&  ws::Repository::get_host() const throw() {
-  return _host;
-}
-
 const std::string&  ws::Repository::get_method() const throw() {
   return _method;
-}
-
-const std::string&  ws::Repository::get_root() const throw() {
-  return _config.root;
-}
-
-const std::string&  ws::Repository::get_uri() const throw() {
-  return _uri;
-}
-
-const std::string&  ws::Repository::get_index_root() const throw() {
-  return _index_root;
 }
 
 const std::string&  ws::Repository::get_file_path() const throw() {
   return _file_path;
 }
 
-const std::string&  ws::Repository::get_request_body() const throw() {
-  return _request_body;
-}
-
 const ws::Repository::autoindex_type&  ws::Repository::get_autoindex() const throw() {
   return _autoindex;
-}
-
-const std::string&  ws::Repository::get_content_type() const throw() {
-  return _content_type;
 }
 
 const ws::Repository::redirect_type&  ws::Repository::get_redirect() const throw() {

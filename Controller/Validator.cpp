@@ -26,10 +26,10 @@ ws::Validator::Validator() throw() : _session(NULL) {
 ws::Validator::~Validator() {}
 
 void ws::Validator::operator()(const session_map_type& session, client_value_type& client_data) {
-  bool request_is_session = (client_data.request.get_uri() == "/session" ? true : false);
+  _request_is_session = (client_data.request.get_uri() == "/session" ? true : false);
 
-  if (request_is_session && !client_data.repository.is_session()) {
-    client_data.status = 401;
+  if (_request_is_session && !client_data.repository.is_session()) {
+    client_data.status = UNAUTHORIZED;
     return;
   }
 
@@ -39,7 +39,7 @@ void ws::Validator::operator()(const session_map_type& session, client_value_typ
       break;
   }
 
-  if (request_is_session) {
+  if (_request_is_session) {
     _session = &session;
 
     for (check_session_func_vec::iterator it = _check_session_func_vec.begin(); it != _check_session_func_vec.end(); ++it) {
@@ -87,12 +87,15 @@ void ws::Validator::check_method(client_value_type& client_data) {
 
 void ws::Validator::check_uri(client_value_type& client_data) {
   const struct stat& file_status = client_data.repository.get_file_stat();
+  const std::string& method = client_data.repository.get_method();
 
-  if (client_data.request.get_uri() == "/session")
+  if (_request_is_session || !client_data.repository.get_file_exist_stat() || !S_ISREG(file_status.st_mode))
     return;
 
-  if (S_ISREG(file_status.st_mode) && !(file_status.st_mode & S_IREAD))
-      client_data.status = FORBIDDEN;
+  if ((method == "GET" || method == "HEAD") && !(file_status.st_mode & S_IREAD))
+    client_data.status = FORBIDDEN;
+  else if (!(file_status.st_mode & S_IWRITE))
+    client_data.status = FORBIDDEN;
 }
 
 void ws::Validator::check_version(client_value_type& client_data) {
@@ -160,7 +163,6 @@ void ws::Validator::check_transfer_encoding(client_value_type& client_data) {
     client_data.status = BAD_REQUEST;
 }
 
-  // todo?: make Util::eraseWS
 void ws::Validator::check_session_id(client_value_type &client_data) {
   const std::string& method = client_data.request.get_method();
   const unsigned int& session_id = client_data.request.get_session_id();
@@ -180,5 +182,3 @@ void ws::Validator::check_secret_key(client_value_type &client_data) {
       client_data.status = UNAUTHORIZED;
   }
 }
-
-//connection close인데 close로 설정되어있지 않으면 error <- response에서 status랑 비교해서 결정하기

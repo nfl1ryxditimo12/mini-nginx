@@ -158,5 +158,7 @@ namespace ws {
     static void wait_child(struct kevent event);
 
     static void generate_response(int client_fd, client_value_type& client_data);
+
+     static session_map_type& get_session() throw();
   };
 }

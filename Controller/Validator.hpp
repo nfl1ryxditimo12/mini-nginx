@@ -25,15 +25,13 @@ namespace ws {
     typedef std::set<std::string> content_type_set;
 
   private:
-    // const ws::Request _request;
-    // const ws::Repository _repository;
-
     validate_func _validate_func;
     check_func_vec _check_func_vec;
     check_session_func_vec _check_session_func_vec;
     content_type_set _content_type_parser;
 
     const session_map_type* _session;
+    bool _request_is_session;
 
     Validator(const Validator& cls);
     Validator& operator=(const Validator& cls);
@@ -55,7 +53,5 @@ namespace ws {
     void check_transfer_encoding(client_value_type& client_data);
     void check_session_id(client_value_type& client_data);
     void check_secret_key(client_value_type& client_data);
-
-    void check_request_header(client_value_type& client_data);
   };
 }

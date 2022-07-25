@@ -24,7 +24,7 @@ namespace ws {
 
     typedef ws::Configure::listen_type listen_type;
 
-    typedef std::map<std::string, std::string> query_type;
+//    typedef std::map<std::string, std::string> query_type;
 
     typedef std::map<std::string, std::string> header_type;
 
@@ -44,7 +44,7 @@ namespace ws {
 
     std::string _method;
     std::string _request_uri;
-    query_type  _request_uri_query;
+//    query_type  _request_uri_query;
     std::string _http_version; // required HTTP/1.1 protocol
 
     /* =================================== */
@@ -130,13 +130,6 @@ namespace ws {
     /*     Request header field parser     */
     /* =================================== */
 
-    /*
-      Transfer-Encoding
-      Host
-      Connection
-      Content-Length
-      등등 추가될 수 있음
-    */
     void  parse_host(const std::string& value);
     void  parse_connection(const std::string& value);
     void  parse_content_length(const std::string& value);
@@ -170,10 +163,10 @@ namespace ws {
     /* =================================== */
 
     /* Getter 더 필요함 변수 확인 필요 */
-    bool eof() const throw();
+    bool  eof() const throw();
     const std::string& get_method() const throw();
     const std::string& get_uri() const throw();
-    const query_type& get_uri_query() const throw();
+//    const query_type& get_uri_query() const throw();
     const std::string& get_version() const throw();
 
     const header_type& get_request_header() const throw();
