@@ -397,7 +397,7 @@ void ws::Socket::parse_cgi_return(client_value_type &client) {
 
 void ws::Socket::read_pipe(struct kevent event) {
   const client_map_type::iterator& client = find_client_by_bpipe(event.ident);
-  ssize_t read_size = client->second.buffer.read_file(event.ident, event.data);
+  ssize_t read_size = client->second.buffer.read_file(event.ident);
 
   if (read_size < 0) {
 //    std::cerr << event.data << std::endl; // test print
@@ -433,7 +433,7 @@ void ws::Socket::write_pipe(struct kevent event) { // todo: when refactoring is 
   const client_map_type::iterator& client = find_client_by_fpipe(event.ident);
   const std::string& request_body = client->second.request.get_request_body();
   std::string::size_type& offset = client->second.pipe_offset;
-  ssize_t write_size = write(event.ident, request_body.c_str() + offset, std::min(static_cast<std::size_t>(event.data), request_body.length() - offset));
+  ssize_t write_size = write(event.ident, request_body.c_str() + offset, request_body.length() - offset);
 
   if (write_size <= 0) {
     std::cerr << "Socket: pipe write error occurred" << std::endl;
