@@ -13,8 +13,11 @@ namespace ws {
   
   private:
     int _kq;
+    const static std::size_t kDefaultEventListSize;
 
     std::vector<struct kevent> _change_list;
+    std::vector<struct kevent> _event_list;
+    std::vector<struct kevent> _delete_list;
 
     Kernel(const Kernel& cls);
     Kernel& operator=(const Kernel& cls);
@@ -27,9 +30,9 @@ namespace ws {
     Kernel() throw();
     ~Kernel();
 
-    // todo: 삭제 예정. 아마?
-    void  kevent_ctl();
-    int   kevent_wait(struct kevent* event_list, size_t event_size);
+    const struct kevent* get_event_list() const throw();
+
+    int   kevent_ctl(int event_size);
 
     void  add_signal_event(int ident, void* udata, uint16_t flags = 0, uint32_t fflags = 0, intptr_t data = 0);
 

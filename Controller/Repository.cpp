@@ -110,7 +110,7 @@ void ws::Repository::set_repository(unsigned int value)  {
 
   this->set_content_type();
 
-//  test(); // todo: print test
+//  test(); // todo: test print
 }
 
 void ws::Repository::set_status(unsigned int status) {

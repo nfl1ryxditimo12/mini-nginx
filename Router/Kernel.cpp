@@ -2,14 +2,18 @@
 
 #include <cstdio>
 
-
 extern bool webserv_fatal;
 
-ws::Kernel::Kernel() throw() {
+const std::size_t ws::Kernel::kDefaultEventListSize = 1024;
+
+ws::Kernel::Kernel() throw() : _change_list(), _event_list(), _delete_list() {
   try {
     _kq = kqueue();
+
     if (_kq == -1)
       throw; // require custom exception
+
+    _event_list.reserve(kDefaultEventListSize);
   } catch (...) {
     webserv_fatal = true;
   }
@@ -19,34 +23,35 @@ ws::Kernel::~Kernel() {
   close(_kq);
   _change_list.clear();
 }
-
-/*
-  커널에서 이벤트 핸들링 하고 싶은 kevent 구조체 등록
-*/
-
-// todo: 이제 불필요한 함수 삭제 예정
-void  ws::Kernel::kevent_ctl() {
-  if (!_change_list.size())
-    return;
-
-  if (kevent(_kq, &_change_list[0], _change_list.size(), NULL, 0, NULL) == -1) {
-    perror("kevent");
-    throw; // require custom exception
-  }
-  _change_list.clear();
-}
 /*
   커널에서 발생한 이벤트 리턴해주는 함수
 */
 
-// todo: 네이밍 변경
-int ws::Kernel::kevent_wait(struct kevent* event_list, size_t event_size) {
+const struct kevent* ws::Kernel::get_event_list() const throw() {
+  return &_event_list[0];
+}
+
+int ws::Kernel::kevent_ctl(int event_size) {
+  struct timespec limit = {0, 0};
+
   int new_event;
 
-  std::memset(event_list, 0, sizeof(struct kevent) * event_size);
-  if ((new_event = kevent(_kq, &_change_list[0], _change_list.size(), event_list, event_size, NULL)) == -1)
-    throw; // require custom exception
+  if (_event_list.capacity() < static_cast<std::vector<struct kevent>::size_type>(event_size))
+    _event_list.reserve(event_size);
+
+  if ((kevent(_kq, _delete_list.data(), _delete_list.size(), NULL, 0, &limit) == -1) && (errno != ENOENT)) {
+    std::perror("delete");
+    throw std::runtime_error("kevent delete error");
+  }
+
+  _delete_list.clear();
+
+  new_event = kevent(_kq, _change_list.data(), _change_list.size(), &_event_list[0], event_size, &limit);
+  if (new_event == -1)
+    throw std::runtime_error("kevent ctl error");
+
   _change_list.clear();
+
   return new_event;
 }
 
@@ -83,23 +88,23 @@ void ws::Kernel::add_user_event(int ident, void *udata, uint16_t flags, uint32_t
 void ws::Kernel::delete_read_event(int ident) {
   struct kevent event;
   EV_SET(&event, ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-  _change_list.push_back(event);
+  _delete_list.push_back(event);
 }
 
 void ws::Kernel::delete_write_event(int ident) {
   struct kevent event;
   EV_SET(&event, ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-  _change_list.push_back(event);
+  _delete_list.push_back(event);
 }
 
 void ws::Kernel::delete_process_event(int ident) {
   struct kevent event;
   EV_SET(&event, ident, EVFILT_PROC, EV_DELETE, 0, 0, NULL);
-  _change_list.push_back(event);
+  _delete_list.push_back(event);
 }
 
 void ws::Kernel::delete_user_event(int ident) {
   struct kevent event;
   EV_SET(&event, ident, EVFILT_USER, EV_DELETE, 0, 0, NULL);
-  _change_list.push_back(event);
+  _delete_list.push_back(event);
 }
