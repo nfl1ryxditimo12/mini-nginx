@@ -32,21 +32,19 @@ const struct kevent* ws::Kernel::get_event_list() const throw() {
 }
 
 int ws::Kernel::kevent_ctl(int event_size) {
-  struct timespec limit = {0, 0};
-
   int new_event;
 
   if (_event_list.capacity() < static_cast<std::vector<struct kevent>::size_type>(event_size))
     _event_list.reserve(event_size);
 
-  if ((kevent(_kq, _delete_list.data(), _delete_list.size(), NULL, 0, &limit) == -1) && (errno != ENOENT)) {
+  if ((kevent(_kq, _delete_list.data(), _delete_list.size(), NULL, 0, NULL) == -1) && (errno != ENOENT)) {
     std::perror("delete");
     throw std::runtime_error("kevent delete error");
   }
 
   _delete_list.clear();
 
-  new_event = kevent(_kq, _change_list.data(), _change_list.size(), &_event_list[0], event_size, &limit);
+  new_event = kevent(_kq, _change_list.data(), _change_list.size(), &_event_list[0], event_size, NULL);
   if (new_event == -1)
     throw std::runtime_error("kevent ctl error");
 
