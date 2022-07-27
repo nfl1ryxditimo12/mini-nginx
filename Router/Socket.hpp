@@ -48,8 +48,8 @@ namespace ws {
       pid_t                   cgi_pid;
       bool                    is_cgi_header;
       ws::Buffer              buffer;
-      clock_t                 start_time; // todo: function start time
-      struct timeval          connect_time; // todo: socket connect time
+      clock_t                 start_time;
+      struct timeval          connect_time;
     };
 
     struct session_data {

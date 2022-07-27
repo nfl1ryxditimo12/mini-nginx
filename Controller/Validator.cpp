@@ -1,7 +1,6 @@
 #include "Validator.hpp"
 #include "Socket.hpp"
 #include <sys/stat.h>
-// #include <iostream>//@
 
 extern bool webserv_fatal;
 
@@ -35,7 +34,7 @@ void ws::Validator::operator()(const session_map_type& session, client_value_typ
 
   for (check_func_vec::iterator it = _check_func_vec.begin(); it != _check_func_vec.end(); ++it) {
     (this->**it)(client_data);
-    if (client_data.status != 0) //todo: < 300
+    if (client_data.status != 0)
       break;
   }
 
@@ -108,8 +107,6 @@ void ws::Validator::check_host(client_value_type& client_data) {
 
   if (host == "")
     client_data.status = BAD_REQUEST;
-
-  //host가 잘못된 값 = 400 -> 공백같은거...?!
 }
 
 void ws::Validator::check_connection(client_value_type& client_data) {

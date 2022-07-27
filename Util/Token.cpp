@@ -114,28 +114,6 @@ ws::Token& ws::Token::rdall(std::istream& buffer) {
   return *this;
 }
 
-/* TODO
-
-param: void
-return: true if token is "\n"
-exception: none
-description: returns true if Token string is "\n"
-
-bool ws::Token::is_endl() const throw() {
-  return _data == "\n" || !_data.length();
-}
-
-
-param: void
-return: true if token is "\r\n"
-exception: none
-description: returns true if Token string is "\r\n"
-
-bool ws::Token::is_http_endl() const throw() {
-  return _data == "\r\n";
-}
-*/
-
 ws::Token &ws::Token::rdword(ws::Buffer &buffer) {
   this->clear();
 

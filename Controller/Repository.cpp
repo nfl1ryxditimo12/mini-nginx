@@ -1,24 +1,6 @@
 #include "Repository.hpp"
 #include "Request.hpp"
 
-
-#include <iostream> // todo
-#define NC "\e[0m"
-#define RED "\e[0;31m"
-#define GRN "\e[0;32m"
-#define YLW "\e[0;33m"
-#define CYN "\e[0;36m"
-/*
-  todo
-
-  fatal 인 경우 전체적인 흐름 유지하는 처리
-
-  테스트 하며 멤버 콘솔 출력 // seonkim
-  _root + _uri 중간에 슬래시 붙는지 확인해야함
-  파일 오픈 분기 delete 처리 해줘야함
-  권한 없을 때 파일 열기 어떻게 처리할지
-*/
-
 ws::Repository::Repository(bool fatal, unsigned int status): _fatal(fatal), _status(status), _session(0), _fd(FD_DEFAULT) {
   memset(&_file_stat, 0, sizeof(struct stat));
   _index_root = ws::Util::get_root_dir() + "/www";
@@ -74,10 +56,6 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
 
   _host = server_name + ":" + ws::Util::ultos(ntohs(_config.listen.second));
   _method = _request->get_method();
-
-  // todo: test print
-//  std::cout << YLW << "\n=========================================================\n" << NC << std::endl;
-//  std::cout << RED << _method << " " << _location->get_block_name() << NC << std::endl;
 }
 
 void ws::Repository::set_option(const ws::InnerOption& option) {
@@ -109,8 +87,6 @@ void ws::Repository::set_repository(unsigned int value)  {
     this->set_status(OK); // todo: Put, Post status is originally 201
 
   this->set_content_type();
-
-//  test(); // todo: test print
 }
 
 void ws::Repository::set_status(unsigned int status) {
@@ -121,10 +97,6 @@ void ws::Repository::set_status(unsigned int status) {
 
 void ws::Repository::set_fatal() {
   _fatal = true;
-}
-
-void ws::Repository::set_fd(int value) {
-  _fd = value;
 }
 
 void ws::Repository::set_autoindex() {
@@ -162,7 +134,6 @@ void ws::Repository::set_content_type() {
     _content_type = "text/html";
   else if (_config.redirect.first > 0 && _config.redirect.first < 300)
     _content_type = "application/octet-stream";
-  // nginx에서 바이너리 파일 어떤 content-type으로 주는지 확인해봐야함
   else {
     _content_type = "text";
   }
@@ -267,52 +238,4 @@ void ws::Repository::clear() throw() {
   _server = NULL;
   _location = NULL;
   _request = NULL;
-}
-
-// todo: test print
-#define NC "\e[0m"
-#define RED "\e[0;31m"
-#define GRN "\e[0;32m"
-#define YLW "\e[0;33m"
-#define CYN "\e[0;36m"
-
-void ws::Repository::test() {
-  std::cout << GRN << "\n== " << NC << "Repository" << GRN << " ==============================\n" << NC << std::endl;
-
-  std::cout << YLW << "** Config data **" << NC << std::endl;
-  std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "listen: " << NC << _config.listen.first << ", " << _config.listen.second << std::endl;
-  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "server_name: " << NC << _config.server_name << std::endl;
-  std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "limit_except_vec:" << NC;
-  for (limit_except_vec_type::iterator it = _config.limit_except_vec.begin(); it != _config.limit_except_vec.end(); ++it)
-    std::cout << " " << *it;
-  std::cout << std::endl;
-  std::cout << CYN << "[Type: pair]   " << NC << "- " << RED << "redirect: " << NC << _config.redirect.first << ", " << _config.redirect.second << std::endl;
-  std::cout << CYN << "[Type: bool]   " << NC << "- " << RED << "autoindex: " << NC << _config.autoindex << std::endl;
-  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "root: " << NC << _config.root << std::endl;
-  std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "index:" << NC;
-  for (index_set_type::iterator it = _config.index.begin(); it != _config.index.end(); ++it)
-    std::cout << " " << *it;
-  std::cout << std::endl;
-  std::cout << CYN << "[Type: ul]     " << NC << "- " << RED << "client_max_body_size: " << NC << _config.client_max_body_size << std::endl;
-  std::cout << CYN << "[Type: map]    " << NC << "- " << RED << "error_page_map:" << NC;
-  for (error_page_map_type::iterator it = _config.error_page_map.begin(); it != _config.error_page_map.end(); ++it)
-    std::cout << " [" << it->first << ", " << it->second << "]";
-  std::cout << "\n" << std::endl;
-
-  std::cout << YLW << "** Repository member **" << NC << std::endl;
-  std::cout << CYN << "[Type: bool]   " << NC << "- " << RED << "_fatal: " << NC << _fatal << std::endl;
-  std::cout << CYN << "[Type: ul]     " << NC << "- " << RED << "_status: " << NC << _status << std::endl;
-  std::cout << CYN << "[Type: int]    " << NC << "- " << RED << "_fd: " << NC << _fd << std::endl;
-  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_uri: " << NC << _uri << std::endl;
-  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_host: " << NC << _host << std::endl;
-  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_method: " << NC << _method << std::endl;
-  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_request_body: " << NC << _request_body << std::endl;
-  std::cout << CYN << "[Type: vector] " << NC << "- " << RED << "_autoindex:" << NC;
-  for (autoindex_type::iterator it = _autoindex.begin(); it != _autoindex.end(); ++it)
-    std::cout << " " << *it;
-  std::cout << std::endl;
-  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_content_type: " << NC << _content_type << std::endl;
-  std::cout << CYN << "[Type: string] " << NC << "- " << RED << "_index_root: " << NC << _index_root << std::endl;
-
-  std::cout << GRN << "\n============================================\n" << NC << std::endl;
 }

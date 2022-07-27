@@ -13,19 +13,9 @@ namespace ws {
     typedef ws::Server::server_name_vec_type server_name_vec_type;
 
     typedef ws::Server::location_map_type location_map_type;
-//    typedef ws::Server::location_pair_type location_pair_type;
-
-//    typedef ws::Location::limit_except_type limit_except_type;
     typedef ws::Location::limit_except_vec_type limit_except_vec_type;
-//    typedef ws::Location::return_type return_type;
-//    typedef ws::Location::cgi_type cgi_type;
     typedef ws::Location::cgi_map_type cgi_map_type;
-
-//    typedef ws::InnerOption::autoindex_type autoindex_type;
-//    typedef ws::InnerOption::root_type root_type;
-//    typedef ws::InnerOption::index_type index_type;
     typedef ws::InnerOption::index_set_type index_set_type;
-//    typedef ws::InnerOption::client_max_body_size_type client_max_body_size_type;
     typedef ws::InnerOption::error_page_type error_page_type;
     typedef ws::InnerOption::error_page_map_type error_page_map_type;
 

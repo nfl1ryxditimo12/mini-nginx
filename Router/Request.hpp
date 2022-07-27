@@ -24,8 +24,6 @@ namespace ws {
 
     typedef ws::Configure::listen_type listen_type;
 
-//    typedef std::map<std::string, std::string> query_type;
-
     typedef std::map<std::string, std::string> header_type;
 
 
@@ -44,7 +42,6 @@ namespace ws {
 
     std::string _method;
     std::string _request_uri;
-//    query_type  _request_uri_query;
     std::string _http_version; // required HTTP/1.1 protocol
 
     /* =================================== */
@@ -123,8 +120,6 @@ namespace ws {
     void  parse_request_header();
     void  parse_request_body();
     void  parse_request_chunked_body();
-//    void  parse_request_chunked_start_line(); // todo: remove..?
-//    void  parse_request_chunked_data_line();
 
     /* =================================== */
     /*     Request header field parser     */
@@ -156,7 +151,6 @@ namespace ws {
 
     int   parse_request_message(const ws::Configure& conf, ws::Buffer* buffer, ws::Repository& repo);
     void  clear();
-    void  test();
 
     /* =================================== */
     /*                Getter               */
@@ -166,7 +160,6 @@ namespace ws {
     bool  eof() const throw();
     const std::string& get_method() const throw();
     const std::string& get_uri() const throw();
-//    const query_type& get_uri_query() const throw();
     const std::string& get_version() const throw();
 
     const header_type& get_request_header() const throw();

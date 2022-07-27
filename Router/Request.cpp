@@ -1,19 +1,11 @@
 #include "Request.hpp"
 
-/* 지울거임 */
-#include <iostream>
-#define NC "\e[0m"
-#define RED "\e[0;31m"
-#define GRN "\e[0;32m"
-#define YLW "\e[0;33m"
-#define CYN "\e[0;36m"
-
 #include "Repository.hpp"
 
 ws::Request::Request(const ws::Configure::listen_type& listen)
   : _listen(listen), _eof(false), _content_length(std::numeric_limits<std::size_t>::max()), _port(), _session_id(UINT_MAX),
     _status(0), _chunked(false), _chunked_line_type(false), _chunked_eof(false), _chunked_byte(std::string::npos), _client_max_body_size(0), _is_header(true),
-    _token() { // todo: added chunked eof initialize to false...
+    _token() {
   insert_require_header_field();
 }
 
@@ -23,7 +15,6 @@ ws::Request::Request(const Request& cls) {
 
   _method = cls._method;
   _request_uri = cls._request_uri;
-//  _request_uri_query = cls._request_uri_query;
   _http_version = cls._http_version;
 
   _request_header = cls._request_header;
@@ -97,14 +88,7 @@ void	ws::Request::parse_request_chunked_body() {
     _status = PAYLOAD_TOO_LARGE;
 }
 
-/*
-  정의되어있는 Content-Length 값보다 적게 파싱해야 한다.
-  Content-Length 보다 buffer size가 넘어간다면 넘어간 값부터는 쓰레기 값이라고 판단 할 수 있다.
-  client_max_body_size 는 validator에서 판단해야 하나?
-*/
 void	ws::Request::parse_request_body() {
-
-  /* token 대입 시간 테스트 해야함 */
   std::string::size_type i = _request_body.length();
 
   for (; i < _content_length; ++i)
@@ -118,22 +102,6 @@ void  ws::Request::parse_request_uri(const std::string& uri) {
   std::string::size_type mark_pos = uri.find('?');
 
   _request_uri = uri.substr(0, mark_pos);
-  return;
-
-//  else {
-//    std::stringstream buffer;
-//    std::string key;
-//    std::string value;
-//
-//    _request_uri = uri.substr(0, mark_pos); // todo: disabled while merging
-//    buffer << uri.substr(mark_pos + 1);
-//
-//    while (!buffer.eof()) {
-//      key = rdline('=');
-//      value = rdline('&');
-//      _request_uri_query.insert(query_type::value_type(key, value));
-//    }
-//  }
 }
 
 bool ws::Request::parse_request_start_line() {
@@ -200,18 +168,8 @@ void	ws::Request::parse_request_header() {
   _is_header = false;
 }
 
-/*
-  repository를 header파싱 후 해줘서 client_max_body_size까지만 받아올 지 생각 해 봐야함
-*/
 int ws::Request::parse_request_message(const ws::Configure& conf, ws::Buffer* buffer, ws::Repository& repo) {
   _buffer = buffer;
-  /*
-    buffer size 가 0 인 경우 어떻게 처리해야 할까?
-    case 1: kernel buffer가 모두 읽힌 뒤 발생한 kevent -> buffer size == 0 으로 들어옴
-    case 2: tcp 또는 application layer 오류 등등
-
-    아마 _eof 변수로 파싱을 관리해서 괜찮지 않을까 라는 뇌피셜
-  */
 
   if (_is_header) {
     parse_request_header();
@@ -245,7 +203,6 @@ void  ws::Request::clear() {
 
   _method.clear();
   _request_uri.clear();
-//  _request_uri_query.clear();
   _http_version.clear();
 
   _request_header.clear();
@@ -301,7 +258,6 @@ void  ws::Request::parse_content_length(const std::string& value) {
 }
 
 void  ws::Request::parse_content_type(const std::string& value) {
-  //text/html; charset=utf-8
   std::string::size_type pos = value.find(';');
 
   _content_type = value.substr(0, pos);
@@ -383,10 +339,6 @@ const std::string& ws::Request::get_uri() const throw() {
 	return _request_uri;
 }
 
-//const ws::Request::query_type& ws::Request::get_uri_query() const throw() {
-//	return _request_uri_query;
-//}
-
 const std::string& ws::Request::get_version() const throw() {
 	return _http_version;
 }
@@ -437,38 +389,4 @@ const std::string& ws::Request::get_secret_key() const throw() {
 
 void ws::Request::set_session_id(unsigned int session_id) throw() {
   _session_id = session_id;
-}
-
-//todo: print test
-void ws::Request::test() {
-  std::cout << "host: _: " << _listen.first << ", port: " << _listen.second << std::endl;
-  std::cout << "eof: " << _eof << std::endl;
-  std::cout << "method: " << _method << std::endl;
-  std::cout << "request_uri: " << _request_uri << std::endl;
-//  std::cout << "request_uri_query:" << std::endl;
-//  for (query_type::iterator it = _request_uri_query.begin(); it != _request_uri_query.end(); ++it) {
-//    std::cout << "  Key: " << it->first << ", Value: " << it->second << std::endl;
-//  }
-  std::cout << "http version: " << _http_version << std::endl;
-  std::cout << "content length: " << _content_length << std::endl;
-  std::cout << "content type: " << _content_type << std::endl;
-  std::cout << "server name: " << _server_name << std::endl;
-  std::cout << "run_server: " << _connection << std::endl;
-  std::cout << "transfer encoding: " << _transfer_encoding << std::endl;
-  std::cout << "session_id: " << _session_id << std::endl;
-  std::cout << "name: " << _name << std::endl;
-  std::cout << "secret_key: " << _secret_key << std::endl;
-
-
-  std::cout << "_status: " << _status << std::endl;
-  std::cout << "_chunked: " << (_chunked ? "true" : "false") << std::endl;
-  std::cout << "_chunked_line_type: " << _chunked_line_type << std::endl;
-  std::cout << "_chunked_byte: " << _chunked_byte << std::endl;
-  std::cout << "_client_max_body_size: " << _client_max_body_size << std::endl;
-  
-  std::cout << "\nHeader:" << std::endl;
-  for (header_type::iterator it = _request_header.begin(); it != _request_header.end(); ++it)
-    std::cout << RED << "> " << NC << it->first << " " << it->second << std::endl;
-  std::cout << "\nBody:" << std::endl;
-  std::cout << _request_body << std::endl;
 }

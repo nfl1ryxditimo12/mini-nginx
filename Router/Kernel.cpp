@@ -11,7 +11,7 @@ ws::Kernel::Kernel() throw() : _change_list(), _event_list(), _delete_list() {
     _kq = kqueue();
 
     if (_kq == -1)
-      throw; // require custom exception
+      throw std::runtime_error("kq error");
 
     _event_list.reserve(kDefaultEventListSize);
   } catch (...) {
@@ -23,30 +23,25 @@ ws::Kernel::~Kernel() {
   close(_kq);
   _change_list.clear();
 }
-/*
-  커널에서 발생한 이벤트 리턴해주는 함수
-*/
 
 const struct kevent* ws::Kernel::get_event_list() const throw() {
   return &_event_list[0];
 }
 
 int ws::Kernel::kevent_ctl(int event_size) {
-  struct timespec limit = {0, 0};
-
   int new_event;
 
   if (_event_list.capacity() < static_cast<std::vector<struct kevent>::size_type>(event_size))
     _event_list.reserve(event_size);
 
-  if ((kevent(_kq, _delete_list.data(), _delete_list.size(), NULL, 0, &limit) == -1) && (errno != ENOENT)) {
+  if ((kevent(_kq, _delete_list.data(), _delete_list.size(), NULL, 0, NULL) == -1) && (errno != ENOENT)) {
     std::perror("delete");
     throw std::runtime_error("kevent delete error");
   }
 
   _delete_list.clear();
 
-  new_event = kevent(_kq, _change_list.data(), _change_list.size(), &_event_list[0], event_size, &limit);
+  new_event = kevent(_kq, _change_list.data(), _change_list.size(), &_event_list[0], event_size, NULL);
   if (new_event == -1)
     throw std::runtime_error("kevent ctl error");
 

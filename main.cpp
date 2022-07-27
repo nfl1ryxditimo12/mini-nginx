@@ -4,12 +4,12 @@
 #include "Util.hpp"
 #include "Socket.hpp"
 
-bool webserv_fatal = false; // could be some kind of status
+bool webserv_fatal = false;
 
 int main(int argc, char** argv) {
   if (webserv_fatal) {
     std::cerr << "Fatal error" << std::endl;
-    return 1; // or handle exception by choice
+    return 1;
   }
 
   if (argc > 3) {
@@ -20,7 +20,6 @@ int main(int argc, char** argv) {
   ws::Configure conf;
 
   try {
-    // todo: origin -> [ ws::ConfParser config_parser(argv[1], ws::Util::get_root_dir()); ]
     ws::ConfParser config_parser(argc == 1 ? "config/default.conf" : argv[1], ws::Util::get_root_dir());
     config_parser.parse(conf);
   } catch (std::exception& e) {
@@ -30,8 +29,6 @@ int main(int argc, char** argv) {
     std::cerr << "Configure: unknown error" << std::endl;
     return 1;
   }
-
-//  conf.print_configure(); // todo: test print
 
   ws::Socket::init_server(conf);
   ws::Socket::run_server();

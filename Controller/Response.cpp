@@ -74,6 +74,6 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
 }
 
 void ws::Response::generate(ws::Response::client_value_type &client_data) {
-  client_data.response_header = ws::HeaderGenerator::generate(client_data, client_data.response_body.length());
+  client_data.response_header = ws::HeaderGenerator::generate(client_data);
   client_data.response_total = client_data.response_header + "\r\n" + client_data.response_body;
 }

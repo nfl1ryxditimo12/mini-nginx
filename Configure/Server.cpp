@@ -53,10 +53,6 @@ const ws::Server::client_max_body_size_type& ws::Server::get_client_max_body_siz
   return _option.get_client_max_body_size();
 }
 
-//const ws::Server::error_page_map_type& ws::Server::get_error_page_map() const throw() {
-//  return _option.get_error_page_map();
-//}
-
 void ws::Server::add_listen(const listen_type& value) {
   for (listen_vec_type::iterator iter = _listen_vec.begin(); iter != _listen_vec.end(); ++iter) {
     if (*iter == value)
@@ -65,10 +61,6 @@ void ws::Server::add_listen(const listen_type& value) {
 
   _listen_vec.push_back(value);
 }
-
-//void ws::Server::set_listen_vec(const listen_vec_type& value) {
-//  _listen_vec = value;
-//}
 
 void ws::Server::add_server_name(const server_name_type& value) {
   _server_name_vec.push_back(value);

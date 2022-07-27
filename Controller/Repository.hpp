@@ -11,18 +11,6 @@
 #include "Define.hpp"
 #include "Util.hpp"
 
-/*
-  bool autoindex;
-  vector<string> dir; // file or dir name vector
-  string filename; // 
-
-  content-type;
-
-  그외 필요한 데이터 만들어야함
-
-*/
-
-
 namespace ws {
 
   #define FD_DEFAULT -2
@@ -92,15 +80,6 @@ namespace ws {
     /*      Repository member variable     */
     /* =================================== */
 
-    /*
-      default root dir 있으면 좋을듯 char* 또는 std::string
-      return 키워드 처리 어떻게 해야할지 고민해봐야함
-      _root 변수 char*로 처리하는게 어떨까 (.c_str() 함수 남발하기 싫음)
-
-    */
-
-    /* 치명적인 오류 일 경우 콘솔 또는 throw 하는 방식 생각해 봐야함 */
-
     bool _fatal;
 
     unsigned int _status; // get_status();
@@ -114,7 +93,6 @@ namespace ws {
 
     std::string _index_root;
 
-    /* filename 필요함 절대경로로 */
     std::string _uri;
 
     std::string _file_path;
@@ -163,9 +141,6 @@ namespace ws {
     void set_repository(unsigned int status);
     void set_status(unsigned int status);
     void set_fatal(); // always set true
-    void set_fd(int value);
-
-    void test();
 
     /* =================================== */
     /*                Getter               */

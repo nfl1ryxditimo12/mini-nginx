@@ -40,10 +40,8 @@ namespace ws {
     const root_type& get_root() const throw();
     const index_set_type& get_index_set() const throw();
     const client_max_body_size_type& get_client_max_body_size() const throw();
-//    const error_page_map_type& get_error_page_map() const throw();
 
     void add_listen(const listen_type& value);
-//    void set_listen_vec(const listen_vec_type& value);
     void add_server_name(const server_name_type& value);
 
     void set_location_map(const location_map_type& value);

@@ -22,10 +22,6 @@ namespace ws {
     Kernel(const Kernel& cls);
     Kernel& operator=(const Kernel& cls);
 
-    /*
-      On call pending state until kernel fetches new events
-    */
-
   public:
     Kernel() throw();
     ~Kernel();

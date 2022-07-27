@@ -20,7 +20,6 @@ namespace ws {
     typedef ws::InnerOption::index_type index_type;
     typedef ws::InnerOption::client_max_body_size_type client_max_body_size_type;
     typedef ws::InnerOption::error_page_map_type error_page_map_type;
-//    typedef ws::InnerOption::error_page_type error_page_type;
   
   private:
     session_type _session;
@@ -64,4 +63,4 @@ namespace ws {
     void set_index(const index_set_type& value);
     void set_client_max_body_size(const client_max_body_size_type& value);
   };
-}  // namespace ws
+}

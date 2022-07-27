@@ -89,10 +89,6 @@ namespace ws {
     ConfParser(const std::string& file, const std::string& root_dir);
     ~ConfParser();
 
-//    ws::Token& get_token() throw();
-//
-//    std::stringstream& get_buffer() throw();
-
     void parse(ws::Configure& conf);
   };
 }

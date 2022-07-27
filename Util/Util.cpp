@@ -167,10 +167,3 @@ std::string ws::Util::format_number(size_t num) {
   }
   return ret;
 }
-
-void ws::Util::print_running_time(const std::string& target, clock_t& time) {
-  clock_t now = clock();
-
-  std::cout << RED << target << NC << ": " << format_number(now - time) << CYN << "µs" << NC << std::endl;
-  time = clock();
-}

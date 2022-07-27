@@ -1,7 +1,5 @@
 #include "InnerOption.hpp"
 
-#include <stdexcept>
-
 ws::InnerOption::InnerOption() : _autoindex(kAUTOINDEX_UNSET), _client_max_body_size(kCLIENT_MAX_BODY_SIZE_UNSET) {}
 
 ws::InnerOption::InnerOption(const InnerOption& other)
