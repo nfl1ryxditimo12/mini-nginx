@@ -182,3 +182,11 @@ std::string ws::Util::mime_type(const std::string& extension) {
   else
     return "text";
 }
+#include <sys/types.h>
+void ws::Util::print_accept_client(const std::string& request, u_int32_t index, int fd) {
+  std::cout << CYN << request << NC << " client_idx: " << index << ", accepted fd: " << fd << std::endl;
+}
+
+void ws::Util::print_disconnect_client(int fd) {
+  std::cout << RED << "[Disconnect]" << NC << " - client fd: " << fd << std::endl;
+}

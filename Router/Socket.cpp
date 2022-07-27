@@ -14,6 +14,7 @@ ws::Validator ws::Socket::_validator;
 ws::Response ws::Socket::_response;
 sig_atomic_t ws::Socket::_signal = 0;
 unsigned int ws::Socket::_session_index = 0;
+unsigned int ws::Socket::_accept_index = 0;
 
 const std::size_t ws::Socket::kBUFFER_SIZE = 1024 * 1024;
 
@@ -60,9 +61,6 @@ void ws::Socket::run_server() {
 
   while (true) {
 
-    if (_signal == SIGINT && _client.empty())
-      exit(0);
-
     new_event = _kernel.kevent_ctl(_client.size() + _server.size());
 
     for (int i = 0; i < new_event; i++) {
@@ -74,8 +72,8 @@ void ws::Socket::run_server() {
 
 /* Private function */
 
-void ws::Socket::init_client(unsigned int fd, listen_type listen) {
-  _client.insert(client_map_type::value_type(fd, client_value_type(listen)));
+void ws::Socket::init_client(unsigned int fd, listen_type listen, const struct sockaddr_in& sock) {
+  _client.insert(client_map_type::value_type(fd, client_value_type(listen, sock)));
 }
 
 void ws::Socket::disconnect_client(int fd) {
@@ -87,6 +85,7 @@ void ws::Socket::disconnect_client(int fd) {
   _client.erase(client_iter);
 
   close(fd);
+  ws::Util::print_disconnect_client(fd);
 }
 
 void ws::Socket::exit_socket() {
@@ -94,8 +93,8 @@ void ws::Socket::exit_socket() {
 }
 
 void ws::Socket::accecpt_signal(struct kevent event) {
-  if (event.ident == SIGINT)
-    _signal = SIGINT;
+  (void)event;
+  exit(0);
 }
 
 void ws::Socket::connect_client(struct kevent event) {
@@ -104,13 +103,18 @@ void ws::Socket::connect_client(struct kevent event) {
 
   listen_type& listen = _server.find(event.ident)->second;
   int client_socket_fd;
+  struct sockaddr_in client_info;
+  int struct_size = sizeof(client_info);
 
   for (int i = 0; i < event.data; ++i) {
-    client_socket_fd = accept(event.ident, NULL, NULL);
+    client_socket_fd = accept(event.ident, (struct sockaddr*)&client_info, (socklen_t *)&struct_size);
 
     if (client_socket_fd != -1) {
       fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
-      init_client(client_socket_fd, listen);
+      init_client(client_socket_fd, listen, client_info);
+
+      ++_accept_index;
+
       _kernel.add_read_event(client_socket_fd, reinterpret_cast<void *>(&Socket::recv_request));
     }
   }
@@ -139,6 +143,7 @@ void ws::Socket::recv_request(struct kevent event) {
   }
 
   if (client_data.request.eof() || client_data.status || !read_size) {
+    ws::Util::print_accept_client((client_data.request.get_method() + " " + client_data.request.get_uri()) , _accept_index, event.ident);
     _kernel.delete_read_event(event.ident);
     _kernel.add_user_event(event.ident, reinterpret_cast<void *>(&Socket::process_request), EV_ONESHOT);
     client_data.buffer.clear();

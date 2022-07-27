@@ -23,18 +23,19 @@ namespace ws {
   private:
     struct client_data {
 
-      client_data(ws::Configure::listen_type listen)
-        : fatal(false), status(0), repository(ws::Repository(fatal, status)), request(ws::Request(listen)),
+      client_data(ws::Configure::listen_type listen, const struct sockaddr_in& sock_info)
+        : sock(sock_info), fatal(false), status(0), repository(ws::Repository(fatal, status)), request(ws::Request(listen)),
           response_header(), response_body(), write_offset(0), pipe_offset(), cgi_handler(), is_cgi_header(true), start_time(clock()) {
         gettimeofday(&connect_time, NULL);
       };
 
       client_data(const client_data& cls)
-      : fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request),
+      : sock(cls.sock), fatal(cls.fatal), status(cls.status), repository(cls.repository), request(cls.request),
         response_total(cls.response_total), response_header(cls.response_header), response_body(cls.response_body),
         write_offset(cls.write_offset), pipe_offset(cls.pipe_offset), cgi_handler(cls.cgi_handler),
         cgi_pid(cls.cgi_pid), is_cgi_header(cls.is_cgi_header), buffer(cls.buffer), start_time(cls.start_time) {};
 
+      const struct sockaddr_in& sock;
       bool                    fatal;
       unsigned int            status;
       ws::Repository          repository;
@@ -103,6 +104,7 @@ namespace ws {
 
     static session_map_type _session;
     static unsigned int _session_index;
+    static unsigned int _accept_index;
 
     static sig_atomic_t _signal;
 
@@ -118,7 +120,7 @@ namespace ws {
     /*            Private Function            */
     /* ====================================== */
 
-    static void init_client(unsigned int fd, listen_type listen);
+    static void init_client(unsigned int fd, listen_type listen, const struct sockaddr_in& sock_info);
     static void disconnect_client(int fd);
     static void exit_socket();
 
