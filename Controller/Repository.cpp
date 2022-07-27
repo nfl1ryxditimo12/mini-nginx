@@ -74,6 +74,10 @@ void ws::Repository::set_repository(unsigned int value)  {
   if (_status == 0 && !_session) {
     if (_file_exist_stat && S_ISDIR(_file_stat.st_mode))
       this->set_autoindex();
+    else if ((_method == "GET" || _method == "HEAD") && !(_file_stat.st_mode & S_IRUSR))
+      _status = FORBIDDEN;
+    else if ((_method == "POST" || _method == "PUT") && !(_file_stat.st_mode & S_IWUSR))
+      _status = FORBIDDEN;
     else if (!_file_exist_stat)
       _status = NOT_FOUND;
     else
