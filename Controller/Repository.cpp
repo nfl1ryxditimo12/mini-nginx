@@ -132,9 +132,11 @@ void ws::Repository::set_autoindex() {
   if (dir)
     closedir(dir);
 }
-#include <iostream>
+
 void ws::Repository::set_content_type() {
-  if (!_autoindex.empty() || _status >= BAD_REQUEST)
+  if (_method != "GET")
+    _content_type = "text";
+  else if (!_autoindex.empty() || _status >= BAD_REQUEST)
     _content_type = "text/html";
   else if (_config.redirect.first > 0 && _config.redirect.first < 300)
     _content_type = "application/octet-stream";
