@@ -74,7 +74,7 @@ void ws::Repository::set_repository(unsigned int value)  {
   if (_status == 0 && !_session) {
     if (_file_exist_stat && S_ISDIR(_file_stat.st_mode))
       this->set_autoindex();
-    else if (!_file_exist_stat)
+    else if (!_file_exist_stat && !(_method == "POST" || _method == "PUT"))
       _status = NOT_FOUND;
     else
       this->open_file(_file_path);
@@ -150,8 +150,11 @@ void ws::Repository::open_file(std::string filename) {
   else
     open_flag = O_WRONLY | O_TRUNC | O_CREAT;
 
-  if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1 || fcntl(_fd, F_SETFL, O_NONBLOCK) == -1)
+  if ((_fd = open(filename.c_str(), open_flag, 0644)) == -1 || fcntl(_fd, F_SETFL, O_NONBLOCK) == -1) {
+    if (errno == ENOENT)
+      set_status(NOT_FOUND);
     this->set_status(INTERNAL_SERVER_ERROR);
+  }
 }
 
 void ws::Repository::open_error_html() {

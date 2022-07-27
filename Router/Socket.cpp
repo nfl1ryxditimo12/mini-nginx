@@ -105,7 +105,7 @@ void ws::Socket::connect_client(struct kevent event) {
   listen_type& listen = _server.find(event.ident)->second;
   int client_socket_fd;
 
-  for (int i = 0; i + _client.size() < static_cast<unsigned int>(event.data); ++i) {
+  for (int i = 0; i < event.data; ++i) {
     client_socket_fd = accept(event.ident, NULL, NULL);
 
     if (client_socket_fd != -1) {
