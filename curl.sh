@@ -4,6 +4,14 @@ echo "\033[31m[ MAIN TEST ]\033[0m"
 echo "\033[36m GET - root : OK \033[0m"
 curl -X GET http://localhost:9090
 
+# GET - root , Host:"" : 400 Bad Request
+echo "\033[36m GET - Host: \"\" : 400, Bad Request \033[0m"
+curl -X GET http://localhost:9090/ -H "Host: "
+
+# GET - root , Host:"" : 400 Bad Request
+echo "\033[36m GET - check file permission : 200 / 403 \033[0m"
+curl -X GET http://localhost:9090/index.html
+
 # POST/PUT - root : 405, Method Not Allowed
 echo "\033[36m POST - root : 405, Method Not Allowed \033[0m"
 curl -X POST http://localhost:9090
