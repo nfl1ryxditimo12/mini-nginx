@@ -73,7 +73,9 @@ void ws::Repository::set_repository(unsigned int value)  {
     this->set_status(_config.redirect.first); // todo
 
   if (_status == 0 && !_session) {
-    if (_file_exist_stat && S_ISDIR(_file_stat.st_mode))
+    if (S_ISDIR(_file_stat.st_mode) && !(_method == "GET" || _method == "HEAD"))
+      _status = NOT_FOUND;
+    else if (_file_exist_stat && S_ISDIR(_file_stat.st_mode))
       this->set_autoindex();
     else if (!_file_exist_stat && !(_method == "POST" || _method == "PUT"))
       _status = NOT_FOUND;
