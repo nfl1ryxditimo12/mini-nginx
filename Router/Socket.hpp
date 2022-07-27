@@ -121,7 +121,7 @@ namespace ws {
 
     /* control socket to kenel event */
     static void accecpt_signal(const struct kevent& event, client_map_type::iterator& client);
-    static void connect_client(struct kevent event, client_map_type::iterator& client);
+    static void connect_client(const struct kevent& event, client_map_type::iterator& client);
     static void recv_request(const struct kevent& event, client_map_type::iterator& client);
     static void process_request(const struct kevent& event, client_map_type::iterator& client);
     static void parse_cgi_return(client_value_type& client);

@@ -1,6 +1,7 @@
 #include "Socket.hpp"
 
 #include <sys/wait.h>
+#include <netinet/tcp.h>
 
 #include "Response.hpp"
 #include "Validator.hpp"
@@ -36,11 +37,15 @@ void ws::Socket::init_server(const ws::Configure& conf) {
     int                 socket_fd;
     struct sockaddr_in  addr_info;
 
-    if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
+    if ((socket_fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
       exit_socket();
 
     int k = true;
+    int maxseg = 100000;
+    int nValue = 1;
     setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &k, sizeof(k));
+    setsockopt(socket_fd, IPPROTO_TCP, TCP_MAXSEG, &maxseg, sizeof(maxseg));
+    setsockopt(socket_fd, IPPROTO_TCP, TCP_NODELAY, &nValue, sizeof(int));
 
     memset(&addr_info, 0, sizeof(addr_info));
     addr_info.sin_family = AF_INET;
@@ -48,11 +53,11 @@ void ws::Socket::init_server(const ws::Configure& conf) {
     addr_info.sin_port = host[i].second;
 
     if (bind(socket_fd, (struct sockaddr*)&addr_info, sizeof(addr_info)) == -1) {
-      std::cout << strerror(errno) << std::endl;
+      std::cout << strerror(errno) << std::endl; // todo delete: restrict errno check
         exit_socket();
     }
     // todo: backlog 몇으로 설정 해야할 지 생각
-    if (listen(socket_fd, 200000) == -1)
+    if (listen(socket_fd, 100000) == -1)
       exit_socket();
     fcntl(socket_fd, F_SETFL, O_NONBLOCK);
     _server.insert(server_map_type::value_type(socket_fd, host[i]));
@@ -84,12 +89,6 @@ void ws::Socket::run_server() {
   struct kevent event_list[event_size];
   int new_event;
 
-  // todo 클래스 또는 함수로 빼야함
-  Kernel timeout;
-  std::string body = "<html>\n<head>\n</head>\n<body>\n<h1>Request Timeout</h1>\n</body>\n<html>";
-  std::string response = "HTTP/1.1 408\r\nContent-Type: text/html\r\nContent-Length: " + ws::Util::ultos(body.length()) + "\r\n\r\n" + body;
-  struct kevent timeout_event;
-
   _kernel.add_signal_event(SIGINT, reinterpret_cast<void*>(&Socket::accecpt_signal));
 
   signal(SIGINT, SIG_IGN);
@@ -108,9 +107,9 @@ void ws::Socket::run_server() {
       client_map_type::iterator client;
 
       if (func == &Socket::read_pipe)
-        client = find_client_by_fpipe(curr_event->ident);
-      else if (func == &Socket::write_pipe)
         client = find_client_by_bpipe(curr_event->ident);
+      else if (func == &Socket::write_pipe)
+        client = find_client_by_fpipe(curr_event->ident);
       else if (func == &Socket::read_data || func == &Socket::write_data)
         client = find_client_by_file(curr_event->ident);
       else if (func == &Socket::wait_child)
@@ -118,16 +117,16 @@ void ws::Socket::run_server() {
       else {
         if (event_list[i].flags & EV_EOF) {
           std::cout << "EOF" << std::endl; // todo: test print
+          _kernel.delete_event(curr_event->ident, curr_event->filter);
           disconnect_client(event_list[i].ident);
           continue;
         }
         client = _client.find(curr_event->ident);
       }
 
-//      if (client == _client.end()) {
-//        // todo: find 실패 시 적절한 처리 필요
-//        continue;
-//      }
+      if (func != &Socket::connect_client && client == _client.end()) {
+        throw std::runtime_error("client not found");
+      }
 
       (*func)(*curr_event, client);
 
@@ -154,6 +153,7 @@ void ws::Socket::run_server() {
 //            disconnect_client(fd);
 //          }
 //        }
+//      usleep(350);
     }
   }
 }
@@ -180,6 +180,8 @@ void ws::Socket::exit_socket() {
 }
 
 void ws::Socket::accecpt_signal(const struct kevent& event, client_map_type::iterator& client) {
+  (void)client;
+
   if (event.ident == SIGINT)
     _signal = SIGINT;
 }
@@ -195,12 +197,23 @@ void ws::Socket::connect_client(const struct kevent& event, client_map_type::ite
 
   if ((client_socket_fd = accept(event.ident, NULL, NULL)) == -1)
     return;
-
   fcntl(client_socket_fd, F_SETFL, O_NONBLOCK);
+
+  struct timeval tv;
+  tv.tv_sec = 10;
+  tv.tv_usec = 0;
+
+  if (setsockopt(client_socket_fd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&tv, sizeof(struct timeval)) < 0)
+    return;
+  if (setsockopt(client_socket_fd, SOL_SOCKET, SO_SNDTIMEO, (struct timeval*)&tv, sizeof(struct timeval)) < 0)
+    return;
+  int maxseg = 100000;
+  setsockopt(client_socket_fd, IPPROTO_TCP, TCP_MAXSEG, &maxseg, sizeof(maxseg));
+
   init_client(client_socket_fd, listen);
   _kernel.add_read_event(client_socket_fd, reinterpret_cast<void*>(&Socket::recv_request));
 
-  ++idx; // todo delete
+  std::cout << ++idx << ", " << _client.size() << std::endl;
 }
 
 void ws::Socket::recv_request(const struct kevent& event, client_map_type::iterator& client) {
@@ -211,7 +224,7 @@ void ws::Socket::recv_request(const struct kevent& event, client_map_type::itera
   read_size = client_data.buffer.read_file(event.ident, event.data);
 
   if (read_size == -1 || client_data.request.eof()) {
-    _kernel.delete_read_event(event.ident);
+    _kernel.delete_event(event.ident, event.filter);
     disconnect_client(event.ident);
     std::cout << "todo client: recv_request() read_size == -1, " << event.ident << std::endl;
     return;
@@ -222,7 +235,7 @@ void ws::Socket::recv_request(const struct kevent& event, client_map_type::itera
 
 //  todo: 가끔 read_size 0 들어올 때 있음
   if (read_size == 0) {
-    _kernel.delete_read_event(event.ident);
+    _kernel.delete_event(event.ident, event.filter);
     disconnect_client(event.ident);
     std::cout << "todo client: recv_request() read_size == 0, " << event.ident << std::endl;
 //     operation timeout
@@ -232,8 +245,8 @@ void ws::Socket::recv_request(const struct kevent& event, client_map_type::itera
   if (client_data.request.eof() || client_data.status || !read_size) {
 //    client_data.request.test(); // todo: test print
 //    std::cout << YLW << "\n=================================================\n" << NC << std::endl;
-    _kernel.delete_read_event(event.ident);
-    _kernel.add_user_event(event.ident, reinterpret_cast<void *>(&Socket::process_request), EV_ONESHOT);
+    _kernel.delete_event(event.ident, event.filter);
+    _kernel.add_user_event(event.ident, reinterpret_cast<void *>(&Socket::process_request));
     client_data.buffer.clear();
 //    ws::Util::print_running_time("recv_request()", client_data.start_time);
   }
@@ -266,7 +279,7 @@ void ws::Socket::process_request(const struct kevent& event, client_map_type::it
 
       if (pid != -1) {
         client_data.cgi_pid = pid;
-        _kernel.delete_user_event(event.ident);
+        _kernel.delete_event(event.ident, event.filter);
         _kernel.add_process_event(pid, reinterpret_cast<void*>(ws::Socket::wait_child), 0, NOTE_EXIT | NOTE_SIGNAL);
         return;
       }
@@ -283,15 +296,18 @@ void ws::Socket::process_request(const struct kevent& event, client_map_type::it
 
   if (client_data.fatal) {
     close(client_data.repository.get_fd());
-    _kernel.delete_user_event(event.ident);
+    _kernel.delete_event(event.ident, event.filter);
     disconnect_client(event.ident);
     std::cout << "todo client: process_request() client_fatal, " << event.ident << std::endl;
     return;
   }
 
+  _kernel.delete_event(event.ident, event.filter);
   _response.process(client_data, event.ident);
-  _kernel.delete_user_event(event.ident);
 //  ws::Util::print_running_time("process_request()", client_data.start_time);
+
+//  client_data.response_total = "HTTP/1.1 " + ws::Util::ultos(client_data.status) + "\r\nContent-Type: text/html\r\n\r\n";
+//  _kernel.add_write_event(event.ident, reinterpret_cast<void*>(Socket::send_response));
 }
 
 ws::Socket::client_map_type::iterator ws::Socket::find_client_by_file(int file) throw() {
@@ -340,7 +356,7 @@ void ws::Socket::process_session(const struct kevent& event, client_map_type::it
     _session.erase(it);
 
   ws::Socket::generate_response(event.ident, client_data);
-  _kernel.delete_user_event(event.ident);
+  _kernel.delete_event(event.ident, event.filter);
 //  ws::Util::print_running_time("process_session()", client_data.start_time);
 }
 
@@ -353,19 +369,23 @@ void ws::Socket::read_data(const struct kevent& event, client_map_type::iterator
   if (read_size < 0) { // todo: read 0 is an error?
     std::cerr << "Socket: read error occurred" << std::endl;
     close(event.ident);
-    _kernel.delete_read_event(event.ident);
+    _kernel.delete_event(event.ident, event.filter);
     disconnect_client(event.ident);
     std::cout << "todo client: read_data() read_size <= 0, " << event.ident << std::endl;
     return;
   }
 
-  if (read_size == 0)
+  if (read_size == 0) {
+    _kernel.delete_event(event.ident, event.filter);
+    disconnect_client(event.ident);
     std::cout << "read_size == 0" << std::endl;
+    return;
+  }
 
   client->second.response_body.insert(client->second.response_body.length(), buffer, read_size);
 
   if (Util::is_eof(event.ident)) {
-    _kernel.delete_read_event(event.ident);
+    _kernel.delete_event(event.ident, event.filter);
     close(event.ident);
     ws::Socket::generate_response(client->first, client->second);
 //    ws::Util::print_running_time("read_data()", client->second.start_time);
@@ -380,8 +400,8 @@ void ws::Socket::write_data(const struct kevent& event, client_map_type::iterato
 
   if (write_size == -1) {
     std::cerr << "Socket: write error occurred" << std::endl;
+    _kernel.delete_event(event.ident, event.filter);
     close(event.ident);
-    _kernel.delete_write_event(event.ident);
     disconnect_client(event.ident);
     std::cout << "todo client: write_data() write_size == -1, " << event.ident << std::endl;
     return;
@@ -391,7 +411,7 @@ void ws::Socket::write_data(const struct kevent& event, client_map_type::iterato
 
   if (offset == request_body.length()) {
     offset = 0;
-    _kernel.delete_write_event(event.ident);
+    _kernel.delete_event(event.ident, event.filter);
     close(event.ident);
     ws::Socket::generate_response(client->first, client->second);
 //    ws::Util::print_running_time("write_data()", client->second.start_time);
@@ -462,7 +482,7 @@ void ws::Socket::read_pipe(const struct kevent& event, client_map_type::iterator
     std::cerr << (event.flags & EV_EOF ? "EOF" : "NO") << std::endl;
 
     std::cerr << "Socket: pipe read error occurred" << std::endl;
-    _kernel.delete_read_event(event.ident);
+    _kernel.delete_event(event.ident, event.filter);
     disconnect_client(client->first);
     return;
   }
@@ -470,13 +490,15 @@ void ws::Socket::read_pipe(const struct kevent& event, client_map_type::iterator
     std::cerr << event.data << std::endl; // test print
     std::cerr << read_size << std::endl; // test print
     std::cerr << client->second.response_body.length() << std::endl; // test print
+    _kernel.delete_event(event.ident, event.filter);
+    disconnect_client(client->first);
     return;
   }
   parse_cgi_return(client->second);
 
   if (client->second.response_body.length() == client->second.request.get_request_body().length()) {
     client->second.buffer.delete_buf();
-    _kernel.delete_read_event(event.ident);
+    _kernel.delete_event(event.ident, event.filter);
     close(event.ident);
     client->second.response_total = client->second.response_header + "\r\n" + client->second.response_body;
     _kernel.add_write_event(client->first, reinterpret_cast<void*>(ws::Socket::send_response));
@@ -490,7 +512,7 @@ void ws::Socket::write_pipe(const struct kevent& event, client_map_type::iterato
 
   if (write_size <= 0) {
     std::cerr << "Socket: pipe write error occurred" << std::endl;
-    _kernel.delete_write_event(event.ident);
+    _kernel.delete_event(event.ident, event.filter);
     disconnect_client(client->first);
     return;
   }
@@ -499,7 +521,7 @@ void ws::Socket::write_pipe(const struct kevent& event, client_map_type::iterato
 
   if (offset == request_body.length()) {
     offset = 0;
-    _kernel.delete_write_event(event.ident);
+    _kernel.delete_event(event.ident, event.filter);
     close(event.ident);
   }
 }
@@ -515,8 +537,8 @@ ws::Socket::client_map_type::iterator ws::Socket::find_client_by_pid(pid_t pid) 
 
 void ws::Socket::wait_child(const struct kevent& event, client_map_type::iterator& client) {
   if (waitpid(event.ident, NULL, 0)) {
-    _kernel.delete_process_event(event.ident);
-    client.cgi_handler.set_eof(true);
+//    _kernel.delete_event(event.ident, event.filter);
+    client->second.cgi_handler.set_eof(true);
   }
 }
 
@@ -534,8 +556,8 @@ void ws::Socket::send_response(const struct kevent& event, client_map_type::iter
     return;
 
   ssize_t n;
-  if ((n = write(event.ident, response_data.c_str() + offset, response_data.length() - offset)) == -1) { // todo: event.data
-    _kernel.delete_write_event(event.ident);
+  if ((n = write(event.ident, response_data.c_str() + offset, response_data.length() - offset)) <= 0) { // todo: event.data
+    _kernel.delete_event(event.ident, event.filter);
     disconnect_client(event.ident); // todo: close
     std::cout << "todo client: send_response() write_size == -1, " << event.ident << std::endl;
     return;
@@ -546,7 +568,7 @@ void ws::Socket::send_response(const struct kevent& event, client_map_type::iter
   if (offset == response_data.length()) {
 //    ws::Util::print_running_time("send_response()", client_data.start_time);
 //    std::cout << YLW << "\n=========================================================\n" << NC << std::endl;
-    _kernel.delete_write_event(event.ident);
+    _kernel.delete_event(event.ident, event.filter);
     disconnect_client(event.ident);
   }
 }

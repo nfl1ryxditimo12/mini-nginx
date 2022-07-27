@@ -13,6 +13,8 @@ ws::Kernel::Kernel() throw() {
   } catch (...) {
     webserv_fatal = true;
   }
+  _timeout.tv_sec = 2;
+  _timeout.tv_nsec = 0;
 }
 
 ws::Kernel::~Kernel() {
@@ -24,12 +26,11 @@ ws::Kernel::~Kernel() {
   커널에서 이벤트 핸들링 하고 싶은 kevent 구조체 등록
 */
 
-경
 void  ws::Kernel::kevent_ctl(uintptr_t ident, int16_t filter,
                              uint16_t flags, uint32_t fflags, intptr_t data, void *udata) {
   struct kevent event;
   EV_SET(&event, ident, filter, flags, fflags, data, udata);
-  if (kevent(_kq, &event, 1, NULL, 0, NULL) == -1) {
+  if (kevent(_kq, &event, 1, NULL, 0, &_timeout) == -1) {
     perror("kevent");
     throw; // require custom exception
   }
@@ -43,7 +44,7 @@ int ws::Kernel::kevent_wait(struct kevent* event_list, size_t event_size) {
   int new_event;
 
   std::memset(event_list, 0, sizeof(struct kevent) * event_size);
-  if ((new_event = kevent(_kq, &_change_list[0], _change_list.size(), event_list, event_size, NULL)) == -1)
+  if ((new_event = kevent(_kq, &_change_list[0], _change_list.size(), event_list, event_size, &_timeout)) == -1)
     throw; // require custom exception
   _change_list.clear();
   return new_event;
@@ -79,18 +80,6 @@ void ws::Kernel::add_user_event(int ident, void *udata, uint16_t flags, uint32_t
   _change_list.push_back(event);
 }
 
-void ws::Kernel::delete_read_event(int fd) {
-  kevent_ctl(fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-}
-
-void ws::Kernel::delete_write_event(int fd) {
-  kevent_ctl(fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-}
-
-void ws::Kernel::delete_process_event(int fd) {
-  kevent_ctl(fd, EVFILT_PROC, EV_DELETE, 0, 0, NULL);
-}
-
-void ws::Kernel::delete_user_event(int fd) {
-  kevent_ctl(fd, EVFILT_USER, EV_DELETE, 0, 0, NULL);
+void ws::Kernel::delete_event(int fd, int16_t filter) {
+  kevent_ctl(fd, filter, EV_DELETE, 0, 0, NULL);
 }
