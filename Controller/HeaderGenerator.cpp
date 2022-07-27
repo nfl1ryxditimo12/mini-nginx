@@ -40,10 +40,10 @@ void ws::HeaderGenerator::generate_representation(std::string& data, const clien
 }
 
 void ws::HeaderGenerator::generate_content_type_line(std::string& data, const client_value_type& client_data) {
-  const std::string& content_type = client_data.request.get_content_type();
+  const std::string& content_type = client_data.repository.get_content_type();
 
   if (content_type.empty())
-    data += "Content-Type: text/html\r\n";
+    data += "Content-Type: text\r\n";
   else
     data += "Content-Type: " + content_type + "\r\n";
 }

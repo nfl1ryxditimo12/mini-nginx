@@ -28,6 +28,8 @@ namespace ws {
       const std::string& base_str = "0123456789"
     ) throw();
 
+    static std::string mime_type(const std::string&);
+
     static std::string ultos(unsigned long n) throw();
 
     static bool is_valid_server_name(const std::string& str);

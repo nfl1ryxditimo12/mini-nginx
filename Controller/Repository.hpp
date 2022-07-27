@@ -155,6 +155,7 @@ namespace ws {
     bool                  is_session() const throw();
     const struct stat&    get_file_stat() const throw();
     bool                  get_file_exist_stat() const throw();
+    const std::string&    get_content_type() const throw();
     const std::string&    get_method() const throw();
     const std::string&    get_file_path() const throw();
     const autoindex_type& get_autoindex() const throw();
