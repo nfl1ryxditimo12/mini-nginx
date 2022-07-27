@@ -167,3 +167,18 @@ std::string ws::Util::format_number(size_t num) {
   }
   return ret;
 }
+
+std::string ws::Util::mime_type(const std::string& extension) {
+  if (extension == "jpeg")
+    return "image/jpeg";
+  else if (extension == "png")
+    return "image/png";
+  else if (extension == "jpg")
+    return "image/jpg";
+  else if (extension == "html")
+    return "text/html";
+  else if (extension == "out")
+    return "application/octet-stream";
+  else
+    return "text";
+}

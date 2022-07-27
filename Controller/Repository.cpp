@@ -76,6 +76,10 @@ void ws::Repository::set_repository(unsigned int value)  {
       this->set_autoindex();
     else if (!_file_exist_stat && !(_method == "POST" || _method == "PUT"))
       _status = NOT_FOUND;
+    else if ((_method == "GET" || _method == "HEAD") && !(_file_stat.st_mode & S_IRUSR))
+      _status = FORBIDDEN;
+    else if ((_method == "POST" || _method == "PUT") && !(_file_stat.st_mode & S_IWUSR))
+      _status = FORBIDDEN;
     else
       this->open_file(_file_path);
   }
@@ -128,14 +132,16 @@ void ws::Repository::set_autoindex() {
   if (dir)
     closedir(dir);
 }
-
+#include <iostream>
 void ws::Repository::set_content_type() {
   if (!_autoindex.empty() || _status >= BAD_REQUEST)
     _content_type = "text/html";
   else if (_config.redirect.first > 0 && _config.redirect.first < 300)
     _content_type = "application/octet-stream";
   else {
-    _content_type = "text";
+    std::string::size_type pos = _uri.find_last_of('.');
+    std::string extension = pos != std::string::npos ?  _uri.substr(pos + 1) : "";
+    _content_type = ws::Util::mime_type(extension);
   }
 }
 
@@ -203,6 +209,10 @@ const struct stat&  ws::Repository::get_file_stat() const throw() {
 
 bool ws::Repository::get_file_exist_stat() const throw() {
   return _file_exist_stat;
+}
+
+const std::string&  ws::Repository::get_content_type() const throw() {
+  return _content_type;
 }
 
 const std::string&  ws::Repository::get_method() const throw() {
