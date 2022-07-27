@@ -76,6 +76,10 @@ void ws::Repository::set_repository(unsigned int value)  {
       this->set_autoindex();
     else if (!_file_exist_stat)
       _status = NOT_FOUND;
+    else if ((_method == "GET" || _method == "HEAD") && !(_file_stat.st_mode & S_IRUSR))
+      _status = FORBIDDEN;
+    else if ((_method == "POST" || _method == "PUT") && !(_file_stat.st_mode & S_IWUSR))
+      _status = FORBIDDEN;
     else
       this->open_file(_file_path);
   }
