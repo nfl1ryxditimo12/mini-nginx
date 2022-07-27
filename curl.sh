@@ -94,3 +94,10 @@ curl -X GET http://localhost:9191/session -H "Cookie: session_id=1"
 
 echo "\033[36m GET location: /naver \033[0m"
 curl -X GET http://localhost:9191/naver
+
+# autoindex
+echo "\033[36m GET location: /autoindex \033[0m"
+curl -X GET http://localhost:9191/autoindex
+
+echo "\033[36m GET location: /none-autoindex \033[0m"
+curl -X GET http://localhost:9191/none-autoindex

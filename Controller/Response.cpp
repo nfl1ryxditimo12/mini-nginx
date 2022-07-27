@@ -47,7 +47,7 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
     for (ws::Repository::autoindex_type::iterator it = autoindex.begin(); it != autoindex.end(); ++it) {
       client_data.response_body += ("<li><a href=\"" + *it + "\">" + *it + "</a></li>\n");
     }
-    client_data.response_body += "</ul>\n</body>\n</html>";
+    client_data.response_body += "</ul>\n</body>\n</html>\n";
     ws::Socket::generate_response(client_fd, client_data);
     return;
   }
