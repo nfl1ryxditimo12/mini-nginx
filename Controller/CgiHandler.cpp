@@ -42,8 +42,8 @@ bool ws::CgiHandler::init_pipe() throw() {
     (
       pipe(_fpipe)
       || pipe(_bpipe)
-      || fcntl(_fpipe[1], F_SETFD, O_NONBLOCK) == -1
-      || fcntl(_bpipe[0], F_SETFD, O_NONBLOCK) == -1
+      || fcntl(_fpipe[1], F_SETFL, O_NONBLOCK) == -1
+      || fcntl(_bpipe[0], F_SETFL, O_NONBLOCK) == -1
     )
   );
 }
