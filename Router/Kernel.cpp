@@ -1,6 +1,7 @@
 #include "Kernel.hpp"
 
 #include <cstdio>
+#include <errno.h>
 
 extern bool webserv_fatal;
 

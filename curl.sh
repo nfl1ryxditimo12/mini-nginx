@@ -1,33 +1,29 @@
-# # GET - root : OK
-# echo "\033[36m GET - root : OK \033[0m"
-# curl -X GET http://localhost:9090
+echo "\033[31m[ MAIN TEST ]\033[0m"
 
-# # POST - post_body : OK
-# echo "\033[36m POST - post_body : OK \033[0m"
-# curl -X POST http://localhost:9090/post_body -d "1234567890"
+# GET - root : OK
+echo "\033[36m GET - root : OK \033[0m"
+curl -X GET http://localhost:9090
 
-# # POST/PUT - root : 405, Method Not Allowed
-# echo "\033[36m POST - root : 405, Method Not Allowed \033[0m"
-# curl -X POST http://localhost:9090
+# POST/PUT - root : 405, Method Not Allowed
+echo "\033[36m POST - root : 405, Method Not Allowed \033[0m"
+curl -X POST http://localhost:9090
 
-# # POST/PUT - post_body : 413, Payload Too Large
-# echo "\033[36m POST - post_body : 413, Payload Too Large \033[0m"
-# curl -X POST http://localhost:9090/post_body -d "12345678901"
+# DELETE
+echo "\033[36m DELETE - root : 405, Method Not Allowed \033[0m"
+curl -X DELETE http://localhost:9090/
 
-# # HEAD
-# # curl -I HEAD http://localhost:9090/
+# POST - post_body : OK
+echo "\033[36m POST - post_body : OK \033[0m"
+curl -X POST http://localhost:9090/post_body -d "1234567890"
 
-# # DELETE
-# echo "\033[36m DELETE - root : 405, Method Not Allowed \033[0m"
-# curl -X DELETE http://localhost:9090/
+# POST/PUT - post_body : 413, Payload Too Large
+echo "\033[36m POST - post_body : 413, Payload Too Large \033[0m"
+curl -X POST http://localhost:9090/post_body -d "12345678901"
 
-# # PUT
-# echo "\033[36m PUT - root : 405, Method Not Allowed \033[0m"
-# curl -X PUT http://localhost:9090/
+echo "\033[31m[ REDIRECT TEST ]\033[0m"
 
-# #header
-# echo "\033[36m POST - post_body, add header : \033[0m"
-# curl -X POST http://localhost:9090/post_body -H "Content-Length=5&Content-Type=text/html"
+echo "\033[36m GET location: /naver \033[0m"
+curl -X GET http://localhost:9090/naver
 
 echo "\033[31m[ SESSION TEST ]\033[0m"
 
@@ -62,3 +58,23 @@ curl -X DELETE http://localhost:9090/session -H "Secret-Key: hello" -H "Cookie: 
 # GET
 echo "\033[36m GET - session 1 : 401 \033[0m"
 curl -X GET http://localhost:9090/session -H "Cookie: session_id=1"
+
+echo "\033[31m[ PORT TEST ]\033[0m"
+
+echo "\033[36m GET - root : 405, Method Not Allowed \033[0m"
+curl -X GET http://localhost:9191
+
+echo "\033[36m POST - root \033[0m"
+curl -X POST http://localhost:9191
+
+echo "\033[36m DELETE - root : 405, Method Not Allowed \033[0m"
+curl -X DELETE http://localhost:9191/
+
+echo "\033[36m POST - session 1 \033[0m"
+curl -X POST http://localhost:9191/session -H "Secret-Key: hellowebserv" -H "Name: yeju"
+
+echo "\033[36m GET - session 1 \033[0m"
+curl -X GET http://localhost:9191/session -H "Cookie: session_id=1"
+
+echo "\033[36m GET location: /naver \033[0m"
+curl -X GET http://localhost:9191/naver
