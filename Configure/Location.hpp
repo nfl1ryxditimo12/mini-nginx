@@ -7,7 +7,7 @@
 namespace ws {
   class Location {
   public:
-    typedef int session_type;
+    typedef bool session_type;
     typedef std::string limit_except_type;
     typedef std::vector<limit_except_type> limit_except_vec_type;
     typedef std::pair<unsigned int, std::string> return_type;

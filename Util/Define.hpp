@@ -20,7 +20,8 @@ namespace ws {
     FORBIDDEN               = 403,
     NOT_FOUND               = 404,
     METHOD_NOT_ALLOWED      = 405,
-    PAYLOAD_TOO_LARGE        = 413,
+    PRECONDITION_FAILED     = 412,
+    PAYLOAD_TOO_LARGE       = 413,
     UNSUPPORTED_MEDIA_TYPE  = 415,
 
     /* 500 Status Code */

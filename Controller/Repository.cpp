@@ -190,7 +190,7 @@ const unsigned int&  ws::Repository::get_status() const throw() {
   return _status;
 }
 
-const int& ws::Repository::is_session() const throw() {
+bool ws::Repository::is_session() const throw() {
   return _session;
 }
 

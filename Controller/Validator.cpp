@@ -25,20 +25,13 @@ ws::Validator::Validator() throw() : _session(NULL) {
 ws::Validator::~Validator() {}
 
 void ws::Validator::operator()(const session_map_type& session, client_value_type& client_data) {
-  _request_is_session = (client_data.request.get_uri() == "/session" ? true : false);
-
-  if (_request_is_session && !client_data.repository.is_session()) {
-    client_data.status = UNAUTHORIZED;
-    return;
-  }
-
   for (check_func_vec::iterator it = _check_func_vec.begin(); it != _check_func_vec.end(); ++it) {
     (this->**it)(client_data);
     if (client_data.status != 0)
       break;
   }
 
-  if (_request_is_session) {
+  if (client_data.repository.is_session()) {
     _session = &session;
 
     for (check_session_func_vec::iterator it = _check_session_func_vec.begin(); it != _check_session_func_vec.end(); ++it) {
@@ -88,7 +81,7 @@ void ws::Validator::check_uri(client_value_type& client_data) {
   const struct stat& file_status = client_data.repository.get_file_stat();
   const std::string& method = client_data.repository.get_method();
 
-  if (_request_is_session || !client_data.repository.get_file_exist_stat() || !S_ISREG(file_status.st_mode))
+  if (!client_data.repository.is_session() || !client_data.repository.get_file_exist_stat() || !S_ISREG(file_status.st_mode))
     return;
 
   if ((method == "GET" || method == "HEAD") && !(file_status.st_mode & S_IREAD))

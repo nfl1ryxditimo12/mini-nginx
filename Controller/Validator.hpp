@@ -31,7 +31,6 @@ namespace ws {
     content_type_set _content_type_parser;
 
     const session_map_type* _session;
-    bool _request_is_session;
 
     Validator(const Validator& cls);
     Validator& operator=(const Validator& cls);

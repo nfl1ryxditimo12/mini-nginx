@@ -84,7 +84,7 @@ namespace ws {
 
     unsigned int _status; // get_status();
 
-    int _session;
+    bool _session;
 
     int _fd; // get_fd();
 
@@ -152,7 +152,7 @@ namespace ws {
     bool                  is_fatal() const throw();
     const int&            get_fd() const throw();
     const unsigned int&   get_status() const throw();
-    const int&            is_session() const throw();
+    bool                  is_session() const throw();
     const struct stat&    get_file_stat() const throw();
     bool                  get_file_exist_stat() const throw();
     const std::string&    get_method() const throw();
