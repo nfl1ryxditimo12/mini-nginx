@@ -58,11 +58,11 @@ void ws::HeaderGenerator::generate_response(std::string& data, const client_valu
 }
 
 void ws::HeaderGenerator::generate_date_line(std::string& data) {
-//  std::time_t curr_time = std::time(NULL);
-//  std::string curr_time_str = std::asctime(std::gmtime(&curr_time));
-//  curr_time_str.erase(curr_time_str.end() - 1);
+  time_t curr_time = time(NULL);
+  std::string curr_time_str = asctime(gmtime(&curr_time));
+  curr_time_str.erase(curr_time_str.end() - 1);
 
-  data += (std::string)"Date: " + "Thu Jul 21 05:27:18 2022" + "\r\n"; // todo
+  data += (std::string)"Date: " + curr_time_str + "\r\n";
 }
 
 void ws::HeaderGenerator::generate_server_line(std::string& data) {
