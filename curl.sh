@@ -68,7 +68,7 @@ echo "\033[36m GET - session 2 : 401 \033[0m"
 curl -X GET http://localhost:9090/session -H "Cookie: session_id=2"
 
 # DELETE
-echo "\033[36m DELETE - session 1 , wrong secret-key : 200 \033[0m"
+echo "\033[36m DELETE - session 1 : 200 \033[0m"
 curl -X DELETE http://localhost:9090/session -H "Secret-Key: hello" -H "Cookie: session_id=1"
 
 # GET
