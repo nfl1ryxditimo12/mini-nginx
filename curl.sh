@@ -20,6 +20,10 @@ curl -X POST http://localhost:9090/post_body -d "1234567890"
 echo "\033[36m POST - post_body : 413, Payload Too Large \033[0m"
 curl -X POST http://localhost:9090/post_body -d "12345678901"
 
+# POST - post_body : 415, Unsupported Media Type
+echo "\033[36m POST - post_body : 415, Unsupported Media Type \033[0m"
+curl -X POST http://localhost:9090/post_body -H "Content-Type: asd"
+
 echo "\033[31m[ REDIRECT TEST ]\033[0m"
 
 echo "\033[36m GET location: /naver \033[0m"
