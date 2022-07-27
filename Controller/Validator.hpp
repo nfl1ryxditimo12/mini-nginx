@@ -43,7 +43,6 @@ namespace ws {
 
     void init_content_type_parser(client_value_type&);
     void check_method(client_value_type& client_data);
-    void check_uri(client_value_type& client_data);
     void check_version(client_value_type& client_data);
     void check_host(client_value_type& client_data);
     void check_connection(client_value_type& client_data);

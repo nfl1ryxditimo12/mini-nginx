@@ -8,7 +8,6 @@ ws::Validator::Validator() throw() : _session(NULL) {
   try {
     _check_func_vec.push_back(&Validator::init_content_type_parser);
     _check_func_vec.push_back(&Validator::check_method);
-    _check_func_vec.push_back(&Validator::check_uri);
     _check_func_vec.push_back(&Validator::check_version);
     _check_func_vec.push_back(&Validator::check_host);
     _check_func_vec.push_back(&Validator::check_connection);
@@ -77,19 +76,6 @@ void ws::Validator::check_method(client_value_type& client_data) {
   client_data.status = METHOD_NOT_ALLOWED;
 }
 
-void ws::Validator::check_uri(client_value_type& client_data) {
-  const struct stat& file_status = client_data.repository.get_file_stat();
-  const std::string& method = client_data.repository.get_method();
-
-  if (!client_data.repository.is_session() || !client_data.repository.get_file_exist_stat() || !S_ISREG(file_status.st_mode))
-    return;
-
-  if ((method == "GET" || method == "HEAD") && !(file_status.st_mode & S_IREAD))
-    client_data.status = FORBIDDEN;
-  else if (!(file_status.st_mode & S_IWRITE))
-    client_data.status = FORBIDDEN;
-}
-
 void ws::Validator::check_version(client_value_type& client_data) {
   if (client_data.request.get_version() != "HTTP/1.1")
     client_data.status = HTTP_VERSION_NOT_SUPPORTED;
@@ -135,12 +121,10 @@ void ws::Validator::check_content_length(client_value_type& client_data) {
 
 void ws::Validator::check_content_type(client_value_type &client_data) {
   header_type request_header = client_data.request.get_request_header();
-  header_type::const_iterator header_iter = request_header.find("Content-Type");
+  std::string content_type = client_data.request.get_content_type();
 
-  if (header_iter == request_header.end())
+  if (content_type == "")
     return;
-
-  const std::string& content_type = header_iter->second;
 
   if (_content_type_parser.find(content_type) == _content_type_parser.end())
     client_data.status = UNSUPPORTED_MEDIA_TYPE;
