@@ -12,6 +12,10 @@ curl -X GET http://localhost:9090/ -H "Host: "
 echo "\033[36m GET - check file permission : 200 / 403 \033[0m"
 curl -X GET http://localhost:9090/index.html
 
+# GET - root , wrong file : 404 not found
+echo "\033[36m GET - 404, not found \033[0m"
+curl -X GET http://localhost:9090/aa
+
 # POST/PUT - root : 405, Method Not Allowed
 echo "\033[36m POST - root : 405, Method Not Allowed \033[0m"
 curl -X POST http://localhost:9090
