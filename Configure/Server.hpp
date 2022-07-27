@@ -15,6 +15,7 @@ namespace ws {
     typedef ws::InnerOption::root_type root_type;
     typedef ws::InnerOption::index_set_type index_set_type;
     typedef ws::InnerOption::index_type index_type;
+    typedef ws::InnerOption::index_check_type index_check_type;
     typedef ws::InnerOption::client_max_body_size_type client_max_body_size_type;
     typedef ws::InnerOption::error_page_map_type error_page_map_type;
     typedef ws::InnerOption::error_page_type error_page_type;
@@ -39,6 +40,7 @@ namespace ws {
     const autoindex_type& get_autoindex() const throw();
     const root_type& get_root() const throw();
     const index_set_type& get_index_set() const throw();
+    index_check_type get_index_check() const throw();
     const client_max_body_size_type& get_client_max_body_size() const throw();
 
     void add_listen(const listen_type& value);
@@ -50,6 +52,7 @@ namespace ws {
     void set_autoindex(const autoindex_type& value);
     void set_root(const root_type& value);
     void add_index(const index_type& value);
+    void set_index_check(index_check_type value);
     void set_client_max_body_size(const client_max_body_size_type& value);
 
     const Location& find_location(location_pair_type::first_type dir) const throw();

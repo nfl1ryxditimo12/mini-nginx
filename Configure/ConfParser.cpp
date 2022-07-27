@@ -431,6 +431,8 @@ void ws::ConfParser::parse_root(ws::InnerOption& option) {
 }
 
 void ws::ConfParser::parse_index(ws::InnerOption& option) {
+  option.set_index_check(true);
+
   this->rdword();
 
   for (
@@ -535,6 +537,8 @@ void ws::ConfParser::set_default_location(ws::Server& server, location_map_type&
       location.set_root(server.get_root());
     if (location.get_index_set().empty())
       location.set_index(server.get_index_set());
+    if (!location.get_index_check())
+      location.set_index_check(server.get_index_check());
   }
 }
 

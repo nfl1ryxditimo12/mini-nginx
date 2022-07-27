@@ -28,6 +28,7 @@ namespace ws {
     typedef ws::InnerOption::autoindex_type autoindex_bool_type;
     typedef ws::InnerOption::root_type root_type;
     typedef ws::InnerOption::index_set_type index_set_type;
+    typedef ws::InnerOption::index_check_type index_check_type;
     typedef ws::InnerOption::client_max_body_size_type client_max_body_size_type;
     typedef ws::InnerOption::error_page_map_type error_page_map_type;
 
@@ -43,6 +44,7 @@ namespace ws {
       autoindex_bool_type autoindex;
       root_type root;
       index_set_type index;
+      index_check_type index_check;
       client_max_body_size_type client_max_body_size;
       error_page_map_type error_page_map;
 
@@ -51,7 +53,7 @@ namespace ws {
       config_data(const config_data& other)
         : listen(other.listen), server_name(other.server_name), limit_except_vec(other.limit_except_vec),
           redirect(other.redirect), autoindex(other.autoindex),
-          root(other.root), index(other.index), client_max_body_size(other.client_max_body_size),
+          root(other.root), index(other.index), index_check(other.index_check), client_max_body_size(other.client_max_body_size),
           error_page_map(other.error_page_map) {}
 
       config_data& operator=(const config_data& other) {

@@ -1,11 +1,15 @@
 #include "InnerOption.hpp"
 
-ws::InnerOption::InnerOption() : _autoindex(kAUTOINDEX_UNSET), _client_max_body_size(kCLIENT_MAX_BODY_SIZE_UNSET) {}
+ws::InnerOption::InnerOption()
+  : _autoindex(kAUTOINDEX_UNSET),
+  _index_check(kINDEX_DEFAULT),
+  _client_max_body_size(kCLIENT_MAX_BODY_SIZE_UNSET) {}
 
 ws::InnerOption::InnerOption(const InnerOption& other)
   : _autoindex(other._autoindex),
   _root(other._root),
   _index_set(other._index_set),
+  _index_check(other._index_check),
   _client_max_body_size(other._client_max_body_size),
   _error_page_map(other._error_page_map) {}
 
@@ -15,6 +19,7 @@ ws::InnerOption& ws::InnerOption::operator=(const InnerOption& other) {
   std::swap(_autoindex, temp._autoindex);
   std::swap(_root, temp._root);
   std::swap(_index_set, temp._index_set);
+  std::swap(_index_check, temp._index_check);
   std::swap(_client_max_body_size, temp._client_max_body_size);
   std::swap(_error_page_map, temp._error_page_map);
 
@@ -33,6 +38,10 @@ const ws::InnerOption::root_type& ws::InnerOption::get_root() const throw() {
 
 const ws::InnerOption::index_set_type& ws::InnerOption::get_index_set() const throw() {
   return _index_set;
+}
+
+ws::InnerOption::index_check_type ws::InnerOption::get_index_check() const throw() {
+  return _index_check;
 }
 
 const ws::InnerOption::client_max_body_size_type& ws::InnerOption::get_client_max_body_size() const throw() {
@@ -57,6 +66,10 @@ void ws::InnerOption::add_index(const index_type& value) {
 
 void ws::InnerOption::set_index(const ws::InnerOption::index_set_type &value) {
   _index_set = value;
+}
+
+void ws::InnerOption::set_index_check(bool value) {
+  _index_check = value;
 }
 
 void ws::InnerOption::set_client_max_body_size(const client_max_body_size_type& value) {

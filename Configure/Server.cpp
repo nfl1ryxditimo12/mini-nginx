@@ -49,6 +49,10 @@ const ws::Server::index_set_type& ws::Server::get_index_set() const throw() {
   return _option.get_index_set();
 }
 
+ws::Server::index_check_type ws::Server::get_index_check() const throw() {
+  return _option.get_index_check();
+}
+
 const ws::Server::client_max_body_size_type& ws::Server::get_client_max_body_size() const throw() {
   return _option.get_client_max_body_size();
 }
@@ -84,6 +88,10 @@ void ws::Server::set_root(const root_type& value) {
 
 void ws::Server::add_index(const index_type& value) {
   _option.add_index(value);
+}
+
+void ws::Server::set_index_check(index_check_type value) {
+  _option.set_index_check(value);
 }
 
 void ws::Server::set_client_max_body_size(const client_max_body_size_type& value) {

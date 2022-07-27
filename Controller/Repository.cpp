@@ -62,6 +62,7 @@ void ws::Repository::set_option(const ws::InnerOption& option) {
   _config.autoindex = option.get_autoindex();
   _config.root = option.get_root();
   _config.index = option.get_index_set();
+  _config.index_check = option.get_index_check();
   _config.client_max_body_size = option.get_client_max_body_size();
   _config.error_page_map = option.get_error_page_map();
 }
@@ -110,10 +111,12 @@ void ws::Repository::set_autoindex() {
   if (dir == NULL)
     this->set_status(INTERNAL_SERVER_ERROR);
 
+  std::cout << _config.index_check << std::endl;
+
   while (dir && ((file = readdir(dir)) != NULL)) {
     index_set_type::const_iterator filename = _config.index.find(file->d_name);
 
-    if (filename != _config.index.end()) {
+    if (filename != _config.index.end() && (_config.index_check || (!_config.index_check && !_config.autoindex))) {
       open_file(_file_path + "/" + *filename);
       _autoindex.clear();
       break;

@@ -48,6 +48,10 @@ const ws::Location::index_set_type& ws::Location::get_index_set() const throw() 
   return _option.get_index_set();
 }
 
+ws::Location::index_check_type ws::Location::get_index_check() const throw() {
+  return _option.get_index_check();
+}
+
 const ws::Location::client_max_body_size_type& ws::Location::get_client_max_body_size() const throw() {
   return _option.get_client_max_body_size();
 }
@@ -98,6 +102,10 @@ void ws::Location::add_index(const index_type& value) {
 
 void ws::Location::set_index(const ws::Location::index_set_type &value) {
   _option.set_index(value);
+}
+
+void ws::Location::set_index_check(index_check_type value) {
+  _option.set_index_check(value);
 }
 
 void ws::Location::set_client_max_body_size(const client_max_body_size_type& value) {
