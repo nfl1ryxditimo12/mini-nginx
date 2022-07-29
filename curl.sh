@@ -5,15 +5,15 @@ echo "\033[36m GET - root : OK \033[0m"
 curl -X GET http://localhost:9090
 
 # GET - root , Host:"" : 400 Bad Request
-echo "\033[36m GET - Host: \"\" : 400, Bad Request \033[0m"
+echo "\n\033[36m GET - Host: \"\" : 400, Bad Request \033[0m"
 curl -X GET http://localhost:9090/ -H "Host: "
 
-# GET - root , Host:"" : 400 Bad Request
+# GET - root , check file permission : 200 / 403
 echo "\033[36m GET - check file permission : 200 / 403 \033[0m"
 curl -X GET http://localhost:9090/index.html
 
 # GET - root , wrong file : 404 not found
-echo "\033[36m GET - 404, not found \033[0m"
+echo "\n\033[36m GET - 404, not found \033[0m"
 curl -X GET http://localhost:9090/aa
 
 # POST/PUT - root : 405, Method Not Allowed
@@ -92,12 +92,22 @@ curl -X POST http://localhost:9191/session -H "Secret-Key: hellowebserv" -H "Nam
 echo "\033[36m GET - session 1 \033[0m"
 curl -X GET http://localhost:9191/session -H "Cookie: session_id=1"
 
-echo "\033[36m GET location: /naver \033[0m"
+echo "\n\033[36m GET location: /naver \033[0m"
 curl -X GET http://localhost:9191/naver
 
 # autoindex
+echo "\033[31m[ AUTOINDEX TEST ]\033[0m"
+
 echo "\033[36m GET location: /autoindex \033[0m"
 curl -X GET http://localhost:9191/autoindex
 
 echo "\033[36m GET location: /none-autoindex \033[0m"
 curl -X GET http://localhost:9191/none-autoindex
+
+echo "\n\033[31m[ TEST ]\033[0m"
+
+echo "\033[36m server name \033[0m"
+curl --resolve example.com:80:127.0.0.1 http://example.com/
+
+echo "\n\033[31m[ LISTEN ]\033[0m"
+lsof -Pni4 | grep LISTEN
