@@ -32,11 +32,7 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   _server = &server;
   _location = &(_server->find_location(Util::parse_relative_path(_request->get_uri())));
 
-  _uri = _request->get_uri().substr(_location->get_block_name().length());;
-
-  /*set server*/
-  _config.listen = request.get_listen();
-  _config.server_name = request.get_server_name();
+  _method = _request->get_method();
 
   if (_location != NULL) {
     if (_location->get_block_name() == "/session" && _request->get_uri() == "/session")
@@ -48,6 +44,15 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   } else
     ws::Repository::set_option(_server->get_option());
 
+  if (!_session && (_method == "POST" || _method == "PUT"))
+    _uri = _request->get_uri().substr(0, _location->get_block_name().length());
+  else
+    _uri = _request->get_uri().substr(_location->get_block_name().length());
+
+  /*set server*/
+  _config.listen = request.get_listen();
+  _config.server_name = request.get_server_name();
+
   _file_path = _config.root + (_uri[0] == '/' || !_uri.length() ? "" : "/") + _uri;
 
   _file_exist_stat = lstat(_file_path.c_str(), &_file_stat) != -1;
@@ -55,7 +60,7 @@ void ws::Repository::operator()(const ws::Server& server, const ws::Request& req
   std::string server_name = _request->get_server_name() == "_" ? "localhost" : _request->get_server_name();
 
   _host = server_name + ":" + ws::Util::ultos(ntohs(_config.listen.second));
-  _method = _request->get_method();
+//  _method = _request->get_method();
 }
 
 void ws::Repository::set_option(const ws::InnerOption& option) {
