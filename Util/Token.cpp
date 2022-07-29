@@ -31,7 +31,7 @@ ws::Token& ws::Token::rdword(std::istream& buffer) {
     c = buffer.peek();
   }
 
-  while (c != ' ' && c != '\t' && c != '\n' && c != '\r') {
+  while (!buffer.eof() && c != ' ' && c != '\t' && c != '\n' && c != '\r') {
     this->push_back(buffer.get());
     c = buffer.peek();
   }

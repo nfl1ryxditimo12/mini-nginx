@@ -19,7 +19,7 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
   ws::Repository::redirect_type redirect = client_data.repository.get_redirect();
 
 //1. 400error
-  if (client_data.status >= BAD_REQUEST) {
+  if (client_data.status >= BAD_REQUEST && !redirect.first) {
     _kernel->add_read_event(client_data.repository.get_fd(), reinterpret_cast<void*>(ws::Socket::read_data));
     return;
   }
@@ -32,7 +32,7 @@ void ws::Response::process(client_value_type& client_data, uintptr_t client_fd) 
 
 //3. redirect
   if (redirect.first > 0) {
-    if (redirect.first < 300 && client_data.repository.get_method() != "HEAD")
+    if (client_data.repository.get_method() != "HEAD")
       client_data.response_body = redirect.second;
 
     ws::Socket::generate_response(client_fd, client_data);

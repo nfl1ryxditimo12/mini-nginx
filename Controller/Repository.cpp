@@ -92,7 +92,7 @@ void ws::Repository::set_repository(unsigned int value)  {
       this->open_file(_file_path);
   }
   
-  if (_status >= BAD_REQUEST)
+  if (_status >= BAD_REQUEST && !_config.redirect.first)
     this->open_error_html();
 
   if (_status == 0)
@@ -117,8 +117,6 @@ void ws::Repository::set_autoindex() {
 
   if (dir == NULL)
     this->set_status(INTERNAL_SERVER_ERROR);
-
-  std::cout << _config.index_check << std::endl;
 
   while (dir && ((file = readdir(dir)) != NULL)) {
     index_set_type::const_iterator filename = _config.index.find(file->d_name);
@@ -182,7 +180,7 @@ void ws::Repository::open_error_html() {
 
   // 기본 에러 페이지 또는 제공된 에러 페이지
   if (error_iter != _config.error_page_map.end())
-    filename = error_iter->second;
+    filename = _index_root + error_iter->second;
   else
     filename = _index_root + "/" + ws::Util::ultos(_status) + ".html"; // _defualt_root_path + status.html
 
