@@ -187,6 +187,10 @@ void ws::Util::print_accept_client(const std::string& request, u_int32_t index, 
   std::cout << CYN << request << NC << " client_idx: " << index << ", accepted fd: " << fd << std::endl;
 }
 
-void ws::Util::print_disconnect_client(int fd) {
-  std::cout << RED << "[Disconnect]" << NC << " - client fd: " << fd << std::endl;
+void ws::Util::print_response_client(int status, int fd) {
+  std::cout << GRN << "[Response]" << NC << " - status: " << status << ", client fd: " << fd << std::endl;
+}
+
+void ws::Util::print_disconnect_client(int fd, const std::string& cause) {
+  std::cout << RED << "[Disconnect]" << NC << " - client fd: " << fd << YLW << " " + cause << NC << std::endl;
 }

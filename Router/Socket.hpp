@@ -120,8 +120,10 @@ namespace ws {
     /*            Private Function            */
     /* ====================================== */
 
+    static bool check_socket_func(kevent_func);
+
     static void init_client(unsigned int fd, listen_type listen, const struct sockaddr_in& sock_info);
-    static void disconnect_client(int fd);
+    static void disconnect_client(int fd, u_int16_t cause = 0);
     static void exit_socket();
 
     /* control socket to kenel event */

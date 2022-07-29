@@ -52,8 +52,17 @@ void ws::Socket::init_server(const ws::Configure& conf) {
 
 ws::Socket::~Socket() {}
 
+bool ws::Socket::check_socket_func(kevent_func f) {
+  return (
+    f == &Socket::recv_request ||
+    f == &Socket::process_request ||
+    f == &Socket::send_response ||
+    f == &Socket::process_session
+  );
+}
+
 void ws::Socket::run_server() {
-  int new_event;
+  int event_size;
 
   _kernel.add_signal_event(SIGINT, reinterpret_cast<void*>(&Socket::accecpt_signal));
 
@@ -61,11 +70,16 @@ void ws::Socket::run_server() {
 
   while (true) {
 
-    new_event = _kernel.kevent_ctl(_client.size() + _server.size());
+    event_size = _kernel.kevent_ctl(_client.size() + _server.size());
 
-    for (int i = 0; i < new_event; i++) {
-      kevent_func func = reinterpret_cast<kevent_func>(_kernel.get_event_list()[i].udata);
-      (*func)(_kernel.get_event_list()[i]);
+    for (int i = 0; i < event_size; i++) {
+      const struct kevent& curr_event = _kernel.get_event_list()[i];
+      kevent_func func = reinterpret_cast<kevent_func>(curr_event.udata);
+
+      if (check_socket_func(func) && (curr_event.flags & EV_EOF || curr_event.flags & EV_ERROR))
+        disconnect_client(curr_event.ident, curr_event.flags);
+      else
+        (*func)(curr_event);
     }
   }
 }
@@ -76,7 +90,7 @@ void ws::Socket::init_client(unsigned int fd, listen_type listen, const struct s
   _client.insert(client_map_type::value_type(fd, client_value_type(listen, sock)));
 }
 
-void ws::Socket::disconnect_client(int fd) {
+void ws::Socket::disconnect_client(int fd, uint16_t cause) {
   client_map_type::iterator client_iter = _client.find(fd);
 
   if (client_iter == _client.end())
@@ -85,7 +99,9 @@ void ws::Socket::disconnect_client(int fd) {
   _client.erase(client_iter);
 
   close(fd);
-  ws::Util::print_disconnect_client(fd);
+
+  std::string err = cause & EV_EOF ? "EOF" : cause & EV_ERROR ? "ERROR" : "";
+  ws::Util::print_disconnect_client(fd, err);
 }
 
 void ws::Socket::exit_socket() {
@@ -129,7 +145,7 @@ void ws::Socket::recv_request(struct kevent event) {
 
   if (read_size == -1 || client_data.request.eof()) {
     _kernel.delete_read_event(event.ident);
-    disconnect_client(event.ident);
+    disconnect_client(event.ident, EV_ERROR);
     return;
   }
 
@@ -138,7 +154,7 @@ void ws::Socket::recv_request(struct kevent event) {
 
   if (read_size == 0) {
     _kernel.delete_read_event(event.ident);
-    disconnect_client(event.ident);
+    disconnect_client(event.ident, EV_ERROR);
     return;
   }
 
@@ -193,7 +209,7 @@ void ws::Socket::process_request(struct kevent event) {
 
   if (client_data.fatal) {
     close(client_data.repository.get_fd());
-    disconnect_client(event.ident);
+    disconnect_client(event.ident, EV_ERROR);
     return;
   }
 
@@ -252,7 +268,7 @@ void ws::Socket::read_data(struct kevent event) {
   if (read_size <= 0) {
     _kernel.delete_read_event(event.ident);
     close(event.ident);
-    disconnect_client(event.ident);
+    disconnect_client(event.ident, EV_ERROR);
     return;
   }
 
@@ -275,7 +291,7 @@ void ws::Socket::write_data(struct kevent event) {
   if (write_size == -1) {
     _kernel.delete_write_event(event.ident);
     close(event.ident);
-    disconnect_client(event.ident);
+    disconnect_client(event.ident, EV_ERROR);
     return;
   }
 
@@ -348,7 +364,7 @@ void ws::Socket::read_pipe(struct kevent event) {
 
   if (read_size < 0) {
     _kernel.delete_read_event(event.ident);
-    disconnect_client(client->first);
+    disconnect_client(client->first, EV_ERROR);
     return;
   }
   if (read_size == 0) {
@@ -374,7 +390,7 @@ void ws::Socket::write_pipe(struct kevent event) {
 
   if (write_size <= 0) {
     _kernel.delete_write_event(event.ident);
-    disconnect_client(client->first);
+    disconnect_client(client->first, EV_ERROR);
     return;
   }
 
@@ -419,7 +435,7 @@ void ws::Socket::send_response(struct kevent event) {
   ssize_t n = write(event.ident, response_data.c_str() + offset, response_data.length() - offset);
   if (n <= 0) {
     _kernel.delete_write_event(event.ident);
-    disconnect_client(event.ident);
+    disconnect_client(event.ident, EV_ERROR);
     return;
   }
 
@@ -427,6 +443,7 @@ void ws::Socket::send_response(struct kevent event) {
 
   if (offset == response_data.length()) {
     _kernel.delete_write_event(event.ident);
+    ws::Util::print_response_client(client_data.status, event.ident);
     disconnect_client(event.ident);
   }
 }

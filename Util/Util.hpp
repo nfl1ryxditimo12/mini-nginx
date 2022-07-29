@@ -48,6 +48,7 @@ namespace ws {
     static std::string format_number(size_t num);
 
     static void print_accept_client(const std::string&, u_int32_t , int);
-    static void print_disconnect_client(int);
+    static void print_response_client(int, int);
+    static void print_disconnect_client(int, const std::string&);
   };
 }
