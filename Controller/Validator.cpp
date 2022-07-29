@@ -49,6 +49,7 @@ void ws::Validator::init_content_type_parser(client_value_type&) {
   _content_type_parser.insert("test/file");
   _content_type_parser.insert("image/jpeg");
   _content_type_parser.insert("image/png");
+  _content_type_parser.insert("application/x-www-form-urlencoded");
   _content_type_parser.insert("application/octet-stream");
 }
 
