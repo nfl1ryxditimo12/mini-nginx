@@ -180,7 +180,7 @@ void ws::Repository::open_error_html() {
 
   // 기본 에러 페이지 또는 제공된 에러 페이지
   if (error_iter != _config.error_page_map.end())
-    filename = _index_root + error_iter->second;
+    filename = _index_root + "/" + error_iter->second;
   else
     filename = _index_root + "/" + ws::Util::ultos(_status) + ".html"; // _defualt_root_path + status.html
 

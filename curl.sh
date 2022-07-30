@@ -20,6 +20,11 @@ curl -X GET http://localhost:9090/aa
 echo "\033[36m POST - root : 405, Method Not Allowed \033[0m"
 curl -X POST http://localhost:9090
 
+# HEAD - root
+echo "\033[36m HEAD - root \033[0m"
+curl -I HEAD http://localhost:9090
+
+
 # DELETE
 echo "\033[36m DELETE - root : 405, Method Not Allowed \033[0m"
 curl -X DELETE http://localhost:9090/
@@ -105,3 +110,8 @@ curl --resolve example.com:80:127.0.0.1 http://example.com/
 
 echo "\n\033[31m[ LISTEN ]\033[0m"
 lsof -Pni4 | grep LISTEN
+
+
+#DELETE
+
+curl -X DELETE localhost:9090/crab.jpeg
