@@ -1,1 +1,9 @@
-# webserv
+![1](https://user-images.githubusercontent.com/74334399/208657879-2e7d8794-4e61-435b-b2ad-5a56a3eb59da.png)
+![2](https://user-images.githubusercontent.com/74334399/208657885-54ce993f-ecc4-4507-bd53-bb237529bc3f.png)
+![3](https://user-images.githubusercontent.com/74334399/208657894-7c11d0cd-4df3-47d3-ac2d-f8164e211bd2.png)
+![4](https://user-images.githubusercontent.com/74334399/208657903-c1f05a15-5838-40fd-a825-9aeb51d9b454.png)
+![5](https://user-images.githubusercontent.com/74334399/208657910-c0b9868f-c5a7-4f8d-b44c-6081641cb538.png)
+![6](https://user-images.githubusercontent.com/74334399/208657915-ca03fdbc-511b-4414-98ef-71b3eb477a7d.png)
+![7](https://user-images.githubusercontent.com/74334399/208657920-13194036-73b7-4766-bc01-b3bb965781e4.png)
+![8](https://user-images.githubusercontent.com/74334399/208657923-1ed426ee-eaab-40b3-8068-20b574825e5d.png)
+![9](https://user-images.githubusercontent.com/74334399/208657926-2307e9e7-4101-45b2-a7ed-c758f50e66cc.png)
